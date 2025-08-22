@@ -2296,6 +2296,17 @@ async function changeTikTokUsername(newUsername, ws) {
         
         // Connect to new username
         console.log('🔗 [USERNAME] Starting connection to new username...');
+        
+        // Send progress update
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'connectionProgress',
+                username: newUsername,
+                message: 'Connecting to TikTok Live...',
+                progress: 25
+            }));
+        }
+        
         await connectToTikTok();
         
         // Send success message after connection
@@ -2393,29 +2404,17 @@ async function connectToTikTok() {
             }
         });
 
-        // Fetch room info BEFORE connecting to get current totals
-        console.log('🔍 [ROOM INFO] Fetching current room statistics...');
-        try {
-            const roomInfo = await connection.fetchRoomInfo();
-            console.log('📊 [ROOM INFO] Room info fetched successfully:', roomInfo);
-            
-            // Extract current totals from room info
-            extractRoomInfoTotals(roomInfo);
-            
-        } catch (roomInfoError) {
-            console.error('❌ [ROOM INFO] Failed to fetch room info:', roomInfoError);
-            console.log('⚠️ [ROOM INFO] Continuing without initial room stats...');
-        }
+        // Skip room info fetching before connection to speed up the process
+        console.log('⚡ [CONNECTION] Skipping pre-connection room info fetch for faster connection...');
         
-        // Also try to get room info from the connection object itself
-        console.log('🔍 [CONNECTION] Checking connection object for room data...');
+        // Quick connection check
+        console.log('🔍 [CONNECTION] Quick connection validation...');
         if (connection.roomId) {
             console.log('🔍 [CONNECTION] Room ID found:', connection.roomId);
         }
         if (connection.uniqueId) {
             console.log('🔍 [CONNECTION] Unique ID found:', connection.uniqueId);
         }
-        console.log('🔍 [CONNECTION] Connection object keys:', Object.keys(connection));
 
         // Note: resetSessionMetrics function moved to global scope
 
@@ -2423,22 +2422,25 @@ async function connectToTikTok() {
         async function fetchRoomInfoAfterConnection() {
             console.log('🔍 [ROOM INFO] Attempting to fetch room info after connection...');
             try {
-                // Wait a bit for connection to stabilize
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Reduced wait time for faster response
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Try multiple methods to get room info
-                if (connection && typeof connection.fetchRoomInfo === 'function') {
-                    const roomInfo = await connection.fetchRoomInfo();
-                    console.log('📊 [ROOM INFO] Room info fetched after connection:', roomInfo);
-                    // Note: We don't call extractRoomInfoTotals here to avoid overwriting
-                    // the data we already extracted before connection
-                    console.log('ℹ️ [ROOM INFO] Skipping extraction to avoid overwriting pre-connection data');
-                }
-                
-                // Also try to get room data from connection state
+                // Try to get room info from connection state first (faster)
                 if (connection && connection.state) {
                     console.log('🔍 [ROOM INFO] Checking connection state for room data...');
                     extractInitialRoomState(connection.state);
+                }
+                
+                // Then try to fetch additional room info if needed
+                if (connection && typeof connection.fetchRoomInfo === 'function') {
+                    try {
+                        const roomInfo = await connection.fetchRoomInfo();
+                        console.log('📊 [ROOM INFO] Room info fetched after connection:', roomInfo);
+                        // Extract totals from room info
+                        extractRoomInfoTotals(roomInfo);
+                    } catch (fetchError) {
+                        console.log('⚠️ [ROOM INFO] Room info fetch failed, using connection state data');
+                    }
                 }
                 
             } catch (error) {

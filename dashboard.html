@@ -3050,14 +3050,28 @@
             document.getElementById('streamStatus').textContent = 'Connecting...';
             document.getElementById('streamerName').textContent = `@${username}`;
             
-            // Set connection timeout (30 seconds)
+            // Set connection timeout (60 seconds - increased for slower connections)
             const connectionTimeout = setTimeout(() => {
                 console.log('⏰ [USERNAME] Connection timeout reached');
                 document.getElementById('streamStatus').textContent = 'Connection Timeout';
                 document.getElementById('connectBtn').style.display = 'inline-block';
                 document.getElementById('disconnectBtn').style.display = 'none';
                 alert('Connection timeout. Please check if the username is correct and the user is live streaming.');
-            }, 30000);
+            }, 60000);
+            
+            // Add progress indicator
+            document.getElementById('streamStatus').textContent = 'Connecting... (0%)';
+            let progressCounter = 0;
+            const progressInterval = setInterval(() => {
+                progressCounter += 10;
+                if (progressCounter <= 90) {
+                    document.getElementById('streamStatus').textContent = `Connecting... (${progressCounter}%)`;
+                }
+            }, 6000); // Update every 6 seconds
+            
+            // Store both timers for cleanup
+            window.connectionTimeout = connectionTimeout;
+            window.progressInterval = progressInterval;
             
             // Send username change request to server
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -3208,10 +3222,15 @@
                                 document.getElementById('streamStatus').textContent = 'Connected';
                                 document.getElementById('streamerName').textContent = `@${message.data.username}`;
                                 addActivityItem('🔄', 'System', message.data.message, null, new Date());
-                                // Clear connection timeout
+                                
+                                // Clear connection timeout and progress interval
                                 if (window.connectionTimeout) {
                                     clearTimeout(window.connectionTimeout);
                                     window.connectionTimeout = null;
+                                }
+                                if (window.progressInterval) {
+                                    clearInterval(window.progressInterval);
+                                    window.progressInterval = null;
                                 }
                                 break;
                             case 'usernameChangeError':
@@ -3243,12 +3262,23 @@
                                 document.getElementById('disconnectBtn').style.display = 'none';
                                 document.getElementById('streamStatus').textContent = 'Error';
                                 
-                                // Clear connection timeout
+                                // Clear connection timeout and progress interval
                                 if (window.connectionTimeout) {
                                     clearTimeout(window.connectionTimeout);
                                     window.connectionTimeout = null;
                                 }
+                                if (window.progressInterval) {
+                                    clearInterval(window.progressInterval);
+                                    window.progressInterval = null;
+                                }
                                 break;
+                            case 'connectionProgress':
+                                console.log('🔄 Connection progress:', message.data);
+                                if (message.data.progress) {
+                                    document.getElementById('streamStatus').textContent = `Connecting... (${message.data.progress}%)`;
+                                }
+                                break;
+                                
                             case 'streamDisconnected':
                                 console.log('❌ Stream disconnected:', message.data);
                                 document.getElementById('streamStatus').textContent = 'Disconnected';
