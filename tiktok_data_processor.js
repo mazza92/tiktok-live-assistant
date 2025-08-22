@@ -2212,6 +2212,12 @@ wss.on('connection', (ws) => {
                 // Remove debug output - just log internally
                 console.log('📨 Received test message from dashboard');
                 // Don't send response back - this was causing confusion
+            } else if (data.type === 'changeUsername') {
+                console.log('🔄 [USERNAME] Username change request:', data.username);
+                changeTikTokUsername(data.username, ws);
+            } else if (data.type === 'disconnectStream') {
+                console.log('❌ [USERNAME] Disconnect stream request');
+                disconnectFromTikTok(ws);
             }
         } catch (error) {
             console.error('❌ Error parsing dashboard message:', error);
@@ -2234,6 +2240,75 @@ let isConnecting = false;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const reconnectDelay = 5000; // 5 seconds
+
+// Function to change TikTok username dynamically
+async function changeTikTokUsername(newUsername, ws) {
+    try {
+        console.log(`🔄 [USERNAME] Changing from ${TIKTOK_USERNAME} to ${newUsername}`);
+        
+        // Disconnect current connection if exists
+        if (connection) {
+            console.log('🔌 [USERNAME] Disconnecting current TikTok connection...');
+            connection.disconnect();
+            connection = null;
+        }
+        
+        // Update global username
+        global.TIKTOK_USERNAME = newUsername;
+        
+        // Reset metrics for new stream
+        resetSessionMetrics();
+        
+        // Notify dashboard of username change
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'usernameChanged',
+                username: newUsername,
+                message: `Switched to @${newUsername}`
+            }));
+        }
+        
+        // Connect to new username
+        await connectToTikTok();
+        
+    } catch (error) {
+        console.error('❌ [USERNAME] Error changing username:', error);
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'usernameChangeError',
+                error: error.message
+            }));
+        }
+    }
+}
+
+// Function to disconnect from TikTok
+async function disconnectFromTikTok(ws) {
+    try {
+        console.log('❌ [USERNAME] Disconnecting from TikTok Live...');
+        
+        if (connection) {
+            connection.disconnect();
+            connection = null;
+        }
+        
+        // Reset metrics
+        resetSessionMetrics();
+        
+        // Notify dashboard
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'streamDisconnected',
+                message: 'Disconnected from TikTok Live'
+            }));
+        }
+        
+        console.log('✅ [USERNAME] Successfully disconnected from TikTok Live');
+        
+    } catch (error) {
+        console.error('❌ [USERNAME] Error disconnecting:', error);
+    }
+}
 
 // Load environment variables
 require('dotenv').config();
@@ -2953,7 +3028,7 @@ async function connectToTikTok() {
 }
 
 // Start the TikTok Live connection
-const username = "kameltoetonybu"; // TODO: Make this configurable
+const username = "camyslive"; // TODO: Make this configurable
 console.log("🎯 TikTok Live Data Processor Starting...");
 console.log(`📡 Connecting to: @${username}`);
 console.log("🖥️  Dashboard will be available at: http://localhost:3000");
