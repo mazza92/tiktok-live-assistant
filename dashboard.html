@@ -3075,13 +3075,34 @@
                                 }
                                 break;
                             case 'usernameChangeError':
-                                console.error('❌ Username change error:', message.data);
-                                const errorMessage = message.data?.error || message.data?.details || 'Unknown error occurred';
+                                console.error('❌ Username change error - Full message:', message);
+                                console.error('❌ Username change error - Message data:', message.data);
+                                console.error('❌ Username change error - Message type:', message.type);
+                                
+                                // Try to extract error message from various possible structures
+                                let errorMessage = 'Unknown error occurred';
+                                if (message.data) {
+                                    if (typeof message.data === 'string') {
+                                        errorMessage = message.data;
+                                    } else if (message.data.error) {
+                                        errorMessage = message.data.error;
+                                    } else if (message.data.details) {
+                                        errorMessage = message.data.details;
+                                    } else if (message.data.message) {
+                                        errorMessage = message.data.message;
+                                    } else {
+                                        errorMessage = JSON.stringify(message.data);
+                                    }
+                                }
+                                
+                                console.log('🔍 Extracted error message:', errorMessage);
                                 alert(`Error changing username: ${errorMessage}`);
+                                
                                 // Reset UI
                                 document.getElementById('connectBtn').style.display = 'inline-block';
                                 document.getElementById('disconnectBtn').style.display = 'none';
                                 document.getElementById('streamStatus').textContent = 'Error';
+                                
                                 // Clear connection timeout
                                 if (window.connectionTimeout) {
                                     clearTimeout(window.connectionTimeout);
@@ -3114,6 +3135,28 @@
                                 break;
                             default:
                                 console.log('📨 Unknown message type:', message.type);
+                                console.log('📨 Full message content:', message);
+                                console.log('📨 Message data:', message.data);
+                                
+                                // If it looks like an error message, handle it gracefully
+                                if (message.type && message.type.toLowerCase().includes('error')) {
+                                    console.error('🚨 Detected error message:', message);
+                                    let errorMsg = 'Unknown error occurred';
+                                    
+                                    if (message.data) {
+                                        if (typeof message.data === 'string') {
+                                            errorMsg = message.data;
+                                        } else if (message.data.error) {
+                                            errorMsg = message.data.error;
+                                        } else if (message.data.message) {
+                                            errorMsg = message.data.message;
+                                        } else {
+                                            errorMsg = JSON.stringify(message.data);
+                                        }
+                                    }
+                                    
+                                    alert(`Error: ${errorMsg}`);
+                                }
                         }
                     } catch (error) {
                         console.error('❌ Error parsing message:', error);
