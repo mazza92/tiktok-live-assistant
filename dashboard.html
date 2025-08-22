@@ -3128,9 +3128,15 @@
                                 break;
                             case 'usernameChanged':
                                 console.log('🔄 Username changed:', message.data);
-                                document.getElementById('streamStatus').textContent = 'Connected';
-                                document.getElementById('streamerName').textContent = `@${message.data.username}`;
-                                addActivityItem('🔄', 'System', message.data.message, null, new Date());
+                                if (message.data && message.data.username) {
+                                    document.getElementById('streamStatus').textContent = 'Connected';
+                                    document.getElementById('streamerName').textContent = `@${message.data.username}`;
+                                    addActivityItem('🔄', 'System', message.data.message || 'Username changed successfully', null, new Date());
+                                } else {
+                                    console.warn('⚠️ Username changed message missing data:', message);
+                                    document.getElementById('streamStatus').textContent = 'Connected';
+                                    addActivityItem('🔄', 'System', 'Username changed successfully', null, new Date());
+                                }
                                 
                                 // Clear connection timeout and progress interval
                                 if (window.connectionTimeout) {
@@ -3183,8 +3189,10 @@
                                 break;
                             case 'connectionProgress':
                                 console.log('🔄 Connection progress:', message.data);
-                                if (message.data.progress) {
+                                if (message.data && message.data.progress) {
                                     document.getElementById('streamStatus').textContent = `Connecting... (${message.data.progress}%)`;
+                                } else {
+                                    console.warn('⚠️ Connection progress message missing data:', message);
                                 }
                                 break;
                                 
@@ -3192,7 +3200,11 @@
                                 console.log('❌ Stream disconnected:', message.data);
                                 document.getElementById('streamStatus').textContent = 'Disconnected';
                                 document.getElementById('streamerName').textContent = '';
-                                addActivityItem('❌', 'System', message.data.message, null, new Date());
+                                if (message.data && message.data.message) {
+                                    addActivityItem('❌', 'System', message.data.message, null, new Date());
+                                } else {
+                                    addActivityItem('❌', 'System', 'Stream disconnected', null, new Date());
+                                }
                                 break;
                             case 'aiWelcome':
                                 console.log('🤖 AI Welcome:', message.data);
@@ -3200,13 +3212,15 @@
                                 break;
                             case 'metricsReset':
                                 console.log('🔄 Metrics reset:', message.data);
-                                addActivityItem('🔄', 'System', 'Live stream metrics reset for new session', null, message.data.timestamp);
+                                const resetTimestamp = message.data && message.data.timestamp ? message.data.timestamp : new Date();
+                                addActivityItem('🔄', 'System', 'Live stream metrics reset for new session', null, resetTimestamp);
                                 // Reset dashboard counters
                                 resetDashboardCounters();
                                 break;
                             case 'streamStarted':
                                 console.log('🎬 Stream started:', message.data);
-                                addActivityItem('🎬', 'System', 'Live stream has started - metrics reset', null, message.data.timestamp);
+                                const startTimestamp = message.data && message.data.timestamp ? message.data.timestamp : new Date();
+                                addActivityItem('🎬', 'System', 'Live stream has started - metrics reset', null, startTimestamp);
                                 // Reset dashboard counters
                                 resetDashboardCounters();
                                 // Show notification
@@ -3237,36 +3251,35 @@
                                     alert(`Error: ${errorMsg}`);
                                 }
                         }
-                                    } catch (error) {
-                    console.error('❌ Error parsing message:', error);
-                    console.error('❌ Raw message that caused error:', message);
-                    
-                    // Try to handle as error message if it looks like one
-                    if (message && typeof message === 'object') {
-                        if (message.type && message.type.toLowerCase().includes('error')) {
-                            console.error('🚨 Detected error message in catch block:', message);
-                            let errorMsg = 'Unknown error occurred';
-                            
-                            if (message.data) {
-                                if (typeof message.data === 'string') {
-                                    errorMsg = message.data;
-                                } else if (message.data.error) {
-                                    errorMsg = message.data.error;
-                                } else if (message.data.message) {
-                                    errorMsg = message.data.message;
-                                } else {
-                                    errorMsg = JSON.stringify(message.data);
+                    } catch (error) {
+                        console.error('❌ Error parsing message:', error);
+                        
+                        // Try to handle as error message if it looks like one
+                        if (error && typeof error === 'object') {
+                            if (error.type && error.type.toLowerCase().includes('error')) {
+                                console.error('🚨 Detected error message in catch block:', error);
+                                let errorMsg = 'Unknown error occurred';
+                                
+                                if (error.data) {
+                                    if (typeof error.data === 'string') {
+                                        errorMsg = error.data;
+                                    } else if (error.data.error) {
+                                        errorMsg = error.data.error;
+                                    } else if (error.data.message) {
+                                        errorMsg = error.data.message;
+                                    } else {
+                                        errorMsg = JSON.stringify(error.data);
+                                    }
+                                } else if (error.error) {
+                                    errorMsg = error.error;
+                                } else if (error.message) {
+                                    errorMsg = error.message;
                                 }
-                            } else if (message.error) {
-                                errorMsg = message.error;
-                            } else if (message.message) {
-                                errorMsg = message.message;
+                                
+                                alert(`Error: ${errorMsg}`);
                             }
-                            
-                            alert(`Error: ${errorMsg}`);
                         }
                     }
-                }
                 };
                 
                 ws.onclose = function(event) {
