@@ -2725,7 +2725,12 @@
         function connectWebSocket() {
             try {
                 updateConnectionStatus('Connecting...', '');
-                ws = new WebSocket('ws://localhost:3000');
+                // Automatically detect the correct WebSocket URL
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const host = window.location.host;
+                const wsUrl = `${protocol}//${host}`;
+                console.log('🔌 Connecting to WebSocket:', wsUrl);
+                ws = new WebSocket(wsUrl);
                 
                 ws.onopen = function() {
                     console.log('🖥️  Dashboard connected via WebSocket');
