@@ -2283,12 +2283,28 @@ async function changeTikTokUsername(newUsername, ws) {
         console.log('🔗 [USERNAME] Starting connection to new username...');
         await connectToTikTok();
         
+        // Send success message after connection
+        console.log('✅ [USERNAME] Successfully connected to new username');
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'usernameChanged',
+                username: newUsername,
+                message: `Successfully connected to @${newUsername}`,
+                status: 'success'
+            }));
+        }
+        
     } catch (error) {
         console.error('❌ [USERNAME] Error changing username:', error);
+        console.error('❌ [USERNAME] Error stack:', error.stack);
+        
+        // Send detailed error to dashboard
         if (ws && ws.readyState === ws.OPEN) {
             ws.send(JSON.stringify({
                 type: 'usernameChangeError',
-                error: error.message
+                error: error.message || 'Unknown error occurred',
+                details: error.toString(),
+                stack: error.stack
             }));
         }
     }

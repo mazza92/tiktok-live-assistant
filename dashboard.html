@@ -2984,11 +2984,17 @@
                                 break;
                             case 'usernameChangeError':
                                 console.error('❌ Username change error:', message.data);
-                                alert(`Error changing username: ${message.data.error}`);
+                                const errorMessage = message.data?.error || message.data?.details || 'Unknown error occurred';
+                                alert(`Error changing username: ${errorMessage}`);
                                 // Reset UI
                                 document.getElementById('connectBtn').style.display = 'inline-block';
                                 document.getElementById('disconnectBtn').style.display = 'none';
                                 document.getElementById('streamStatus').textContent = 'Error';
+                                // Clear connection timeout
+                                if (window.connectionTimeout) {
+                                    clearTimeout(window.connectionTimeout);
+                                    window.connectionTimeout = null;
+                                }
                                 break;
                             case 'streamDisconnected':
                                 console.log('❌ Stream disconnected:', message.data);
