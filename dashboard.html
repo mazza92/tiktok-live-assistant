@@ -2818,6 +2818,15 @@
             document.getElementById('streamStatus').textContent = 'Connecting...';
             document.getElementById('streamerName').textContent = `@${username}`;
             
+            // Set connection timeout (30 seconds)
+            const connectionTimeout = setTimeout(() => {
+                console.log('⏰ [USERNAME] Connection timeout reached');
+                document.getElementById('streamStatus').textContent = 'Connection Timeout';
+                document.getElementById('connectBtn').style.display = 'inline-block';
+                document.getElementById('disconnectBtn').style.display = 'none';
+                alert('Connection timeout. Please check if the username is correct and the user is live streaming.');
+            }, 30000);
+            
             // Send username change request to server
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ 
@@ -2838,6 +2847,9 @@
                     }
                 }, 1000);
             }
+            
+            // Store timeout reference for clearing when connection succeeds
+            window.connectionTimeout = connectionTimeout;
         }
 
         function disconnectFromStream() {
@@ -2964,6 +2976,11 @@
                                 document.getElementById('streamStatus').textContent = 'Connected';
                                 document.getElementById('streamerName').textContent = `@${message.data.username}`;
                                 addActivityItem('🔄', 'System', message.data.message, null, new Date());
+                                // Clear connection timeout
+                                if (window.connectionTimeout) {
+                                    clearTimeout(window.connectionTimeout);
+                                    window.connectionTimeout = null;
+                                }
                                 break;
                             case 'usernameChangeError':
                                 console.error('❌ Username change error:', message.data);

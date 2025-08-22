@@ -2246,15 +2246,25 @@ async function changeTikTokUsername(newUsername, ws) {
     try {
         console.log(`🔄 [USERNAME] Changing from ${TIKTOK_USERNAME} to ${newUsername}`);
         
+        // Validate username
+        if (!newUsername || newUsername.trim() === '') {
+            throw new Error('Username cannot be empty');
+        }
+        
         // Disconnect current connection if exists
         if (connection) {
             console.log('🔌 [USERNAME] Disconnecting current TikTok connection...');
-            connection.disconnect();
+            try {
+                connection.disconnect();
+            } catch (disconnectError) {
+                console.log('⚠️ [USERNAME] Error during disconnect (continuing):', disconnectError.message);
+            }
             connection = null;
         }
         
-        // Update global username
-        global.TIKTOK_USERNAME = newUsername;
+        // Update username variable
+        TIKTOK_USERNAME = newUsername;
+        console.log(`✅ [USERNAME] Username updated to: ${TIKTOK_USERNAME}`);
         
         // Reset metrics for new stream
         resetSessionMetrics();
@@ -2266,9 +2276,11 @@ async function changeTikTokUsername(newUsername, ws) {
                 username: newUsername,
                 message: `Switched to @${newUsername}`
             }));
+            console.log('📤 [USERNAME] Sent usernameChanged message to dashboard');
         }
         
         // Connect to new username
+        console.log('🔗 [USERNAME] Starting connection to new username...');
         await connectToTikTok();
         
     } catch (error) {
@@ -2313,7 +2325,7 @@ async function disconnectFromTikTok(ws) {
 // Load environment variables
 require('dotenv').config();
 
-const TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || "kameltoetonybu"; // Make configurable via env
+let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || "kameltoetonybu"; // Make configurable via env
 
 async function connectToTikTok() {
     if (isConnecting) return;
