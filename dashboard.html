@@ -2283,8 +2283,8 @@
             position: relative;
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 18px 24px;
+            justify-content: center;
+            padding: 16px 24px;
             background: linear-gradient(135deg, 
                 rgba(255, 255, 255, 0.15) 0%, 
                 rgba(255, 255, 255, 0.05) 100%);
@@ -2294,8 +2294,8 @@
                 0 8px 32px rgba(0, 0, 0, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
-            min-width: 280px;
-            max-width: 320px;
+            min-width: 200px;
+            max-width: 280px;
             transition: all 0.3s ease;
             overflow: hidden;
         }
@@ -2313,125 +2313,53 @@
                 transparent 100%);
         }
 
-        .status-indicator {
-            position: relative;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .status-indicator::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, 
-                rgba(255, 255, 255, 0.1), 
-                rgba(255, 255, 255, 0.05));
-            z-index: -1;
-        }
-
-        .status-indicator.connecting {
-            color: #ffa500;
-            border-color: #ffa500;
-            box-shadow: 
-                0 0 20px rgba(255, 165, 0, 0.3),
-                inset 0 0 20px rgba(255, 165, 0, 0.1);
-            animation: connectingPulse 2s infinite;
-        }
-
-        .status-indicator.connected {
-            color: #00ff88;
-            border-color: #00ff88;
-            box-shadow: 
-                0 0 25px rgba(0, 255, 136, 0.4),
-                inset 0 0 20px rgba(0, 255, 136, 0.1);
-            animation: connectedGlow 3s ease-in-out infinite;
-        }
-
-        .status-indicator.disconnected {
-            color: #ff4757;
-            border-color: #ff4757;
-            box-shadow: 
-                0 0 20px rgba(255, 71, 87, 0.3),
-                inset 0 0 20px rgba(255, 71, 87, 0.1);
-        }
+        /* Status indicator removed - using simple text-based status */
 
         .status-text {
             color: #fff;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 1rem;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
             text-align: center;
             letter-spacing: 0.5px;
             position: relative;
             z-index: 1;
         }
 
-        .status-text::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: -8px;
-            width: 1px;
-            height: 20px;
-            background: linear-gradient(180deg, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.3) 50%, 
-                transparent 100%);
-            transform: translateY(-50%);
-        }
-
         /* NEW: Enhanced animations */
-        @keyframes connectingPulse {
-            0%, 100% { 
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% { 
-                transform: scale(1.1);
-                opacity: 0.8;
-            }
+        /* connectingPulse animation removed */
+
+        /* connectedGlow animation removed */
+
+        /* SIMPLE: Status-based colors */
+        .connection-status.connecting {
+            border-color: #ffa500;
+            box-shadow: 
+                0 8px 32px rgba(255, 165, 0, 0.2),
+                inset 0 1px 0 rgba(255, 165, 0, 0.2);
         }
 
-        @keyframes connectedGlow {
-            0%, 100% { 
-                box-shadow: 
-                    0 0 25px rgba(0, 255, 136, 0.4),
-                    inset 0 0 20px rgba(0, 255, 136, 0.1);
-            }
-            50% { 
-                box-shadow: 
-                    0 0 35px rgba(0, 255, 136, 0.6),
-                    inset 0 0 25px rgba(0, 255, 136, 0.2);
-            }
+        .connection-status.connected {
+            border-color: #00ff88;
+            box-shadow: 
+                0 8px 32px rgba(0, 255, 136, 0.2),
+                inset 0 1px 0 rgba(0, 255, 136, 0.2);
         }
 
-        /* NEW: Hover effects */
+        .connection-status.disconnected {
+            border-color: #ff4757;
+            box-shadow: 
+                0 8px 32px rgba(255, 71, 87, 0.2),
+                inset 0 1px 0 rgba(255, 71, 87, 0.2);
+        }
+
+        /* Hover effect */
         .connection-status:hover {
             transform: translateY(-2px);
             box-shadow: 
                 0 12px 40px rgba(0, 0, 0, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }
-
-        .connection-status:hover .status-indicator {
-            transform: scale(1.05);
         }
 
         /* Old pulse animation removed - replaced with new animations above */
@@ -2480,11 +2408,7 @@
                 justify-content: center;
             }
             
-            .status-indicator {
-                width: 28px; /* Slightly smaller on mobile */
-                height: 28px;
-                font-size: 1rem;
-            }
+            /* Status indicator removed from mobile design */
             
             .status-text {
                 font-size: 0.9rem;
@@ -2501,11 +2425,7 @@
                 gap: 12px;
             }
             
-            .status-indicator {
-                width: 24px;
-                height: 24px;
-                font-size: 0.9rem;
-            }
+            /* Status indicator removed from extra small screens */
             
             .status-text {
                 font-size: 0.85rem;
@@ -2621,7 +2541,6 @@
     <div class="dashboard-header">
         <h1>🎯 TikTok Live Assistant</h1>
         <div class="connection-status" id="connectionStatus">
-            <span class="status-indicator" id="statusIndicator">🔴</span>
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
         </div>
@@ -3006,25 +2925,15 @@
         const reconnectDelay = 2000; // 2 seconds
 
         function updateConnectionStatus(status, className) {
-            const indicator = document.getElementById('statusIndicator');
             const text = document.getElementById('statusText');
             const refreshBtn = document.getElementById('refreshBtn');
+            const connectionStatus = document.getElementById('connectionStatus');
             
-            // Update status indicator with appropriate emoji
-            let emoji = '🔴'; // Default
-            if (className === 'connected') {
-                emoji = '🟢';
-            } else if (className === 'disconnected') {
-                emoji = '🔴';
-            } else if (className === 'connecting' || status.includes('Connecting')) {
-                emoji = '🟡';
-            } else if (status.includes('Failed') || status.includes('Error')) {
-                emoji = '🔴';
-            }
-            
-            indicator.textContent = emoji;
-            indicator.className = `status-indicator ${className}`;
+            // Update status text
             text.textContent = status;
+            
+            // Update connection status class for color coding
+            connectionStatus.className = `connection-status ${className}`;
             
             // Show refresh button when disconnected or failed
             if (className === 'disconnected' || status.includes('Failed') || status.includes('Error')) {
