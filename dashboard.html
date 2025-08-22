@@ -2278,69 +2278,163 @@
             font-weight: bold;
         }
 
+        /* NEW: Completely redesigned connection status */
         .connection-status {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 12px; /* Reduced gap for better spacing */
-            padding: 15px 25px;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            min-width: 220px; /* Increased to prevent cramping */
-            justify-content: flex-start; /* Changed from center to flex-start */
+            gap: 16px;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15) 0%, 
+                rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            min-width: 280px;
+            max-width: 320px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .connection-status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 100%);
         }
 
         .status-indicator {
-            font-size: 1.8rem;
-            color: #ffa500;
-            animation: pulse 2s infinite;
-            flex-shrink: 0; /* Prevent shrinking */
-            width: 24px; /* Fixed width */
-            height: 24px; /* Fixed height */
+            position: relative;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, 
+                rgba(255, 255, 255, 0.1), 
+                rgba(255, 255, 255, 0.05));
+            z-index: -1;
+        }
+
+        .status-indicator.connecting {
+            color: #ffa500;
+            border-color: #ffa500;
+            box-shadow: 
+                0 0 20px rgba(255, 165, 0, 0.3),
+                inset 0 0 20px rgba(255, 165, 0, 0.1);
+            animation: connectingPulse 2s infinite;
         }
 
         .status-indicator.connected {
             color: #00ff88;
-            animation: none;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            border-color: #00ff88;
+            box-shadow: 
+                0 0 25px rgba(0, 255, 136, 0.4),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
+            animation: connectedGlow 3s ease-in-out infinite;
         }
 
         .status-indicator.disconnected {
             color: #ff4757;
-            animation: none;
-            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+            border-color: #ff4757;
+            box-shadow: 
+                0 0 20px rgba(255, 71, 87, 0.3),
+                inset 0 0 20px rgba(255, 71, 87, 0.1);
         }
 
         .status-text {
             color: #fff;
             font-weight: 600;
-            font-size: 1rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 0.95rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            flex: 1; /* Take remaining space */
-            text-align: left; /* Changed from center to left */
-            min-width: 0; /* Allow text to shrink */
-            padding-left: 4px; /* Small left padding */
+            flex: 1;
+            text-align: center;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
         }
 
-        @keyframes pulse {
+        .status-text::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 1px;
+            height: 20px;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 100%);
+            transform: translateY(-50%);
+        }
+
+        /* NEW: Enhanced animations */
+        @keyframes connectingPulse {
             0%, 100% { 
-                opacity: 1; 
                 transform: scale(1);
+                opacity: 1;
             }
             50% { 
-                opacity: 0.7; 
                 transform: scale(1.1);
+                opacity: 0.8;
             }
         }
+
+        @keyframes connectedGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 25px rgba(0, 255, 136, 0.4),
+                    inset 0 0 20px rgba(0, 255, 136, 0.1);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 35px rgba(0, 255, 136, 0.6),
+                    inset 0 0 25px rgba(0, 255, 136, 0.2);
+            }
+        }
+
+        /* NEW: Hover effects */
+        .connection-status:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .connection-status:hover .status-indicator {
+            transform: scale(1.05);
+        }
+
+        /* Old pulse animation removed - replaced with new animations above */
 
         .refresh-btn {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
@@ -2380,14 +2474,41 @@
             }
             
             .connection-status {
-                min-width: 200px; /* Increased for mobile */
-                padding: 12px 20px;
-                justify-content: center; /* Center on mobile */
+                min-width: 260px; /* Adjusted for new design */
+                max-width: 300px; /* Adjusted for mobile */
+                padding: 16px 20px;
+                justify-content: center;
+            }
+            
+            .status-indicator {
+                width: 28px; /* Slightly smaller on mobile */
+                height: 28px;
+                font-size: 1rem;
             }
             
             .status-text {
-                text-align: center; /* Center text on mobile */
-                padding-left: 0; /* Remove left padding on mobile */
+                font-size: 0.9rem;
+                letter-spacing: 0.3px;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .connection-status {
+                min-width: 240px;
+                max-width: 280px;
+                padding: 14px 18px;
+                gap: 12px;
+            }
+            
+            .status-indicator {
+                width: 24px;
+                height: 24px;
+                font-size: 0.9rem;
+            }
+            
+            .status-text {
+                font-size: 0.85rem;
             }
         }
 
@@ -2500,7 +2621,7 @@
     <div class="dashboard-header">
         <h1>🎯 TikTok Live Assistant</h1>
         <div class="connection-status" id="connectionStatus">
-            <span class="status-indicator" id="statusIndicator">●</span>
+            <span class="status-indicator" id="statusIndicator">🔴</span>
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
         </div>
@@ -2889,6 +3010,19 @@
             const text = document.getElementById('statusText');
             const refreshBtn = document.getElementById('refreshBtn');
             
+            // Update status indicator with appropriate emoji
+            let emoji = '🔴'; // Default
+            if (className === 'connected') {
+                emoji = '🟢';
+            } else if (className === 'disconnected') {
+                emoji = '🔴';
+            } else if (className === 'connecting' || status.includes('Connecting')) {
+                emoji = '🟡';
+            } else if (status.includes('Failed') || status.includes('Error')) {
+                emoji = '🔴';
+            }
+            
+            indicator.textContent = emoji;
             indicator.className = `status-indicator ${className}`;
             text.textContent = status;
             
