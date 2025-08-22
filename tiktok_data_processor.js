@@ -106,6 +106,21 @@ let commentsInLastMinute = [];
 let sharesInLastMinute = [];
 let followersGainedInLastMinute = []; // Track when followers were gained
 
+// Reset session-specific metrics for new stream
+function resetSessionMetrics() {
+    console.log('🔄 [METRICS] Resetting session metrics for new stream...');
+    metrics.sessionFollowersGained = 0;
+    metrics.newFollowers = [];
+    followersGainedInLastMinute = [];
+    
+    // Clean up any existing duplicates
+    if (typeof cleanupDuplicateFollowers === 'function') {
+        cleanupDuplicateFollowers();
+    }
+    
+    console.log('✅ [METRICS] Session metrics reset complete');
+}
+
 // Comment cleaning function for sentiment analysis
 function cleanComment(commentText) {
     if (!commentText) return '';
@@ -2402,18 +2417,7 @@ async function connectToTikTok() {
         }
         console.log('🔍 [CONNECTION] Connection object keys:', Object.keys(connection));
 
-        // Reset session-specific metrics for new stream
-        function resetSessionMetrics() {
-            console.log('🔄 [METRICS] Resetting session metrics for new stream...');
-            metrics.sessionFollowersGained = 0;
-            metrics.newFollowers = [];
-            followersGainedInLastMinute = [];
-            
-            // Clean up any existing duplicates
-            cleanupDuplicateFollowers();
-            
-            console.log('✅ [METRICS] Session metrics reset complete');
-        }
+        // Note: resetSessionMetrics function moved to global scope
 
         // Function to attempt fetching room info after connection
         async function fetchRoomInfoAfterConnection() {
