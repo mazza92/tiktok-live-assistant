@@ -1,0 +1,37 @@
+{
+  "name": "tiktok-live-assistant",
+  "version": "1.0.0",
+  "description": "Real-time TikTok Live stream analytics and engagement dashboard",
+  "main": "tiktok_data_processor.js",
+  "scripts": {
+    "start": "node tiktok_data_processor.js",
+    "dev": "node tiktok_data_processor.js",
+    "build": "echo 'No build step required for this project'",
+    "test": "node tiktok_live_test.js"
+  },
+  "keywords": [
+    "tiktok",
+    "live",
+    "streaming",
+    "real-time",
+    "analytics",
+    "dashboard",
+    "engagement",
+    "metrics"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "sentiment": "^5.0.2",
+    "tiktok-live-connector": "^2.0.0",
+    "ws": "^8.18.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
