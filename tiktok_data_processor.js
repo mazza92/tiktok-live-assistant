@@ -2300,12 +2300,18 @@ async function changeTikTokUsername(newUsername, ws) {
         
         // Send detailed error to dashboard
         if (ws && ws.readyState === ws.OPEN) {
-            ws.send(JSON.stringify({
+            const errorMessage = {
                 type: 'usernameChangeError',
                 error: error.message || 'Unknown error occurred',
                 details: error.toString(),
                 stack: error.stack
-            }));
+            };
+            
+            console.log('📤 [USERNAME] Sending error message to dashboard:', errorMessage);
+            ws.send(JSON.stringify(errorMessage));
+            console.log('✅ [USERNAME] Error message sent successfully');
+        } else {
+            console.error('❌ [USERNAME] Cannot send error - WebSocket not ready. State:', ws?.readyState);
         }
     }
 }

@@ -2281,24 +2281,27 @@
         .connection-status {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px; /* Reduced gap for better spacing */
             padding: 15px 25px;
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(10px);
-            min-width: 200px;
-            justify-content: center;
+            min-width: 220px; /* Increased to prevent cramping */
+            justify-content: flex-start; /* Changed from center to flex-start */
         }
 
         .status-indicator {
             font-size: 1.8rem;
             color: #ffa500;
             animation: pulse 2s infinite;
-            margin-right: 5px;
-            flex-shrink: 0;
-            width: 20px;
+            flex-shrink: 0; /* Prevent shrinking */
+            width: 24px; /* Fixed width */
+            height: 24px; /* Fixed height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
@@ -2322,9 +2325,10 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 120px;
-            flex: 1;
-            text-align: center;
+            flex: 1; /* Take remaining space */
+            text-align: left; /* Changed from center to left */
+            min-width: 0; /* Allow text to shrink */
+            padding-left: 4px; /* Small left padding */
         }
 
         @keyframes pulse {
@@ -2376,12 +2380,14 @@
             }
             
             .connection-status {
-                min-width: 180px;
+                min-width: 200px; /* Increased for mobile */
                 padding: 12px 20px;
+                justify-content: center; /* Center on mobile */
             }
             
             .status-text {
-                max-width: 100px;
+                text-align: center; /* Center text on mobile */
+                padding-left: 0; /* Remove left padding on mobile */
             }
         }
 
@@ -3158,9 +3164,36 @@
                                     alert(`Error: ${errorMsg}`);
                                 }
                         }
-                    } catch (error) {
-                        console.error('❌ Error parsing message:', error);
+                                    } catch (error) {
+                    console.error('❌ Error parsing message:', error);
+                    console.error('❌ Raw message that caused error:', message);
+                    
+                    // Try to handle as error message if it looks like one
+                    if (message && typeof message === 'object') {
+                        if (message.type && message.type.toLowerCase().includes('error')) {
+                            console.error('🚨 Detected error message in catch block:', message);
+                            let errorMsg = 'Unknown error occurred';
+                            
+                            if (message.data) {
+                                if (typeof message.data === 'string') {
+                                    errorMsg = message.data;
+                                } else if (message.data.error) {
+                                    errorMsg = message.data.error;
+                                } else if (message.data.message) {
+                                    errorMsg = message.data.message;
+                                } else {
+                                    errorMsg = JSON.stringify(message.data);
+                                }
+                            } else if (message.error) {
+                                errorMsg = message.error;
+                            } else if (message.message) {
+                                errorMsg = message.message;
+                            }
+                            
+                            alert(`Error: ${errorMsg}`);
+                        }
                     }
+                }
                 };
                 
                 ws.onclose = function(event) {
