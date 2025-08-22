@@ -1107,11 +1107,42 @@
 
         .entertainment-breakdown {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Mobile responsive entertainment breakdown */
+        @media (max-width: 768px) {
+            .entertainment-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .entertainment-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .breakdown-item {
+                padding: 12px 8px;
+            }
+            
+            .breakdown-icon {
+                font-size: 1.3rem;
+            }
+            
+            .breakdown-label {
+                font-size: 0.65rem;
+            }
+            
+            .breakdown-value {
+                font-size: 0.9rem;
+            }
         }
 
         .breakdown-item {
@@ -2673,6 +2704,35 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
+        /* Responsive question stats bar */
+        @media (max-width: 768px) {
+            .question-stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                padding: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .question-stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
+            
+            .stat-item {
+                padding: 10px;
+            }
+            
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            
+            .stat-value {
+                font-size: 1.3rem;
+            }
+        }
+        
         .stat-item {
             text-align: center;
         }
@@ -3195,11 +3255,11 @@
                         </div>
                         
                         <div class="card-actions">
-                            <button class="action-btn-large answer-btn" id="answerBtn">
+                            <button class="action-btn-large answer-btn" id="answerBtn" onclick="handleQuestionAnswered()">
                                 <span class="btn-icon">✅</span>
                                 <span class="btn-text">ANSWERED</span>
                             </button>
-                            <button class="action-btn-large ignore-btn" id="ignoreBtn">
+                            <button class="action-btn-large ignore-btn" id="ignoreBtn" onclick="handleQuestionIgnored()">
                                 <span class="btn-icon">❌</span>
                                 <span class="btn-text">IGNORE</span>
                             </button>
@@ -4461,9 +4521,7 @@
             if (viewerName) viewerName.textContent = question.nickname;
             if (questionText) questionText.textContent = question.question;
             
-            // Set button onclick handlers
-            if (answerBtn) answerBtn.onclick = () => markQuestionAnswered(question.id);
-            if (ignoreBtn) ignoreBtn.onclick = () => ignoreQuestion(question.id);
+            // Button handlers are now set via HTML onclick attributes
             
             // Start timer
             startQuestionTimer(question.timestamp);
@@ -4697,6 +4755,35 @@
             
             // Log state after action
             logQuestionState('ignoreQuestion');
+        }
+        
+        // Handler functions for onclick buttons
+        function handleQuestionAnswered() {
+            if (pendingQuestions.length === 0) {
+                console.log('❌ [QUESTIONS] No questions to answer');
+                return;
+            }
+            
+            const currentQuestion = pendingQuestions[currentQuestionIndex];
+            if (currentQuestion) {
+                markQuestionAnswered(currentQuestion.id);
+            } else {
+                console.log('❌ [QUESTIONS] No current question to answer');
+            }
+        }
+        
+        function handleQuestionIgnored() {
+            if (pendingQuestions.length === 0) {
+                console.log('❌ [QUESTIONS] No questions to ignore');
+                return;
+            }
+            
+            const currentQuestion = pendingQuestions[currentQuestionIndex];
+            if (currentQuestion) {
+                ignoreQuestion(currentQuestion.id);
+            } else {
+                console.log('❌ [QUESTIONS] No current question to ignore');
+            }
         }
 
         // ===== SMART ACTIVITY MANAGEMENT =====
