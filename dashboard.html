@@ -3708,15 +3708,19 @@
             window.connectionTimeout = connectionTimeout;
             window.progressInterval = progressInterval;
             
-            // Send username change request to server
+            // Try WebSocket first, fallback to HTTP if needed
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ 
                     type: 'changeUsername', 
                     username: username 
                 }));
-                console.log('📤 [USERNAME] Sent username change request:', username);
+                console.log('📤 [USERNAME] Sent username change request via WebSocket:', username);
+            } else if (window.httpPollInterval) {
+                // HTTP polling mode - use fetch API
+                console.log('📤 [USERNAME] Using HTTP mode for username change:', username);
+                connectViaHttp(username);
             } else {
-                console.log('⚠️ [USERNAME] WebSocket not connected, connecting first...');
+                console.log('⚠️ [USERNAME] WebSocket not connected, attempting connection...');
                 connectWebSocket();
                 // Wait for connection then send username
                 setTimeout(() => {
@@ -3725,6 +3729,9 @@
                             type: 'changeUsername', 
                             username: username 
                         }));
+                    } else if (window.httpPollInterval) {
+                        // Fallback to HTTP if WebSocket still not available
+                        connectViaHttp(username);
                     }
                 }, 1000);
             }
@@ -3756,10 +3763,20 @@
         function connectWebSocket() {
             try {
                 updateConnectionStatus('Connecting...', '');
-                // Automatically detect the correct WebSocket URL
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const host = window.location.host;
-                const wsUrl = `${protocol}//${host}`;
+                
+                // Handle different deployment environments
+                let wsUrl;
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    // Local development
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const host = window.location.host;
+                    wsUrl = `${protocol}//${host}`;
+                } else {
+                    // Deployed environment (Render, Heroku, etc.)
+                    // Try WebSocket first, fallback to HTTP polling if needed
+                    wsUrl = `wss://${window.location.hostname}`;
+                }
+                
                 console.log('🔌 Connecting to WebSocket:', wsUrl);
                 ws = new WebSocket(wsUrl);
                 
@@ -4039,6 +4056,14 @@
                 ws.onerror = function(error) {
                     console.error('❌ WebSocket error:', error);
                     updateConnectionStatus('Connection Error', 'disconnected');
+                    
+                    // Check if this is a deployment environment WebSocket issue
+                    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                        console.log('🌐 Detected deployed environment - attempting HTTP fallback...');
+                        // Fallback to HTTP polling for deployed environments
+                        enableHttpPolling();
+                        return;
+                    }
                 };
                 
             } catch (error) {
@@ -4056,6 +4081,103 @@
             }
         }
 
+        // HTTP-based connection for deployed environments
+        async function connectViaHttp(username) {
+            try {
+                console.log('🌐 [HTTP MODE] Connecting to TikTok Live via HTTP API...');
+                
+                // Update UI to show HTTP mode
+                document.getElementById('streamStatus').textContent = 'Connecting via HTTP...';
+                
+                // Send username change request via HTTP POST
+                const response = await fetch('/change-username', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: username })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ [HTTP MODE] Username change successful:', result);
+                    document.getElementById('streamStatus').textContent = 'Connected (HTTP Mode)';
+                    
+                    // Clear timers
+                    if (window.connectionTimeout) clearTimeout(window.connectionTimeout);
+                    if (window.progressInterval) clearInterval(window.progressInterval);
+                    
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ [HTTP MODE] Connection failed:', error);
+                document.getElementById('streamStatus').textContent = 'HTTP Connection Failed';
+                document.getElementById('connectBtn').style.display = 'inline-block';
+                document.getElementById('disconnectBtn').style.display = 'none';
+                alert(`Connection failed: ${error.message}`);
+            }
+        }
+        
+        // HTTP polling fallback for deployed environments where WebSocket fails
+        function enableHttpPolling() {
+            console.log('🔄 [HTTP FALLBACK] Enabling HTTP polling for deployed environment...');
+            updateConnectionStatus('HTTP Polling Mode', 'connected');
+            
+            // Clear any existing WebSocket connection
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            // Set up HTTP polling interval
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/metrics');
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateMetrics(data);
+                        
+                        // Also fetch viewer stats
+                        const viewerResponse = await fetch('/api/viewers');
+                        if (viewerResponse.ok) {
+                            const viewerData = await viewerResponse.json();
+                            if (viewerData.success) {
+                                updateViewerStats(viewerData);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ [HTTP FALLBACK] Polling error:', error);
+                }
+            }, 2000); // Poll every 2 seconds
+            
+            // Store interval for cleanup
+            window.httpPollInterval = pollInterval;
+            
+            // Show info message
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 1000;
+                font-family: Arial, sans-serif;
+            `;
+            infoDiv.innerHTML = `
+                <strong>HTTP Mode Active</strong><br>
+                WebSocket unavailable, using HTTP polling instead.
+                <button onclick="this.parentElement.remove()" style="margin-left: 10px; padding: 5px 10px; border: none; background: white; color: #4CAF50; border-radius: 4px; cursor: pointer;">×</button>
+            `;
+            document.body.appendChild(infoDiv);
+        }
+        
         function showConnectionError() {
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `

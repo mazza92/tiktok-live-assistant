@@ -2458,7 +2458,7 @@ async function changeTikTokUsername(newUsername, ws) {
         // Reset metrics for new stream
         resetSessionMetrics();
         
-        // Notify dashboard of username change
+        // Notify dashboard of username change (if WebSocket available)
         if (ws && ws.readyState === ws.OPEN) {
             ws.send(JSON.stringify({
                 type: 'usernameChanged',
@@ -2466,12 +2466,14 @@ async function changeTikTokUsername(newUsername, ws) {
                 message: `Switched to @${newUsername}`
             }));
             console.log('📤 [USERNAME] Sent usernameChanged message to dashboard');
+        } else {
+            console.log('📤 [USERNAME] WebSocket not available (HTTP mode) - username change successful');
         }
         
         // Connect to new username
         console.log('🔗 [USERNAME] Starting connection to new username...');
         
-        // Send progress update
+        // Send progress update (if WebSocket available)
         if (ws && ws.readyState === ws.OPEN) {
             ws.send(JSON.stringify({
                 type: 'connectionProgress',
@@ -2483,7 +2485,7 @@ async function changeTikTokUsername(newUsername, ws) {
         
         await connectToTikTok();
         
-        // Send success message after connection
+        // Send success message after connection (if WebSocket available)
         console.log('✅ [USERNAME] Successfully connected to new username');
         if (ws && ws.readyState === ws.OPEN) {
             ws.send(JSON.stringify({
@@ -2492,6 +2494,8 @@ async function changeTikTokUsername(newUsername, ws) {
                 message: `Successfully connected to @${newUsername}`,
                 status: 'success'
             }));
+        } else {
+            console.log('✅ [USERNAME] HTTP mode - connection successful, no WebSocket notification needed');
         }
         
     } catch (error) {
@@ -3396,6 +3400,40 @@ app.get('/totals', (req, res) => {
         currentViewerCount: metrics.currentViewerCount,
         sessionFollowersGained: metrics.sessionFollowersGained
     });
+});
+
+// HTTP endpoint for username changes (fallback when WebSocket unavailable)
+app.post('/change-username', async (req, res) => {
+    try {
+        const { username } = req.body;
+        
+        if (!username || username.trim() === '') {
+            return res.status(400).json({ 
+                error: 'Username is required',
+                message: 'Please provide a valid TikTok username'
+            });
+        }
+        
+        console.log('🔄 [HTTP API] Username change request:', username);
+        
+        // Use the existing username change logic
+        await changeTikTokUsername(username, null); // Pass null for ws since this is HTTP
+        
+        res.json({ 
+            success: true, 
+            message: `Successfully connected to @${username}`,
+            username: username,
+            status: 'connected'
+        });
+        
+    } catch (error) {
+        console.error('❌ [HTTP API] Username change error:', error);
+        res.status(500).json({ 
+            error: 'Failed to change username', 
+            message: error.message,
+            details: 'Check server logs for more information'
+        });
+    }
 });
 
 // Serve dashboard
