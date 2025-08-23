@@ -151,16 +151,17 @@
         }
 
         .metric-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            padding: 25px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 30px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            min-height: 140px;
+            min-height: 150px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
         /* Responsive adjustments for metric cards */
@@ -214,6 +215,18 @@
             color: #ffd700;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             display: block;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .metric-value.updated {
+            animation: valueUpdate 0.6s ease-out;
+        }
+
+        @keyframes valueUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); color: #ffed4e; }
+            100% { transform: scale(1); }
         }
 
         .metric-label {
@@ -234,18 +247,19 @@
 
         .metric-trend {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 28px;
-            height: 28px;
+            top: 18px;
+            right: 18px;
+            width: 32px;
+            height: 32px;
             transition: all 0.3s ease;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.15);
             border-radius: 50%;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* Responsive adjustments for trend indicators */
@@ -266,46 +280,63 @@
 
         .metric-trend.increase {
             color: #00E676;
-            animation: pulseGreen 1s ease-in-out;
+            animation: pulseGreen 1.5s ease-in-out infinite;
+            transform: scale(1.1);
         }
 
         .metric-trend.increase svg {
-            filter: drop-shadow(0 0 8px rgba(0, 230, 118, 0.4));
+            filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.6));
+            animation: glowGreen 2s ease-in-out infinite;
         }
 
         .metric-trend.decrease {
             color: #FF5252;
-            animation: pulseRed 1s ease-in-out;
+            animation: pulseRed 1.5s ease-in-out infinite;
+            transform: scale(1.1);
         }
 
         .metric-trend.decrease svg {
-            filter: drop-shadow(0 0 8px rgba(255, 82, 82, 0.4));
+            filter: drop-shadow(0 0 12px rgba(255, 82, 82, 0.6));
+            animation: glowRed 2s ease-in-out infinite;
         }
 
         .metric-trend.stable {
             color: #FFD700;
-            opacity: 0.7;
+            opacity: 0.9;
+            animation: pulseStable 2s ease-in-out infinite;
         }
 
         .metric-trend.stable svg {
-            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
         }
 
         .metric-trend:hover {
-            transform: scale(1.1);
-            transition: transform 0.2s ease;
+            transform: scale(1.2);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-trend.increase:hover {
+            animation: pulseGreen 0.8s ease-in-out infinite;
+        }
+
+        .metric-trend.decrease:hover {
+            animation: pulseRed 0.8s ease-in-out infinite;
+        }
+
+        .metric-trend.stable:hover {
+            animation: pulseStable 1s ease-in-out infinite;
         }
 
         .metric-trend.increase:hover svg {
-            filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.6));
+            filter: drop-shadow(0 0 20px rgba(0, 230, 118, 0.8));
         }
 
         .metric-trend.decrease:hover svg {
-            filter: drop-shadow(0 0 12px rgba(255, 82, 82, 0.6));
+            filter: drop-shadow(0 0 20px rgba(255, 82, 82, 0.8));
         }
 
         .metric-trend.stable:hover svg {
-            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.7));
         }
 
         @keyframes pulseGreen {
@@ -322,6 +353,21 @@
             50% { transform: scale(1.3); opacity: 1; }
             75% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        @keyframes pulseStable {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        @keyframes glowGreen {
+            0%, 100% { filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.6)); }
+            50% { filter: drop-shadow(0 0 20px rgba(0, 230, 118, 0.9)); }
+        }
+
+        @keyframes glowRed {
+            0%, 100% { filter: drop-shadow(0 0 12px rgba(255, 82, 82, 0.6)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 82, 82, 0.9)); }
         }
         
         /* Viewer Stats Cards */
@@ -885,16 +931,42 @@
         }
 
         .entertainment-gauge {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            padding: 30px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 193, 7, 0.08) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 35px;
             text-align: center;
             margin: 30px 0;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 107, 107, 0.25);
+            box-shadow: 
+                0 20px 40px rgba(255, 107, 107, 0.15),
+                0 8px 25px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .entertainment-gauge:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 25px 50px rgba(255, 107, 107, 0.2),
+                0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .entertainment-gauge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6b6b, #ffc107, #ff6b6b);
+            animation: gaugeGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes gaugeGlow {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
         }
 
         .sentiment-gauge::before {
@@ -910,13 +982,29 @@
 
         .entertainment-gauge h3 {
             margin: 0 0 20px 0;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             color: #ffffff;
             font-weight: 700;
             letter-spacing: 0.5px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .entertainment-gauge h3::before {
+            content: '🔴';
+            font-size: 1.8rem;
+            filter: drop-shadow(0 2px 4px rgba(255, 0, 0, 0.3));
+            animation: moodPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes moodPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
         .gauge-container {
@@ -1147,36 +1235,75 @@
 
         .breakdown-item {
             text-align: center;
-            padding: 15px 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            padding: 18px 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .breakdown-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .breakdown-item:hover::before {
+            left: 100%;
         }
 
         .breakdown-icon {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-            opacity: 0.9;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            opacity: 1;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            transition: all 0.3s ease;
         }
 
         .breakdown-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.1) 100%);
+            transform: translateY(-3px) scale(1.02);
+            border-color: rgba(255, 107, 107, 0.4);
+            box-shadow: 0 12px 25px rgba(255, 107, 107, 0.2);
+        }
+
+        .breakdown-item:hover .breakdown-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
         }
 
         .breakdown-label {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 6px;
-            font-weight: 500;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            transition: color 0.3s ease;
+        }
+
+        .breakdown-item:hover .breakdown-label {
+            color: #ffffff;
         }
 
         .breakdown-value {
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: bold;
             color: #ffd700;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .breakdown-item:hover .breakdown-value {
+            color: #ffed4e;
+            text-shadow: 0 4px 8px rgba(255, 237, 78, 0.4);
         }
 
         .entertainment-score {
@@ -2351,14 +2478,24 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            padding: 25px 30px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 30px 35px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.15) 0%, rgba(255, 193, 7, 0.1) 100%);
+            backdrop-filter: blur(25px);
+            border-radius: 30px;
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            box-shadow: 
+                0 15px 35px rgba(255, 107, 107, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 20px 40px rgba(255, 107, 107, 0.25),
+                0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
         .dashboard-header::before {
@@ -2367,21 +2504,81 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #ffc107, #ff6b6b);
+            animation: headerGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes headerGlow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
         }
 
         .dashboard-header h1 {
             margin: 0;
-            color: #fff;
-            font-size: 2.8rem;
-            font-weight: 700;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd700 0%, #ff6b6b 50%, #4ecdc4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: -0.5px;
+            letter-spacing: -1px;
+            text-shadow: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .dashboard-header h1::before {
+            content: '🎯';
+            display: inline-block;
+            margin-right: 15px;
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            animation: iconBounce 2s ease-in-out infinite;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-text {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .refresh-btn:hover {
+            transform: rotate(180deg) scale(1.1);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
 
         .username-section {
@@ -3079,7 +3276,7 @@
 
         <!-- Entertainment Gauge at the top -->
         <div class="entertainment-gauge">
-            <h3>🔴 Live Mood Score</h3>
+            <h3>Live Mood Score</h3>
             
             <!-- Main Entertainment Score -->
             <div class="entertainment-main">
@@ -3205,7 +3402,7 @@
 
 
         <div class="actionable-prompt">
-            <div class="feed-header">🎯 Actionable Prompt</div>
+            <div class="feed-header">🎯 LIVE ASSISTANT</div>
             <div id="actionablePrompt">
                 <div class="prompt-content">
                     <div class="prompt-icon">🤖</div>
@@ -3216,7 +3413,7 @@
         </div>
 
         <div class="question-highlight">
-            <div class="feed-header">❓ Pending Questions - Viewer Interaction Needed</div>
+            <div class="feed-header"> Viewers Questions ❓</div>
             
             <!-- Question Stats Bar -->
             <div class="question-stats-bar">
@@ -3300,7 +3497,7 @@
         </div>
 
         <div class="ai-insights">
-            <div class="feed-header">🤖 AI Insights & Trends</div>
+            <div class="feed-header">Live Stream Insights & Trends</div>
             <div id="aiInsights">
                 <div class="feed-item">
                     <div class="feed-content">Waiting for AI analysis...</div>
@@ -3350,7 +3547,7 @@
         </div>
 
         <div class="activity-feed">
-            <div class="feed-header">📊 Recent Activity</div>
+            <div class="feed-header">📊 Chat Activity</div>
             
             <!-- Activity Tabs -->
             <div class="activity-tabs">
@@ -3914,6 +4111,19 @@
         const sharesPerMinuteEl = document.getElementById('sharesPerMinute');
         const followersGainsEl = document.getElementById('followersGains');
         const sentimentScoreEl = document.getElementById('sentimentScore');
+
+        // Helper function to update metric with animation
+        function updateMetricWithAnimation(element, newValue, formatFunction = null) {
+            if (!element) return;
+            const oldValue = element.textContent;
+            const formattedValue = formatFunction ? formatFunction(newValue) : newValue;
+            
+            if (element.textContent !== formattedValue.toString()) {
+                element.textContent = formattedValue;
+                element.classList.add('updated');
+                setTimeout(() => element.classList.remove('updated'), 600);
+            }
+        }
         
         // Store previous values for trend calculation
         const prevViewerCount = parseInt(viewerCountEl?.textContent || '0');
@@ -3925,8 +4135,8 @@
         const prevSharesPerMinute = parseInt(sharesPerMinuteEl?.textContent || '0');
         const prevFollowersGains = parseInt(followersGainsEl?.textContent || '0');
         
-                    // Update current values
-            if (viewerCountEl) viewerCountEl.textContent = data.currentViewerCount || 0;
+                    // Update current values with animation
+            updateMetricWithAnimation(viewerCountEl, data.currentViewerCount || 0);
             
             // Update activity counters
             updateActivityCounters('viewer', data.currentViewerCount || 0);
@@ -3941,16 +4151,16 @@
                 sharesPerMinute: data.sharesPerMinute
             });
             
-            if (likesPerMinuteEl) likesPerMinuteEl.textContent = data.likesPerMinute || 0;
-            if (giftsPerMinuteEl) giftsPerMinuteEl.textContent = data.giftsPerMinute || 0;
-            if (sharesPerMinuteEl) sharesPerMinuteEl.textContent = data.sharesPerMinute || 0;
+            updateMetricWithAnimation(likesPerMinuteEl, data.likesPerMinute || 0);
+            updateMetricWithAnimation(giftsPerMinuteEl, data.giftsPerMinute || 0);
+            updateMetricWithAnimation(sharesPerMinuteEl, data.sharesPerMinute || 0);
             // Show session total (never decreases) instead of per-minute rate
             console.log('📊 [FOLLOWERS] Updating followers gains element:', {
                 element: !!followersGainsEl,
                 sessionFollowersGained: data.sessionFollowersGained,
                 currentText: followersGainsEl?.textContent
             });
-            if (followersGainsEl) followersGainsEl.textContent = data.sessionFollowersGained || 0;
+            updateMetricWithAnimation(followersGainsEl, data.sessionFollowersGained || 0);
             
             // Update followers gains session subtitle
             const followersGainsSubtitleEl = document.getElementById('followersGainsSubtitle');
@@ -3973,10 +4183,10 @@
             updateMetricTrend('sharesPerMinuteTrend', data.sharesPerMinute || 0, prevSharesPerMinute);
             updateMetricTrend('followersGainsTrend', data.sessionFollowersGained || 0, prevFollowersGains);
             
-            // Update Total Likes, Total Gifts, and Total Shares
-            if (totalLikesEl) totalLikesEl.textContent = (data.totalLikes || 0).toLocaleString();
-            if (totalGiftsEl) totalGiftsEl.textContent = (data.totalGifts || 0).toLocaleString();
-            if (totalSharesEl) totalSharesEl.textContent = (data.totalShares || 0).toLocaleString();
+            // Update Total Likes, Total Gifts, and Total Shares with animation
+            updateMetricWithAnimation(totalLikesEl, (data.totalLikes || 0), (val) => val.toLocaleString());
+            updateMetricWithAnimation(totalGiftsEl, (data.totalGifts || 0), (val) => val.toLocaleString());
+            updateMetricWithAnimation(totalSharesEl, (data.totalShares || 0), (val) => val.toLocaleString());
             
             // Update entertainment gauge
             updateEntertainmentGauge(data.entertainmentMetrics?.entertainmentScore || 0);
@@ -4017,7 +4227,7 @@
             updateQuestionDetection(data);
                 }
 
-        // Update metric trend indicators with arrows
+        // Update metric trend indicators with arrows and enhanced animations
         function updateMetricTrend(trendId, currentValue, previousValue) {
             const trendEl = document.getElementById(trendId);
             if (!trendEl) return;
@@ -4025,28 +4235,43 @@
             // Remove existing trend classes
             trendEl.classList.remove('increase', 'decrease', 'stable');
             
-            if (currentValue > previousValue) {
-                trendEl.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 14L12 9L17 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                `;
-                trendEl.classList.add('increase');
-            } else if (currentValue < previousValue) {
-                trendEl.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                `;
-                trendEl.classList.add('decrease');
-            } else {
-                trendEl.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                `;
-                trendEl.classList.add('stable');
-            }
+            // Add a small delay to ensure smooth transitions
+            setTimeout(() => {
+                if (currentValue > previousValue) {
+                    trendEl.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 14L12 9L17 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    `;
+                    trendEl.classList.add('increase');
+                    // Trigger animation
+                    trendEl.style.animation = 'none';
+                    trendEl.offsetHeight; // Trigger reflow
+                    trendEl.style.animation = null;
+                } else if (currentValue < previousValue) {
+                    trendEl.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    `;
+                    trendEl.classList.add('decrease');
+                    // Trigger animation
+                    trendEl.style.animation = 'none';
+                    trendEl.offsetHeight; // Trigger reflow
+                    trendEl.style.animation = null;
+                } else {
+                    trendEl.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    `;
+                    trendEl.classList.add('stable');
+                    // Trigger animation
+                    trendEl.style.animation = 'none';
+                    trendEl.offsetHeight; // Trigger reflow
+                    trendEl.style.animation = null;
+                }
+            }, 50);
         }
 
         // Reset dashboard counters when metrics are reset
