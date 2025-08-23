@@ -16,6 +16,23 @@ app.use(express.static('.')); // Serve static files from current directory
 // Initialize sentiment analyzer
 const sentiment = new Sentiment();
 
+// Gift value mapping (TikTok diamonds to USD conversion)
+const GIFT_VALUES = {
+    // Common gifts with their diamond costs and approximate USD values
+    'Rose': { diamonds: 1, usd: 0.01 },
+    'Heart': { diamonds: 1, usd: 0.01 },
+    'Kiss': { diamonds: 5, usd: 0.05 },
+    'Cake': { diamonds: 10, usd: 0.10 },
+    'Crown': { diamonds: 50, usd: 0.50 },
+    'Diamond': { diamonds: 100, usd: 1.00 },
+    'Rocket': { diamonds: 500, usd: 5.00 },
+    'Lion': { diamonds: 1000, usd: 10.00 },
+    'Dragon': { diamonds: 2000, usd: 20.00 },
+    'Unicorn': { diamonds: 5000, usd: 50.00 },
+    'Galaxy': { diamonds: 10000, usd: 100.00 },
+    'Universe': { diamonds: 50000, usd: 500.00 }
+};
+
 // Data processing and metrics storage with memory optimization
 let metrics = {
     currentViewerCount: 0,
@@ -23,17 +40,22 @@ let metrics = {
     // Cumulative totals (all-time, never reset)
     totalLikes: 0,
     totalGifts: 0,
+    totalGiftDiamonds: 0, // Total diamonds received
+    totalGiftValue: 0, // Total USD value of gifts
     totalComments: 0,
     totalShares: 0,
     sessionFollowersGained: 0, // Total followers gained in current live session
     
     likesPerMinute: 0,
     giftsPerMinute: 0,
+    giftsPerMinuteDiamonds: 0, // Diamonds per minute
+    giftsPerMinuteValue: 0, // USD value per minute
     commentsPerMinute: 0,
     followersGainsPerMinute: 0, // Track new followers gained per minute
     recentComments: [],
     recentLikes: [],
     recentGifts: [],
+    recentGiftValues: [], // Track gift values over time
     recentShares: [],
     userLikeCounts: {}, // Track likes per user
     newFollowers: [], // Track new followers
@@ -361,6 +383,7 @@ function addViewer(userId, nickname, profilePic = null) {
                     totalComments: 0,
                     totalShares: 0, // Track total shares
                     totalDiamonds: 0, // Track total diamonds spent
+                    totalGiftValue: 0, // Track total USD value of gifts
                     isFollower: false, // Track follower status
                     followTime: null, // When they started following
                     hasBeenWelcomed: false // Track if AI has welcomed them
@@ -2228,6 +2251,12 @@ function updatePerMinuteMetrics() {
     // Update metrics
     metrics.likesPerMinute = likesInLastMinute.length;
     metrics.giftsPerMinute = giftsInLastMinute.length;
+    
+    // Calculate gifts per minute (diamonds and USD value)
+    const recentGifts = metrics.recentGiftValues.filter(gift => gift.timestamp > oneMinuteAgo);
+    metrics.giftsPerMinuteDiamonds = recentGifts.reduce((sum, gift) => sum + gift.diamonds, 0);
+    metrics.giftsPerMinuteValue = recentGifts.reduce((sum, gift) => sum + gift.usdValue, 0);
+    
     metrics.commentsPerMinute = commentsInLastMinute.length;
     metrics.sharesPerMinute = sharesInLastMinute.length;
     metrics.followersGainsPerMinute = followersGainedInLastMinute.length;
@@ -2249,6 +2278,8 @@ function broadcastMetrics() {
         // Cumulative totals (all-time)
         totalLikes: metrics.totalLikes,
         totalGifts: metrics.totalGifts,
+        totalGiftDiamonds: metrics.totalGiftDiamonds,
+        totalGiftValue: metrics.totalGiftValue,
         totalComments: metrics.totalComments,
         totalShares: metrics.totalShares,
         
@@ -2264,6 +2295,8 @@ function broadcastMetrics() {
         
         likesPerMinute: metrics.likesPerMinute,
         giftsPerMinute: metrics.giftsPerMinute,
+        giftsPerMinuteDiamonds: metrics.giftsPerMinuteDiamonds,
+        giftsPerMinuteValue: metrics.giftsPerMinuteValue,
         commentsPerMinute: metrics.commentsPerMinute,
         sharesPerMinute: metrics.sharesPerMinute,
         followersGainsPerMinute: metrics.followersGainsPerMinute,
@@ -2930,18 +2963,26 @@ async function connectToTikTok() {
             const repeatCount = data.repeatCount || 1;
             const totalDiamonds = diamondCount * repeatCount;
             
+            // Calculate USD value of the gift
+            const giftName = gift.name || 'Unknown';
+            const giftValue = GIFT_VALUES[giftName] || { diamonds: totalDiamonds, usd: totalDiamonds * 0.01 }; // Default: 1 diamond = $0.01
+            const totalUSDValue = giftValue.usd * repeatCount;
+            
             // Track viewer activity for watch time and update viewer's diamond count
             if (userId && metrics.viewers[userId]) {
                 updateViewerActivity(userId, 'gift');
-                // Update viewer's total diamonds spent
+                // Update viewer's total diamonds spent and USD value
                 metrics.viewers[userId].totalDiamonds += totalDiamonds;
+                metrics.viewers[userId].totalGiftValue += totalUSDValue;
                 
                 // Check and update follower status
                 checkAndUpdateFollowerStatus(userId, data);
             }
             
-            // Add to total gifts earned
+            // Add to total gifts earned (both diamonds and USD value)
             metrics.totalGifts += totalDiamonds;
+            metrics.totalGiftDiamonds += totalDiamonds;
+            metrics.totalGiftValue += totalUSDValue;
             giftsInLastMinute.push(Date.now());
             
             console.log(`🎁 [GIFT] ${nickname} sent ${gift.name} (${totalDiamonds} diamonds total)`);
@@ -2952,12 +2993,25 @@ async function connectToTikTok() {
                 profilePic: data.profilePictureUrl || data.user?.avatarThumb?.urlList?.[0] || data.userDetails?.profilePictureUrls?.[0] || null,
                 gift: gift,
                 timestamp: new Date(),
-                diamondCount: totalDiamonds
+                diamondCount: totalDiamonds,
+                usdValue: totalUSDValue,
+                giftName: giftName
             };
             
             metrics.recentGifts.unshift(giftData);
             if (metrics.recentGifts.length > 20) {
                 metrics.recentGifts = metrics.recentGifts.slice(0, 20);
+            }
+            
+            // Track gift values over time for analytics
+            metrics.recentGiftValues.push({
+                timestamp: Date.now(),
+                diamonds: totalDiamonds,
+                usdValue: totalUSDValue,
+                giftName: giftName
+            });
+            if (metrics.recentGiftValues.length > 100) {
+                metrics.recentGiftValues = metrics.recentGiftValues.slice(-100);
             }
             
             // Handle undefined diamond counts gracefully
@@ -3438,9 +3492,49 @@ app.get('/totals', (req, res) => {
     res.json({
         totalLikes: metrics.totalLikes,
         totalGifts: metrics.totalGifts,
+        totalGiftDiamonds: metrics.totalGiftDiamonds,
+        totalGiftValue: metrics.totalGiftValue,
         totalComments: metrics.totalComments,
         currentViewerCount: metrics.currentViewerCount,
         sessionFollowersGained: metrics.sessionFollowersGained
+    });
+});
+
+// API endpoint to get gift analytics
+app.get('/gift-analytics', (req, res) => {
+    // Calculate top gift givers
+    const topGiftGivers = Object.values(metrics.viewers)
+        .filter(v => v.totalGiftValue > 0)
+        .sort((a, b) => b.totalGiftValue - a.totalGiftValue)
+        .slice(0, 10)
+        .map(v => ({
+            nickname: v.nickname,
+            totalGifts: v.totalGifts,
+            totalDiamonds: v.totalDiamonds,
+            totalValue: v.totalGiftValue,
+            watchTime: v.watchTime
+        }));
+    
+    // Calculate gift value trends
+    const recentGifts = metrics.recentGiftValues.slice(-50); // Last 50 gifts
+    const giftTrends = {
+        totalValue: recentGifts.reduce((sum, g) => sum + g.usdValue, 0),
+        averageValue: recentGifts.length > 0 ? recentGifts.reduce((sum, g) => sum + g.usdValue, 0) / recentGifts.length : 0,
+        topGift: recentGifts.length > 0 ? recentGifts.reduce((max, g) => g.usdValue > max.usdValue ? g : max) : null
+    };
+    
+    res.json({
+        totalGifts: metrics.totalGifts,
+        totalDiamonds: metrics.totalGiftDiamonds,
+        totalValue: metrics.totalGiftValue,
+        perMinute: {
+            count: metrics.giftsPerMinute,
+            diamonds: metrics.giftsPerMinuteDiamonds,
+            value: metrics.giftsPerMinuteValue
+        },
+        topGiftGivers: topGiftGivers,
+        giftTrends: giftTrends,
+        recentGifts: metrics.recentGifts.slice(0, 10)
     });
 });
 

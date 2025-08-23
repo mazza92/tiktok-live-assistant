@@ -991,6 +991,80 @@
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
+        
+        /* Gift Analytics Styles */
+        .gift-analytics {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .gift-analytics h3 {
+            color: white;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gift-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .gift-stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .gift-stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .gift-stat-value {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .gift-stat-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+        }
+        
+        .gift-trends {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        
+        .trend-item {
+            text-align: center;
+        }
+        
+        .trend-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .trend-value {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
 
         .entertainment-gauge {
             background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 193, 7, 0.08) 100%);
@@ -3430,6 +3504,51 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Gift Value Analytics -->
+        <div class="gift-analytics">
+            <h3>💰 Gift Revenue Analytics</h3>
+            <div class="gift-stats-grid">
+                <div class="gift-stat-card">
+                    <div class="gift-stat-icon">💎</div>
+                    <div class="gift-stat-content">
+                        <div class="gift-stat-value" id="totalGiftDiamonds">0</div>
+                        <div class="gift-stat-label">Total Diamonds</div>
+                    </div>
+                </div>
+                <div class="gift-stat-card">
+                    <div class="gift-stat-icon">💵</div>
+                    <div class="gift-stat-content">
+                        <div class="gift-stat-value" id="totalGiftValue">$0.00</div>
+                        <div class="gift-stat-label">Total Value</div>
+                    </div>
+                </div>
+                <div class="gift-stat-card">
+                    <div class="gift-stat-icon">📈</div>
+                    <div class="gift-stat-content">
+                        <div class="gift-stat-value" id="giftsPerMinuteValue">$0.00</div>
+                        <div class="gift-stat-label">Per Minute</div>
+                    </div>
+                </div>
+                <div class="gift-stat-card">
+                    <div class="gift-stat-icon">🎁</div>
+                    <div class="gift-stat-content">
+                        <div class="gift-stat-value" id="giftsPerMinuteDiamonds">0</div>
+                        <div class="gift-stat-label">Diamonds/Min</div>
+                    </div>
+                </div>
+            </div>
+            <div class="gift-trends">
+                <div class="trend-item">
+                    <span class="trend-label">Top Gift:</span>
+                    <span class="trend-value" id="topGiftName">None</span>
+                </div>
+                <div class="trend-item">
+                    <span class="trend-label">Avg Gift Value:</span>
+                    <span class="trend-value" id="avgGiftValue">$0.00</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Actionable Prompt Section -->
         <div class="actionable-prompt">
@@ -4348,9 +4467,13 @@
             console.log('📊 [METRICS] Received data:', {
                 totalLikes: data.totalLikes,
                 totalGifts: data.totalGifts,
+                totalGiftDiamonds: data.totalGiftDiamonds,
+                totalGiftValue: data.totalGiftValue,
                 totalShares: data.totalShares,
                 likesPerMinute: data.likesPerMinute,
                 giftsPerMinute: data.giftsPerMinute,
+                giftsPerMinuteDiamonds: data.giftsPerMinuteDiamonds,
+                giftsPerMinuteValue: data.giftsPerMinuteValue,
                 sharesPerMinute: data.sharesPerMinute,
                 currentViewerCount: data.currentViewerCount,
                 sessionFollowersGained: data.sessionFollowersGained
@@ -4366,6 +4489,50 @@
         const sharesPerMinuteEl = document.getElementById('sharesPerMinute');
         const followersGainsEl = document.getElementById('followersGains');
         const sentimentScoreEl = document.getElementById('sentimentScore');
+        
+        // Update gift analytics display
+        updateGiftAnalytics(data);
+        
+        // Function to update gift analytics display
+        function updateGiftAnalytics(data) {
+            // Update total gift diamonds
+            const totalGiftDiamondsEl = document.getElementById('totalGiftDiamonds');
+            if (totalGiftDiamondsEl && data.totalGiftDiamonds !== undefined) {
+                totalGiftDiamondsEl.textContent = data.totalGiftDiamonds.toLocaleString();
+            }
+            
+            // Update total gift value
+            const totalGiftValueEl = document.getElementById('totalGiftValue');
+            if (totalGiftValueEl && data.totalGiftValue !== undefined) {
+                totalGiftValueEl.textContent = `$${data.totalGiftValue.toFixed(2)}`;
+            }
+            
+            // Update gifts per minute value
+            const giftsPerMinuteValueEl = document.getElementById('giftsPerMinuteValue');
+            if (giftsPerMinuteValueEl && data.giftsPerMinuteValue !== undefined) {
+                giftsPerMinuteValueEl.textContent = `$${data.giftsPerMinuteValue.toFixed(2)}`;
+            }
+            
+            // Update gifts per minute diamonds
+            const giftsPerMinuteDiamondsEl = document.getElementById('giftsPerMinuteDiamonds');
+            if (giftsPerMinuteDiamondsEl && data.giftsPerMinuteDiamonds !== undefined) {
+                giftsPerMinuteDiamondsEl.textContent = data.giftsPerMinuteDiamonds;
+            }
+            
+            // Update gift trends (these will be populated when we fetch gift analytics)
+            if (data.giftTrends) {
+                const topGiftNameEl = document.getElementById('topGiftName');
+                const avgGiftValueEl = document.getElementById('avgGiftValue');
+                
+                if (topGiftNameEl && data.giftTrends.topGift) {
+                    topGiftNameEl.textContent = data.giftTrends.topGift.giftName || 'Unknown';
+                }
+                
+                if (avgGiftValueEl && data.giftTrends.averageValue !== undefined) {
+                    avgGiftValueEl.textContent = `$${data.giftTrends.averageValue.toFixed(2)}`;
+                }
+            }
+        }
 
         // Helper function to update metric with animation
         function updateMetricWithAnimation(element, newValue, formatFunction = null) {
