@@ -2547,10 +2547,16 @@ async function disconnectFromTikTok(ws) {
 // Load environment variables
 require('dotenv').config();
 
-let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || "@camyslive"; // Make configurable via env
+let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || ""; // Start with no username - will be set via dashboard
 
 async function connectToTikTok() {
     if (isConnecting) return;
+    
+    // Check if username is set
+    if (!TIKTOK_USERNAME || TIKTOK_USERNAME.trim() === '') {
+        console.log('⚠️ [CONNECTION] No username set. Please use the dashboard to connect to a streamer.');
+        return;
+    }
     
     isConnecting = true;
     console.log(`🔗 [CONNECTION] Attempting to connect to TikTok Live: ${TIKTOK_USERNAME}`);
@@ -3339,8 +3345,8 @@ setInterval(() => {
 // Note: Removed periodic room info fetching to restore original behavior
 // Historical data is now fetched once before connection and broadcasted immediately
 
-// Start the TikTok connection
-connectToTikTok();
+// TikTok connection will be initiated via dashboard username input
+// No auto-connection on startup - wait for user to specify streamer
 
 
 
@@ -3460,12 +3466,15 @@ app.get('/api/viewers', (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🌐 Server running on http://localhost:${PORT}`);
-    
+    console.log(`📊 Dashboard: http://localhost:${PORT}`);
     console.log(`📊 Metrics API: http://localhost:${PORT}/metrics`);
     
     // Clean up any existing duplicates on server startup
     cleanupDuplicateFollowers();
     
+    console.log("=" .repeat(60));
+    console.log("🎯 TikTok Live Assistant Ready!");
+    console.log("📱 Open the dashboard and enter a streamer username to connect");
     console.log("=" .repeat(60));
 });
 
