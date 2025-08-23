@@ -2547,7 +2547,7 @@ async function disconnectFromTikTok(ws) {
 // Load environment variables
 require('dotenv').config();
 
-let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || "kameltoetonybu"; // Make configurable via env
+let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || "@camyslive"; // Make configurable via env
 
 async function connectToTikTok() {
     if (isConnecting) return;
@@ -2557,7 +2557,7 @@ async function connectToTikTok() {
     
     try {
         connection = new WebcastPushConnection(TIKTOK_USERNAME, {
-            requestPollingIntervalMs: 2000,
+            requestPollingIntervalMs: 3000, // Increased for better stability
             sessionId: undefined,
             clientParams: {
                 "app_language": "en-US",
@@ -2573,9 +2573,12 @@ async function connectToTikTok() {
                 "tz_name": "America/New_York",
                 "identity": "en",
                 "room_id": "7280301053461791239",
-                "heartbeatIntervalMs": 10000,
+                "heartbeatIntervalMs": 15000, // Increased for better stability
                 "client": "web"
-            }
+            },
+            // Add connection timeout handling
+            connectTimeoutMs: 30000, // 30 second timeout
+            requestTimeoutMs: 10000   // 10 second request timeout
         });
 
         // Skip room info fetching before connection to speed up the process
@@ -2629,6 +2632,9 @@ async function connectToTikTok() {
             isConnecting = false;
             reconnectAttempts = 0;
             
+            // Clear connection timeout since we're connected
+            clearTimeout(connectionTimeout);
+            
             // Reset session metrics for new stream
             resetSessionMetrics();
             
@@ -2668,7 +2674,56 @@ async function connectToTikTok() {
         connection.on('error', (error) => {
             console.error('❌ [CONNECTION] TikTok connection error:', error);
             isConnecting = false;
+            
+            // Handle specific error types
+            if (error.message && error.message.includes('timeout')) {
+                console.error('⏰ [CONNECTION] Connection timeout detected. Possible causes:');
+                console.error('   - Username may be incorrect or not live streaming');
+                console.error('   - TikTok API may be experiencing issues');
+                console.error('   - Network connectivity problems');
+                console.error('   - Rate limiting from TikTok');
+                
+                // Broadcast timeout error
+                broadcastEvent('connectionError', { 
+                    type: 'timeout', 
+                    message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
+                    username: TIKTOK_USERNAME
+                });
+            }
+            
+            // Broadcast general error
+            broadcastEvent('connectionError', { 
+                type: 'general', 
+                message: error.message || 'Unknown connection error',
+                username: TIKTOK_USERNAME
+            });
         });
+
+        // Add connection timeout handler
+        const connectionTimeout = setTimeout(() => {
+            if (isConnecting) {
+                console.error('⏰ [CONNECTION] Connection timeout after 30 seconds');
+                isConnecting = false;
+                
+                // Broadcast timeout error
+                broadcastEvent('connectionError', { 
+                    type: 'timeout', 
+                    message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
+                    username: TIKTOK_USERNAME
+                });
+                
+                // Attempt reconnection
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`🔄 [RECONNECTION] Attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);
+                    setTimeout(() => {
+                        if (!isConnecting) {
+                            connectToTikTok();
+                        }
+                    }, reconnectDelay);
+                }
+            }
+        }, 30000); // 30 second timeout
 
         // Event handlers for live stream data
         connection.on('chat', (data) => {
