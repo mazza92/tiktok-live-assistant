@@ -3077,6 +3077,64 @@
             </div>
         </div>
 
+        <!-- Entertainment Gauge at the top -->
+        <div class="entertainment-gauge">
+            <h3>🔴 Live Mood Score</h3>
+            
+            <!-- Main Entertainment Score -->
+            <div class="entertainment-main">
+                <div class="score-display">
+                    <div class="score-number" id="entertainmentScore">0</div>
+                    <div class="score-label" id="entertainmentLabel">Neutral</div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-markers">
+                        <div class="marker boring">😴</div>
+                        <div class="marker meh">😐</div>
+                        <div class="marker good">😊</div>
+                        <div class="marker entertaining">🎉</div>
+                        <div class="marker fire">🔥</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>Boring</span>
+                        <span>Meh</span>
+                        <span>Good</span>
+                        <span>Entertaining</span>
+                        <span>Fire!</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Entertainment Breakdown -->
+            <div class="entertainment-breakdown">
+                <div class="breakdown-item">
+                    <div class="breakdown-icon">📊</div>
+                    <div class="breakdown-label">Engagement</div>
+                    <div class="breakdown-value" id="engagementIntensity">0%</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-icon">🎭</div>
+                    <div class="breakdown-label">Content</div>
+                    <div class="breakdown-value" id="contentReception">0%</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-icon">⚡</div>
+                    <div class="breakdown-label">Energy</div>
+                    <div class="breakdown-value" id="audienceEnergy">0%</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-icon">📈</div>
+                    <div class="breakdown-label">Retention</div>
+                    <div class="breakdown-value" id="retentionQuality">0%</div>
+                </div>
+            </div>
+        </div>
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value" id="viewerCount">0</div>
@@ -3145,63 +3203,6 @@
     </div>
 
 
-
-        <div class="entertainment-gauge">
-            <h3>🔴 Live Mood Score</h3>
-            
-            <!-- Main Entertainment Score -->
-            <div class="entertainment-main">
-                <div class="score-display">
-                    <div class="score-number" id="entertainmentScore">0</div>
-                    <div class="score-label" id="entertainmentLabel">Neutral</div>
-                </div>
-                
-                <!-- Progress Bar -->
-                <div class="progress-container">
-                    <div class="progress-markers">
-                        <div class="marker boring">😴</div>
-                        <div class="marker meh">😐</div>
-                        <div class="marker good">😊</div>
-                        <div class="marker entertaining">🎉</div>
-                        <div class="marker fire">🔥</div>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-labels">
-                        <span>Boring</span>
-                        <span>Meh</span>
-                        <span>Good</span>
-                        <span>Entertaining</span>
-                        <span>Fire!</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Entertainment Breakdown -->
-            <div class="entertainment-breakdown">
-                <div class="breakdown-item">
-                    <div class="breakdown-icon">📊</div>
-                    <div class="breakdown-label">Engagement</div>
-                    <div class="breakdown-value" id="engagementIntensity">0%</div>
-                </div>
-                <div class="breakdown-item">
-                    <div class="breakdown-icon">🎭</div>
-                    <div class="breakdown-label">Content</div>
-                    <div class="breakdown-value" id="contentReception">0%</div>
-                </div>
-                <div class="breakdown-item">
-                    <div class="breakdown-icon">⚡</div>
-                    <div class="breakdown-label">Energy</div>
-                    <div class="breakdown-value" id="audienceEnergy">0%</div>
-                </div>
-                <div class="breakdown-item">
-                    <div class="breakdown-icon">📈</div>
-                    <div class="breakdown-label">Retention</div>
-                    <div class="breakdown-value" id="retentionQuality">0%</div>
-                </div>
-            </div>
-        </div>
 
         <div class="actionable-prompt">
             <div class="feed-header">🎯 Actionable Prompt</div>
@@ -3557,6 +3558,10 @@
                     console.log('🖥️  Dashboard connected via WebSocket');
                     updateConnectionStatus('Connected', 'connected');
                     reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                    
+                    // Initialize question display
+                    showNoQuestionsCard();
+                    updateQuestionStatsRealTime();
                     
                     // Send test message to verify connection
                     ws.send(JSON.stringify({ type: 'test', data: 'ping' }));
@@ -4074,6 +4079,15 @@
                 console.log('🔄 [DASHBOARD] Cleared new followers display');
             }
             
+            // Reset question tracking and display
+            pendingQuestions = [];
+            currentQuestionIndex = 0;
+            window.totalQuestionsProcessed = 0;
+            window.totalResponseTime = 0;
+            window.averageResponseTime = 0;
+            showNoQuestionsCard();
+            updateQuestionStatsRealTime();
+            
             console.log('✅ [DASHBOARD] Dashboard counters reset complete');
         }
 
@@ -4291,15 +4305,21 @@
             const stats = data.questionDetection.questionStats;
             const questions = data.questionDetection.pendingQuestions || [];
             
-            // Update stats
+            // Update stats (but respect local tracking when questions are being processed)
             const totalQuestionsEl = document.getElementById('totalQuestions');
             const responseRateEl = document.getElementById('responseRate');
             const avgResponseTimeEl = document.getElementById('avgResponseTime');
             const currentPriorityEl = document.getElementById('currentPriority');
             
-            if (totalQuestionsEl) totalQuestionsEl.textContent = stats.totalQuestions || 0;
-            if (responseRateEl) responseRateEl.textContent = `${Math.round(stats.responseRate || 0)}%`;
-            if (avgResponseTimeEl) avgResponseTimeEl.textContent = `${Math.round((stats.averageResponseTime || 0) / 1000)}s`;
+            // Only update stats if we're not in protection mode (to avoid overriding local tracking)
+            if (!questionActionProtection) {
+                if (totalQuestionsEl) totalQuestionsEl.textContent = stats.totalQuestions || 0;
+                if (responseRateEl) responseRateEl.textContent = `${Math.round(stats.responseRate || 0)}%`;
+                if (avgResponseTimeEl) avgResponseTimeEl.textContent = `${Math.round((stats.averageResponseTime || 0) / 1000)}s`;
+            } else {
+                // Use local tracking when protection is active
+                updateQuestionStatsRealTime();
+            }
             
             // Update current priority if there are pending questions
             if (currentPriorityEl && pendingQuestions.length > 0) {
@@ -4335,6 +4355,17 @@
                 
                 // Sort by timestamp to maintain order
                 pendingQuestions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // If we added new questions, ensure they're displayed
+                if (addedCount > 0) {
+                    console.log(`🔄 [QUESTIONS] ${addedCount} new questions added, updating display`);
+                    updateQuestionSlideshow();
+                    
+                    // Force a refresh to ensure new questions are visible
+                    setTimeout(() => {
+                        updateQuestionSlideshow();
+                    }, 200);
+                }
             } else {
                 // No protection active, safe to update completely
                 console.log('🔄 [QUESTIONS] Full update: no protection active, updating completely');
@@ -4351,6 +4382,15 @@
             // Start auto-advance for all questions
             if (pendingQuestions.length > 0) {
                 startAutoAdvance();
+                // Ensure the display shows the first question immediately
+                if (currentQuestionIndex === 0) {
+                    displayCurrentQuestion();
+                }
+                
+                // Force a refresh to ensure questions are visible
+                setTimeout(() => {
+                    updateQuestionSlideshow();
+                }, 100);
             } else {
                 stopAutoAdvance();
             }
@@ -4362,6 +4402,11 @@
             if (!pendingQuestions || pendingQuestions.length === 0) {
                 showNoQuestionsCard();
                 return;
+            }
+            
+            // Ensure current index is valid
+            if (currentQuestionIndex >= pendingQuestions.length) {
+                currentQuestionIndex = 0;
             }
             
             // Display the current question
@@ -4395,17 +4440,33 @@
         function updateQuestionStatsRealTime() {
             const totalQuestionsEl = document.getElementById('totalQuestions');
             const responseRateEl = document.getElementById('responseRate');
+            const avgResponseTimeEl = document.getElementById('avgResponseTime');
             
             if (totalQuestionsEl) {
                 totalQuestionsEl.textContent = pendingQuestions.length;
             }
             
-            // Calculate response rate based on answered questions
+            // Calculate response rate based on answered questions (tracked separately)
             if (responseRateEl) {
-                // This would need to be updated with actual answered questions count from backend
-                // For now, we'll show the current pending questions count
-                const responseRate = pendingQuestions.length > 0 ? Math.round((pendingQuestions.length / (pendingQuestions.length + 0)) * 100) : 0;
-                responseRateEl.textContent = `${responseRate}%`;
+                // Get total questions processed (pending + answered + ignored)
+                const totalProcessed = (window.totalQuestionsProcessed || 0) + pendingQuestions.length;
+                const answeredCount = window.totalQuestionsProcessed || 0;
+                
+                if (totalProcessed > 0) {
+                    const responseRate = Math.round((answeredCount / totalProcessed) * 100);
+                    responseRateEl.textContent = `${responseRate}%`;
+                } else {
+                    responseRateEl.textContent = '0%';
+                }
+            }
+            
+            // Calculate average response time
+            if (avgResponseTimeEl) {
+                if (window.averageResponseTime) {
+                    avgResponseTimeEl.textContent = `${Math.round(window.averageResponseTime)}s`;
+                } else {
+                    avgResponseTimeEl.textContent = '0s';
+                }
             }
             
             // Update auto-advance status
@@ -4521,7 +4582,9 @@
             if (viewerName) viewerName.textContent = question.nickname;
             if (questionText) questionText.textContent = question.question;
             
-            // Button handlers are now set via HTML onclick attributes
+            // Enable buttons when there's a question to display
+            if (answerBtn) answerBtn.disabled = false;
+            if (ignoreBtn) ignoreBtn.disabled = false;
             
             // Start timer
             startQuestionTimer(question.timestamp);
@@ -4613,6 +4676,9 @@
             
             displayCurrentQuestion();
             updateQuestionCounter();
+            
+            // Also update the stats to reflect the current question
+            updateQuestionStatsRealTime();
         }
 
 
@@ -4643,6 +4709,22 @@
         // Protection mechanism to prevent metrics from overriding question actions
         let questionActionProtection = false;
         let questionActionTimeout = null;
+        
+        // Question tracking variables for better stats
+        window.totalQuestionsProcessed = 0;
+        window.totalResponseTime = 0;
+        window.averageResponseTime = 0;
+        
+        // Initialize question stats display
+        function initializeQuestionStats() {
+            updateQuestionStatsRealTime();
+        }
+        
+        // Call initialization when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeQuestionStats();
+            showNoQuestionsCard(); // Ensure question display is initialized
+        });
 
         // Question action functions
         function markQuestionAnswered(questionId = null) {
@@ -4680,22 +4762,38 @@
             const question = pendingQuestions[questionIndex];
             console.log(`✅ [QUESTIONS] Marking question from ${question.nickname} as answered`);
             
+            // Track response time and update stats
+            const responseTime = Math.floor((Date.now() - new Date(question.timestamp)) / 1000);
+            window.totalQuestionsProcessed++;
+            window.totalResponseTime += responseTime;
+            window.averageResponseTime = window.totalResponseTime / window.totalQuestionsProcessed;
+            
             // Remove the answered question
             pendingQuestions.splice(questionIndex, 1);
             
-            // Update display
+            // Update display and stats immediately
             if (pendingQuestions.length === 0) {
                 showNoQuestionsCard();
                 stopAutoAdvance();
             } else {
+                // Adjust current index if needed
                 if (currentQuestionIndex >= pendingQuestions.length) {
                     currentQuestionIndex = pendingQuestions.length - 1;
                 }
+                // Update the display with the new current question
                 updateQuestionSlideshow();
                 
                 // Continue auto-advance for remaining questions
                 startAutoAdvance();
             }
+            
+            // Update stats display immediately
+            updateQuestionStatsRealTime();
+            
+            // Force a display refresh to ensure everything is updated
+            setTimeout(() => {
+                updateQuestionSlideshow();
+            }, 100);
             
             // Log state after action
             logQuestionState('markQuestionAnswered');
@@ -4734,24 +4832,37 @@
             }
             
             const question = pendingQuestions[questionIndex];
-            console.log(`❌ [QUESTIONS] Ignoring question from ${question.nickname}`);
+            console.log(`❌ [QUESTIONS] Ignoring question from ${question.id} from ${question.nickname}`);
+            
+            // Track ignored question for stats
+            window.totalQuestionsProcessed++;
             
             // Remove the ignored question
             pendingQuestions.splice(questionIndex, 1);
             
-            // Update display
+            // Update display and stats immediately
             if (pendingQuestions.length === 0) {
                 showNoQuestionsCard();
                 stopAutoAdvance();
             } else {
+                // Adjust current index if needed
                 if (currentQuestionIndex >= pendingQuestions.length) {
                     currentQuestionIndex = pendingQuestions.length - 1;
                 }
+                // Update the display with the new current question
                 updateQuestionSlideshow();
                 
                 // Continue auto-advance for remaining questions
                 startAutoAdvance();
             }
+            
+            // Update stats display immediately
+            updateQuestionStatsRealTime();
+            
+            // Force a display refresh to ensure everything is updated
+            setTimeout(() => {
+                updateQuestionSlideshow();
+            }, 100);
             
             // Log state after action
             logQuestionState('ignoreQuestion');
@@ -5791,60 +5902,132 @@
             }
         }
         
-        // Update predictive analytics display
+        // Update predictive analytics display with improved accuracy
         function updatePredictiveAnalytics(data) {
             if (!data.predictiveMetrics) return;
             
             const pm = data.predictiveMetrics;
             
-            // Update churn risk
+            // Calculate more accurate predictive scores based on real-time data
+            const improvedScores = calculateImprovedPredictiveScores(data);
+            
+            // Update churn risk with improved calculation
             const churnRiskEl = document.getElementById('churnRiskScore');
             const churnTrendEl = document.getElementById('churnRiskTrend');
             if (churnRiskEl) {
-                churnRiskEl.textContent = `${Math.round(pm.churnRiskScore || 0)}%`;
-                churnRiskEl.style.color = getRiskColor(pm.churnRiskScore || 0);
+                const churnScore = improvedScores.churnRisk;
+                churnRiskEl.textContent = `${Math.round(churnScore)}%`;
+                churnRiskEl.style.color = getRiskColor(churnScore);
             }
             if (churnTrendEl) {
-                churnTrendEl.textContent = getRiskTrend(pm.churnRiskScore || 0);
+                churnTrendEl.textContent = getRiskTrend(improvedScores.churnRisk);
             }
             
-            // Update monetization opportunity
+            // Update monetization opportunity with improved calculation
             const monetizationEl = document.getElementById('monetizationScore');
             const monetizationTrendEl = document.getElementById('monetizationTrend');
             if (monetizationEl) {
-                monetizationEl.textContent = `${Math.round(pm.monetizationOpportunityScore || 0)}%`;
-                monetizationEl.style.color = getOpportunityColor(pm.monetizationOpportunityScore || 0);
+                const monetizationScore = improvedScores.monetization;
+                monetizationEl.textContent = `${Math.round(monetizationScore)}%`;
+                monetizationEl.style.color = getOpportunityColor(monetizationScore);
             }
             if (monetizationTrendEl) {
-                monetizationTrendEl.textContent = getOpportunityTrend(pm.monetizationOpportunityScore || 0);
+                monetizationTrendEl.textContent = getOpportunityTrend(improvedScores.monetization);
             }
             
-            // Update retention rate
+            // Update retention rate with improved calculation
             const retentionEl = document.getElementById('retentionRate');
             const retentionTrendEl = document.getElementById('retentionTrend');
             if (retentionEl) {
-                retentionEl.textContent = `${Math.round((pm.viewerRetentionRate || 0) * 100)}%`;
-                retentionEl.style.color = getRetentionColor(pm.viewerRetentionRate || 0);
+                const retentionScore = improvedScores.retention;
+                retentionEl.textContent = `${Math.round(retentionScore * 100)}%`;
+                retentionEl.style.color = getRetentionColor(retentionScore);
             }
             if (retentionTrendEl) {
-                retentionTrendEl.textContent = getRetentionTrend(pm.viewerRetentionRate || 0);
+                retentionTrendEl.textContent = getRetentionTrend(improvedScores.retention);
             }
             
-            // Update sentiment volatility
+            // Update sentiment volatility with improved calculation
             const volatilityEl = document.getElementById('sentimentVolatility');
             const volatilityTrendEl = document.getElementById('volatilityTrend');
             if (volatilityEl) {
-                volatilityEl.textContent = (pm.sentimentVolatility || 0).toFixed(2);
-                volatilityEl.style.color = getVolatilityColor(pm.sentimentVolatility || 0);
+                const volatilityScore = improvedScores.volatility;
+                volatilityEl.textContent = volatilityScore.toFixed(2);
+                volatilityEl.style.color = getVolatilityColor(volatilityScore);
             }
             if (volatilityTrendEl) {
-                volatilityTrendEl.textContent = getVolatilityTrend(pm.sentimentVolatility || 0);
+                volatilityTrendEl.textContent = getVolatilityTrend(improvedScores.volatility);
             }
             
-            // Update predictive insights
-            updatePredictiveInsights(pm);
+            // Update predictive insights with improved data
+            updatePredictiveInsights(improvedScores, data);
         }
 
+        // Calculate improved predictive scores based on real-time data patterns
+        function calculateImprovedPredictiveScores(data) {
+            // Get current activity data
+            const currentViewers = parseInt(document.getElementById('viewerCount')?.textContent || '0');
+            const currentLikes = parseInt(document.getElementById('totalLikes')?.textContent || '0');
+            const currentGifts = parseInt(document.getElementById('totalGifts')?.textContent || '0');
+            const currentShares = parseInt(document.getElementById('totalShares')?.textContent || '0');
+            const likesPerMinute = parseInt(document.getElementById('likesPerMinute')?.textContent || '0');
+            
+            // Calculate engagement rate (likes + gifts + shares per viewer)
+            const totalEngagement = currentLikes + (currentGifts * 10) + (currentShares * 5); // Weighted engagement
+            const engagementRate = currentViewers > 0 ? totalEngagement / currentViewers : 0;
+            
+            // Calculate churn risk based on engagement patterns
+            let churnRisk = 0;
+            if (engagementRate < 2) churnRisk = 85; // High risk if low engagement
+            else if (engagementRate < 5) churnRisk = 60; // Medium-high risk
+            else if (engagementRate < 10) churnRisk = 35; // Medium risk
+            else if (engagementRate < 20) churnRisk = 15; // Low risk
+            else churnRisk = 5; // Very low risk
+            
+            // Adjust based on likes per minute trend
+            if (likesPerMinute < 5) churnRisk += 10;
+            else if (likesPerMinute > 20) churnRisk -= 10;
+            
+            // Calculate monetization opportunity based on gift patterns
+            let monetization = 0;
+            if (currentGifts > 0) {
+                const giftRate = currentGifts / Math.max(currentViewers, 1);
+                if (giftRate > 0.3) monetization = 90; // High opportunity
+                else if (giftRate > 0.2) monetization = 75;
+                else if (giftRate > 0.1) monetization = 60;
+                else if (giftRate > 0.05) monetization = 45;
+                else monetization = 30;
+            } else {
+                // No gifts yet, estimate based on engagement
+                monetization = Math.min(engagementRate * 3, 50);
+            }
+            
+            // Calculate retention based on viewer stability and engagement
+            let retention = 0.5; // Base retention
+            if (engagementRate > 15) retention += 0.3; // High engagement = better retention
+            if (likesPerMinute > 15) retention += 0.2; // Active chat = better retention
+            if (currentGifts > 0) retention += 0.1; // Gifts indicate strong connection
+            
+            // Calculate volatility based on engagement consistency
+            let volatility = 1.0; // Base volatility
+            if (engagementRate < 5) volatility += 0.5; // Low engagement = more volatile
+            if (likesPerMinute < 10) volatility += 0.3; // Inactive periods = more volatile
+            if (currentGifts === 0) volatility += 0.2; // No gifts = more volatile
+            
+            // Ensure scores are within valid ranges
+            churnRisk = Math.max(0, Math.min(100, churnRisk));
+            monetization = Math.max(0, Math.min(100, monetization));
+            retention = Math.max(0.1, Math.min(1.0, retention));
+            volatility = Math.max(0.5, Math.min(3.0, volatility));
+            
+            return {
+                churnRisk: Math.round(churnRisk),
+                monetization: Math.round(monetization),
+                retention: retention,
+                volatility: volatility
+            };
+        }
+        
         // Helper functions for predictive analytics display
         function getRiskColor(score) {
             if (score >= 80) return '#ff4444';
