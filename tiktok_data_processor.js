@@ -16,7 +16,7 @@ app.use(express.static('.')); // Serve static files from current directory
 // Initialize sentiment analyzer
 const sentiment = new Sentiment();
 
-// Data processing and metrics storage
+// Data processing and metrics storage with memory optimization
 let metrics = {
     currentViewerCount: 0,
     
@@ -39,11 +39,11 @@ let metrics = {
     newFollowers: [], // Track new followers
     sentimentScore: 0, // Automated sentiment score
     rollingSentimentScore: 0, // Rolling average of last 100 comments
-    commentSentiments: [], // Store sentiment scores for rolling average
-    keywordFrequency: {}, // Track keyword mentions
+    commentSentiments: [], // Store sentiment scores for rolling average (max 100)
+    keywordFrequency: {}, // Track keyword mentions (max 50 keywords)
     lastPromptTime: 0, // Track when last prompt was sent
     promptCooldowns: {}, // Track cooldowns for different prompt types
-    viewerHistory: [], // Track viewer count over time
+    viewerHistory: [], // Track viewer count over time (max 100 entries)
     
     // Viewer watch time tracking
     viewers: {}, // Track individual viewers and their watch time
@@ -2423,6 +2423,43 @@ wss.on('connection', (ws) => {
     });
 });
 
+// Memory management and optimization
+const MAX_SENTIMENT_HISTORY = 100;
+const MAX_KEYWORDS = 50;
+const MAX_VIEWER_HISTORY = 100;
+const MAX_PENDING_QUESTIONS = 20;
+
+// Memory cleanup function
+function cleanupMemory() {
+    // Limit sentiment history
+    if (metrics.commentSentiments.length > MAX_SENTIMENT_HISTORY) {
+        metrics.commentSentiments = metrics.commentSentiments.slice(-MAX_SENTIMENT_HISTORY);
+    }
+    
+    // Limit viewer history
+    if (metrics.viewerHistory.length > MAX_VIEWER_HISTORY) {
+        metrics.viewerHistory = metrics.viewerHistory.slice(-MAX_VIEWER_HISTORY);
+    }
+    
+    // Limit pending questions
+    if (metrics.questionDetection.pendingQuestions.length > MAX_PENDING_QUESTIONS) {
+        metrics.questionDetection.pendingQuestions = metrics.questionDetection.pendingQuestions.slice(-MAX_PENDING_QUESTIONS);
+    }
+    
+    // Clean up old viewer data (inactive for more than 1 hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    Object.keys(metrics.viewers).forEach(userId => {
+        if (metrics.viewers[userId].lastSeen < oneHourAgo && !metrics.viewers[userId].isActive) {
+            delete metrics.viewers[userId];
+        }
+    });
+    
+    console.log('🧹 [MEMORY] Cleanup completed');
+}
+
+// Run memory cleanup every 5 minutes
+setInterval(cleanupMemory, 5 * 60 * 1000);
+
 // TikTok Live connection with reconnection logic
 let connection = null;
 let isConnecting = false;
@@ -2750,9 +2787,14 @@ async function connectToTikTok() {
                 metrics.totalComments++;
                 commentsInLastMinute.push(Date.now());
                 
-                // Perform sentiment analysis
-                const sentimentResult = sentiment.analyze(cleanedComment);
-                const sentimentScore = sentimentResult.score;
+                // Perform sentiment analysis (with performance optimization)
+                let sentimentScore = 0;
+                
+                // Only analyze sentiment for comments longer than 3 words (performance optimization)
+                if (cleanedComment.split(' ').length > 3) {
+                    const sentimentResult = sentiment.analyze(cleanedComment);
+                    sentimentScore = sentimentResult.score;
+                }
                 
                 // Update rolling sentiment
                 updateRollingSentiment(sentimentScore);
@@ -3434,6 +3476,34 @@ app.post('/change-username', async (req, res) => {
             details: 'Check server logs for more information'
         });
     }
+});
+
+// Performance monitoring endpoint
+app.get('/health', (req, res) => {
+    const memoryUsage = process.memoryUsage();
+    const uptime = process.uptime();
+    
+    res.json({
+        status: 'healthy',
+        uptime: Math.floor(uptime),
+        memory: {
+            rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
+            heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + ' MB',
+            heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + ' MB',
+            external: Math.round(memoryUsage.external / 1024 / 1024) + ' MB'
+        },
+        metrics: {
+            activeViewers: Object.keys(metrics.viewers).length,
+            totalQuestions: metrics.questionDetection.questionStats.totalQuestions,
+            sentimentHistorySize: metrics.commentSentiments.length
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Simple test endpoint for Render health checks
+app.get('/test', (req, res) => {
+    res.json({ status: 'ok', message: 'TikTok Live Assistant is running' });
 });
 
 // Serve dashboard

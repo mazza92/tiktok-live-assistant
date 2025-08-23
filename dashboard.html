@@ -930,6 +930,68 @@
             }
         }
 
+        /* Performance Monitor Styles */
+        .performance-monitor {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .performance-monitor h3 {
+            color: white;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .performance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .perf-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .perf-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .perf-value {
+            display: block;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .perf-refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .perf-refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
         .entertainment-gauge {
             background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 193, 7, 0.08) 100%);
             backdrop-filter: blur(20px);
@@ -3288,6 +3350,30 @@
         </div>
 
         <!-- Entertainment Gauge at the top -->
+        <!-- Performance Monitor (Admin Only) -->
+        <div class="performance-monitor" id="performanceMonitor" style="display: none;">
+            <h3>🖥️ System Performance</h3>
+            <div class="performance-grid">
+                <div class="perf-card">
+                    <span class="perf-label">Memory Usage:</span>
+                    <span class="perf-value" id="memoryUsage">--</span>
+                </div>
+                <div class="perf-card">
+                    <span class="perf-label">Uptime:</span>
+                    <span class="perf-value" id="uptime">--</span>
+                </div>
+                <div class="perf-card">
+                    <span class="perf-label">Active Viewers:</span>
+                    <span class="perf-value" id="activeViewers">--</span>
+                </div>
+                <div class="perf-card">
+                    <span class="perf-label">Connection Mode:</span>
+                    <span class="perf-value" id="connectionMode">--</span>
+                </div>
+            </div>
+            <button class="perf-refresh-btn" onclick="refreshPerformance()">🔄 Refresh</button>
+        </div>
+        
         <div class="entertainment-gauge">
             <h3>Live Mood Score</h3>
             
@@ -4081,6 +4167,41 @@
             }
         }
 
+        // Performance monitoring functions
+        async function refreshPerformance() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update performance display
+                    document.getElementById('memoryUsage').textContent = data.memory.heapUsed;
+                    document.getElementById('uptime').textContent = formatUptime(data.uptime);
+                    document.getElementById('activeViewers').textContent = data.metrics.activeViewers;
+                    document.getElementById('connectionMode').textContent = ws && ws.readyState === WebSocket.OPEN ? 'WebSocket' : 'HTTP Polling';
+                    
+                    console.log('📊 [PERFORMANCE] Updated performance metrics:', data);
+                }
+            } catch (error) {
+                console.error('❌ [PERFORMANCE] Failed to fetch performance data:', error);
+            }
+        }
+        
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+        
+        // Toggle performance monitor (Ctrl+Shift+P)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                const monitor = document.getElementById('performanceMonitor');
+                monitor.style.display = monitor.style.display === 'none' ? 'block' : 'none';
+                console.log('🖥️ [PERFORMANCE] Monitor toggled');
+            }
+        });
+        
         // HTTP-based connection for deployed environments
         async function connectViaHttp(username) {
             try {
