@@ -1681,6 +1681,13 @@ function generateAutomatedPrompt() {
                 action: 'leverage_momentum'
             });
         } else if (commentRate > 20) {
+            // Get top keyword and engager for context
+            const topKeywordEntry = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0];
+            const topKeyword = topKeywordEntry ? topKeywordEntry[0] : 'general';
+            
+            const topEngagerEntry = getViewerEngagementRanking()[0];
+            const topEngager = topEngagerEntry ? topEngagerEntry.nickname : 'viewers';
+            
             prompts.push({
                 type: 'interaction',
                 priority: 'medium',
@@ -1784,6 +1791,10 @@ function analyzeSentimentIntelligence() {
         const likeRate = metrics.likesPerMinute || 0;
         
         if (currentViewers > 800 && likeRate > 40) {
+            // Get top keyword for context
+            const topKeywordEntry = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0];
+            const topKeyword = topKeywordEntry ? topKeywordEntry[0] : 'general';
+            
             return {
                 type: 'sentiment',
                 priority: 'high',
@@ -1804,6 +1815,13 @@ function analyzeSentimentIntelligence() {
     
     // Detect sentiment swings (controversial topics)
     if (sentimentVariance > 5) {
+        // Get top keyword and engager for context
+        const topKeywordEntry = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0];
+        const topKeyword = topKeywordEntry ? topKeywordEntry[0] : 'general';
+        
+        const topEngagerEntry = getViewerEngagementRanking()[0];
+        const topEngager = topEngagerEntry ? topEngagerEntry.nickname : 'viewers';
+        
         return {
             type: 'sentiment',
             priority: 'medium',
@@ -1869,6 +1887,10 @@ function analyzeKeywordInsights() {
     }
     
     if (topKeyword.context === 'personal') {
+        // Get top engager for context
+        const topEngagerEntry = getViewerEngagementRanking()[0];
+        const topEngager = topEngagerEntry ? topEngagerEntry.nickname : 'viewers';
+        
         return {
             type: 'content',
             priority: 'medium',
@@ -1914,6 +1936,10 @@ function monitorStreamHealth() {
     if (metrics.recentComments.length > 0) {
         const lastCommentTime = metrics.recentComments[0].timestamp.getTime();
         if (now - lastCommentTime > 300000) { // 5 minutes
+            // Get top keyword for context
+            const topKeywordEntry = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0];
+            const topKeyword = topKeywordEntry ? topKeywordEntry[0] : 'general';
+            
             return {
                 type: 'health',
                 priority: 'high',
