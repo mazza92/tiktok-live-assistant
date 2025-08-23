@@ -2050,6 +2050,16 @@ function detectNewViewers() {
 }
 
 function analyzeLikePatterns() {
+    // Get top keyword for context
+    const topKeyword = Object.keys(metrics.keywordFrequency).sort((a, b) => 
+        metrics.keywordFrequency[b] - metrics.keywordFrequency[a]
+    )[0] || 'general';
+    
+    // Get top engager for personalization
+    const topEngager = Object.values(metrics.viewers)
+        .filter(v => v.isActive && (v.totalLikes > 0 || v.totalGifts > 0 || v.totalComments > 0))
+        .sort((a, b) => (b.totalLikes + b.totalGifts * 2 + b.totalComments) - (a.totalLikes + a.totalGifts * 2 + a.totalComments))[0]?.nickname || 'viewers';
+    
     if (metrics.likesPerMinute < 5 && metrics.totalLikes > 100) {
         return {
             type: 'engagement',
@@ -2090,8 +2100,9 @@ function checkViewerMilestones() {
 
 function detectRecurringThemes() {
     // Enhanced: Detect if top keyword has high frequency
-    const topFreq = Object.entries(metrics.keywordFrequency).sort((a, b) => b[1] - a[1])[0]?.[1] || 0;
-    if (topFreq > 10) {
+    const topKeywordEntry = Object.entries(metrics.keywordFrequency).sort((a, b) => b[1] - a[1])[0];
+    if (topKeywordEntry && topKeywordEntry[1] > 10) {
+        const [topKeyword, topFreq] = topKeywordEntry;
         return {
             type: 'theme',
             priority: 'medium',
