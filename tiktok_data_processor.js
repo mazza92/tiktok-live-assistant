@@ -1026,7 +1026,7 @@ function runPredictiveAnalytics() {
         insights.churnRisk = {
             type: 'prediction_churn',
             priority: 'critical',
-            message: `🚨 [PREDICTIVE] High churn risk detected (${churnRisk.risk}%)! ${churnRisk.factors.join(', ')}`,
+            message: `🚨 [PREDICTIVE] High churn risk detected (${churnRisk.risk}%) due to ${churnRisk.factors.join(', ')}. Suggested action: ${churnRisk.suggestedActions.join(' or ')}`,
             trigger: 'prediction_churn',
             action: 'prevent_churn',
             score: churnRisk.risk,
@@ -1041,7 +1041,7 @@ function runPredictiveAnalytics() {
         insights.monetizationOpportunity = {
             type: 'prediction_monetization',
             priority: 'high',
-            message: `💰 [PREDICTIVE] High-value monetization opportunity (${monetizationOpportunity.opportunity}%)! ${monetizationOpportunity.factors.join(', ')}`,
+            message: `💰 [PREDICTIVE] High-value monetization opportunity (${monetizationOpportunity.opportunity}%) due to ${monetizationOpportunity.factors.join(', ')}. Suggested action: ${monetizationOpportunity.suggestedActions.join(' or ')}`,
             trigger: 'prediction_monetization',
             action: 'capitalize_opportunity',
             score: monetizationOpportunity.opportunity,
@@ -1057,6 +1057,7 @@ function runPredictiveAnalytics() {
 function predictChurnRisk() {
     const now = Date.now();
     const riskFactors = [];
+    const suggestedActions = [];
     let totalRisk = 0;
     
     // 1. Viewer count decline trend
@@ -1065,6 +1066,7 @@ function predictChurnRisk() {
         const declineRate = calculateDeclineRate(recentViewers.map(v => v.count));
         if (declineRate > 0.1) { // 10% decline
             riskFactors.push(`Viewer count declining at ${(declineRate * 100).toFixed(1)}% per minute`);
+            suggestedActions.push('Engage viewers with a quick poll or question to boost retention');
             totalRisk += Math.min(declineRate * 200, 40); // Max 40 points
         }
     }
@@ -1074,6 +1076,7 @@ function predictChurnRisk() {
     const avgEngagement = calculateAverageEngagement();
     if (currentEngagement < avgEngagement * 0.6) {
         riskFactors.push(`Engagement ${((avgEngagement - currentEngagement) / avgEngagement * 100).toFixed(1)}% below average`);
+        suggestedActions.push('Call for likes or comments to re-engage the audience');
         totalRisk += 25;
     }
     
@@ -1084,6 +1087,7 @@ function predictChurnRisk() {
         const overallSentiment = metrics.rollingSentimentScore;
         if (avgRecentSentiment < overallSentiment - 1) {
             riskFactors.push(`Recent sentiment ${(overallSentiment - avgRecentSentiment).toFixed(1)} points below average`);
+            suggestedActions.push('Shift to positive topics or share an uplifting story');
             totalRisk += 20;
         }
     }
@@ -1094,6 +1098,7 @@ function predictChurnRisk() {
     const silenceDuration = (now - lastCommentTime) / 1000 / 60; // minutes
     if (silenceDuration > 3) {
         riskFactors.push(`Chat silent for ${silenceDuration.toFixed(1)} minutes`);
+        suggestedActions.push('Ask an open-ended question to restart conversation');
         totalRisk += Math.min(silenceDuration * 8, 30); // Max 30 points
     }
     
@@ -1101,6 +1106,7 @@ function predictChurnRisk() {
     const retentionRate = calculateUserRetentionRate();
     if (retentionRate < 0.7) { // Less than 70% retention
         riskFactors.push(`User retention at ${(retentionRate * 100).toFixed(1)}%`);
+        suggestedActions.push('Highlight upcoming content to encourage staying');
         totalRisk += 15;
     }
     
@@ -1117,6 +1123,7 @@ function predictChurnRisk() {
         risk: Math.min(totalRisk, 100),
         confidence: Math.round(confidence),
         factors: riskFactors,
+        suggestedActions: suggestedActions,
         timeToChurn: timeToChurn
     };
 }
@@ -1125,6 +1132,7 @@ function predictChurnRisk() {
 function predictMonetizationOpportunity() {
     const now = Date.now();
     const opportunityFactors = [];
+    const suggestedActions = [];
     let totalOpportunity = 0;
     
     // 1. High engagement moment
@@ -1132,6 +1140,7 @@ function predictMonetizationOpportunity() {
     const avgEngagement = calculateAverageEngagement();
     if (currentEngagement > avgEngagement * 1.5) {
         opportunityFactors.push(`Engagement ${((currentEngagement - avgEngagement) / avgEngagement * 100).toFixed(1)}% above average`);
+        suggestedActions.push('Promote gifts or subscriptions now while engagement is high');
         totalOpportunity += 30;
     }
     
@@ -1141,6 +1150,7 @@ function predictMonetizationOpportunity() {
         const avgRecentSentiment = recentSentiment.reduce((a, b) => a + b, 0) / recentSentiment.length;
         if (avgRecentSentiment > 1.5) {
             opportunityFactors.push(`Very positive sentiment (${avgRecentSentiment.toFixed(1)})`);
+            suggestedActions.push('Leverage positive mood for gift challenges or shoutouts');
             totalOpportunity += 25;
         }
     }
@@ -1149,6 +1159,7 @@ function predictMonetizationOpportunity() {
     const giftCorrelation = analyzeGiftCorrelation();
     if (giftCorrelation.correlation > 0.7) {
         opportunityFactors.push(`Strong gift correlation with current content`);
+        suggestedActions.push('Continue current content and subtly encourage gifts');
         totalOpportunity += 20;
     }
     
@@ -1158,6 +1169,7 @@ function predictMonetizationOpportunity() {
         const growthRate = calculateGrowthRate(recentViewers.map(v => v.count));
         if (growthRate > 0.05) { // 5% growth
             opportunityFactors.push(`Viewer count growing at ${(growthRate * 100).toFixed(1)}% per minute`);
+            suggestedActions.push('Capitalize on growth with a gift goal for special content');
             totalOpportunity += 15;
         }
     }
@@ -1166,6 +1178,7 @@ function predictMonetizationOpportunity() {
     const contentPerformance = analyzeContentPerformance();
     if (contentPerformance.score > 0.8) {
         opportunityFactors.push(`Current content type historically performs well`);
+        suggestedActions.push('Extend this content segment and promote monetization');
         totalOpportunity += 10;
     }
     
@@ -1179,6 +1192,7 @@ function predictMonetizationOpportunity() {
         opportunity: Math.min(totalOpportunity, 100),
         confidence: Math.round(confidence),
         factors: opportunityFactors,
+        suggestedActions: suggestedActions,
         expectedValue: expectedValue
     };
 }
@@ -1479,6 +1493,29 @@ function generateAutomatedPrompt() {
         prompts.push(predictiveInsights.monetizationOpportunity);
     }
     
+    // 0.5 ENHANCED: Check for pending questions and suggest addressing them if high priority or many pending
+    if (metrics.questionDetection.pendingQuestions.length > 3) {
+        const highPriorityQuestions = metrics.questionDetection.pendingQuestions.filter(q => q.priority >= 3);
+        if (highPriorityQuestions.length > 0) {
+            const topQuestion = highPriorityQuestions.sort((a, b) => b.priority - a.priority)[0];
+            prompts.push({
+                type: 'question',
+                priority: 'high',
+                message: `❓ [QUESTIONS] There are ${metrics.questionDetection.pendingQuestions.length} pending questions. Highest priority from ${topQuestion.nickname}: "${topQuestion.question}". Suggest answering it to boost engagement and retention.`,
+                trigger: 'pending_questions_high',
+                action: 'answer_question'
+            });
+        } else if (metrics.questionDetection.pendingQuestions.length > 5) {
+            prompts.push({
+                type: 'question',
+                priority: 'medium',
+                message: `❓ [QUESTIONS] ${metrics.questionDetection.pendingQuestions.length} unanswered questions accumulating. Pick one like "${metrics.questionDetection.pendingQuestions[0].question}" to address for better viewer interaction and growth.`,
+                trigger: 'pending_questions_many',
+                action: 'address_questions'
+            });
+        }
+    }
+    
     // 1. ENGAGEMENT PATTERN ANALYSIS
     const engagementTrend = analyzeEngagementTrend();
     console.log(`🤖 [ENGAGEMENT] Trend analysis: ${engagementTrend}`);
@@ -1490,7 +1527,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'engagement',
                 priority: 'high',
-                message: '📉 High viewer count but low engagement. Try: "I see lots of you watching! What\'s something interesting that happened today?" or "Anyone want to share a funny story?"',
+                message: `📉 High viewer count (${currentViewers}) but low engagement (${likeRate} likes/min). Try: "I see lots of you watching! What's something interesting that happened today?" or "Anyone want to share a funny story?" to animate and retain viewers.`,
                 trigger: 'high_viewers_low_engagement',
                 action: 'activate_lurkers'
             });
@@ -1498,7 +1535,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'engagement',
                 priority: 'high',
-                message: '📉 Chat seems quieter than usual. Try asking: "What\'s on your mind?" or "Anyone want to share a story?"',
+                message: `📉 Chat seems quieter than usual with trend declining. Try asking: "What's on your mind?" or "Anyone want to share a story?" considering current sentiment score of ${metrics.rollingSentimentScore.toFixed(1)}.`,
                 trigger: 'engagement_decline',
                 action: 'ask_open_question'
             });
@@ -1511,7 +1548,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'momentum',
                 priority: 'high',
-                message: '🚀 Like explosion! Something is resonating with chat - keep doing what you\'re doing! Consider: "This energy is amazing! What\'s got everyone so excited?"',
+                message: `🚀 Like explosion (${likeRate}/min)! Something is resonating with chat - keep doing what you're doing! Consider: "This energy is amazing! What's got everyone so excited?" to grow the stream further.`,
                 trigger: 'like_explosion',
                 action: 'capitalize_momentum'
             });
@@ -1519,7 +1556,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'momentum',
                 priority: 'medium',
-                message: '📈 Engagement is picking up! Try: "I love this energy! What\'s something positive that happened to you recently?"',
+                message: `📈 Engagement is picking up with ${currentViewers} viewers! Try: "I love this energy! What's something positive that happened to you recently?" leveraging current entertainment score of ${metrics.entertainmentMetrics.entertainmentScore}.`,
                 trigger: 'engagement_increase',
                 action: 'maintain_momentum'
             });
@@ -1567,7 +1604,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'content',
                 priority: 'high',
-                message: '🔥 Stream is on fire! Viewers are super engaged. Try: "What\'s the most exciting thing that happened to you this week?" or "Let\'s play a game - what\'s your favorite [topic]?"',
+                message: `🔥 Stream is on fire with ${viewerCount} viewers and ${likeRate} likes/min! Viewers are super engaged. Try: "What's the most exciting thing that happened to you this week?" or "Let's play a game - what's your favorite [topic]?" to animate and grow.`,
                 trigger: 'high_engagement',
                 action: 'leverage_momentum'
             });
@@ -1575,7 +1612,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'interaction',
                 priority: 'medium',
-                message: '💬 Chat is buzzing with conversation! Ask: "What\'s the most interesting thing someone said in chat today?" or "Who has the best story to share right now?"',
+                message: `💬 Chat is buzzing with ${commentRate} comments/min! Ask: "What's the most interesting thing someone said in chat today?" or "Who has the best story to share right now?" considering top keyword "${Object.keys(metrics.keywordFrequency)[0] || 'general'}".`,
                 trigger: 'active_chat',
                 action: 'facilitate_discussion'
             });
@@ -1583,7 +1620,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'engagement',
                 priority: 'medium',
-                message: '👥 Good viewer count but chat could be livelier. Try: "What\'s something that made you laugh today?" or "Anyone want to share a win or achievement?"',
+                message: `👥 Good viewer count (${viewerCount}) but chat could be livelier. Try: "What's something that made you laugh today?" or "Anyone want to share a win or achievement?" with current retention rate of ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(1)}%.`,
                 trigger: 'moderate_engagement',
                 action: 'boost_interaction'
             });
@@ -1591,7 +1628,7 @@ function generateAutomatedPrompt() {
             prompts.push({
                 type: 'growth',
                 priority: 'medium',
-                message: '📈 Building the community! Ask: "What brought you to this stream today?" or "What kind of content do you enjoy most?"',
+                message: `📈 Building the community with ${viewerCount} viewers! Ask: "What brought you to this stream today?" or "What kind of content do you enjoy most?" to retain and grow, noting sentiment volatility of ${metrics.predictiveMetrics.sentimentVolatility.toFixed(2)}.`,
                 trigger: 'community_building',
                 action: 'understand_audience'
             });
@@ -1655,7 +1692,7 @@ function analyzeSentimentIntelligence() {
             return {
                 type: 'sentiment',
                 priority: 'high',
-                message: '😔 Large audience but chat mood is down. Try: "I feel like we need some positive energy! What\'s something that always makes you smile?" or "Let\'s share some good news - what\'s something great that happened this week?"',
+                message: `😔 Large audience (${currentViewers}) but chat mood is down (avg sentiment: ${avgSentiment.toFixed(2)}). Try: "I feel like we need some positive energy! What's something that always makes you smile?" or "Let's share some good news - what's something great that happened this week?" to retain viewers.`,
                 trigger: 'large_audience_negative_mood',
                 action: 'mood_transformation'
             };
@@ -1663,7 +1700,7 @@ function analyzeSentimentIntelligence() {
             return {
                 type: 'sentiment',
                 priority: 'high',
-                message: '😔 Chat seems down. Try: "Let\'s turn this around! What\'s something positive that happened today?"',
+                message: `😔 Chat seems down (avg sentiment: ${avgSentiment.toFixed(2)}). Try: "Let's turn this around! What's something positive that happened today?" considering entertainment score of ${metrics.entertainmentMetrics.entertainmentScore}.`,
                 trigger: 'sustained_negative',
                 action: 'positive_redirection'
             };
@@ -1678,7 +1715,7 @@ function analyzeSentimentIntelligence() {
             return {
                 type: 'sentiment',
                 priority: 'high',
-                message: '🎉 Amazing energy! High viewers and engagement. Try: "This vibe is incredible! What\'s the most exciting thing you\'re looking forward to?" or "Let\'s play a game - what\'s your favorite [topic] and why?"',
+                message: `🎉 Amazing energy (avg sentiment: ${avgSentiment.toFixed(2)})! High viewers (${currentViewers}) and engagement (${likeRate} likes/min). Try: "This vibe is incredible! What's the most exciting thing you're looking forward to?" or "Let's play a game - what's your favorite [topic] and why?" to grow the stream.`,
                 trigger: 'high_positive_energy_high_engagement',
                 action: 'leverage_peak_momentum'
             };
@@ -1686,7 +1723,7 @@ function analyzeSentimentIntelligence() {
             return {
                 type: 'sentiment',
                 priority: 'medium',
-                message: '🎉 Great vibes in chat! Capitalize on this energy - ask for game suggestions or share a win!',
+                message: `🎉 Great vibes in chat (avg sentiment: ${avgSentiment.toFixed(2)})! Capitalize on this energy - ask for game suggestions or share a win! With volatility ${sentimentVariance.toFixed(2)}.`,
                 trigger: 'high_positive_energy',
                 action: 'leverage_positive_mood'
             };
@@ -1698,7 +1735,7 @@ function analyzeSentimentIntelligence() {
         return {
             type: 'sentiment',
             priority: 'medium',
-            message: '⚡ Chat is divided on this topic. Consider: "Let\'s hear both sides - what do you think?"',
+            message: `⚡ Chat is divided on this topic (variance: ${sentimentVariance.toFixed(2)}). Consider: "Let's hear both sides - what do you think?" to animate discussion while monitoring retention rate of ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(1)}%.`,
             trigger: 'controversial_topic',
             action: 'facilitate_discussion'
         };
@@ -1752,7 +1789,7 @@ function analyzeKeywordInsights() {
         return {
             type: 'content',
             priority: 'medium',
-            message: `🎮 "${topKeyword.keyword}" is hot right now! Consider: "Should we play ${topKeyword.keyword} next?" or "What's your best ${topKeyword.keyword} tip?"`,
+            message: `🎮 "${topKeyword.keyword}" mentioned ${topKeyword.count} times! Consider: "Should we play ${topKeyword.keyword} next?" or "What's your best ${topKeyword.keyword} tip?" to animate and grow engagement with current viewers (${metrics.currentViewerCount}).`,
             trigger: 'game_trend',
             action: 'game_suggestion',
             keyword: topKeyword.keyword
@@ -1763,7 +1800,7 @@ function analyzeKeywordInsights() {
         return {
             type: 'content',
             priority: 'medium',
-            message: `👤 Chat is curious about "${topKeyword.keyword}"! Share a story or ask: "What's your experience with ${topKeyword.keyword}?"`,
+            message: `👤 Chat is curious about "${topKeyword.keyword}" (${topKeyword.count} mentions)! Share a story or ask: "What's your experience with ${topKeyword.keyword}?" considering sentiment score ${metrics.rollingSentimentScore.toFixed(1)}.`,
             trigger: 'personal_interest',
             action: 'share_personal',
             keyword: topKeyword.keyword
@@ -1773,7 +1810,7 @@ function analyzeKeywordInsights() {
     return {
         type: 'content',
         priority: 'medium',
-        message: `💡 "${topKeyword.keyword}" is getting attention! "What should we discuss about ${topKeyword.keyword}?"`,
+        message: `💡 "${topKeyword.keyword}" is getting attention (${topKeyword.count} mentions)! "What should we discuss about ${topKeyword.keyword}?" to retain viewers with average watch time ${metrics.viewerStats.averageWatchTime}s.`,
         trigger: 'topic_interest',
         action: 'topic_discussion',
         keyword: topKeyword.keyword
@@ -1808,7 +1845,7 @@ function monitorStreamHealth() {
             return {
                 type: 'health',
                 priority: 'high',
-                message: '🔇 Chat has been quiet for a while. Try asking: "Anyone still here? Drop a comment!" or "What should we do next?"',
+                message: `🔇 Chat has been quiet for a while (last comment ${((now - lastCommentTime)/60000).toFixed(1)} min ago). Try asking: "Anyone still here? Drop a comment!" or "What should we do next?" to animate and prevent churn risk of ${metrics.predictiveMetrics.churnRiskScore}%.`,
                 trigger: 'extended_silence',
                 action: 'reengage_chat'
             };
@@ -1822,7 +1859,7 @@ function monitorStreamHealth() {
             return {
                 type: 'health',
                 priority: 'medium',
-                message: '📊 Viewer retention could be better. Try: "What would make you stay longer?" or "Should we change things up?"',
+                message: `📊 Viewer retention could be better (${(retentionRate * 100).toFixed(1)}%). Try: "What would make you stay longer?" or "Should we change things up?" with current energy level ${metrics.entertainmentMetrics.audienceEnergy.toFixed(2)}.`,
                 trigger: 'low_retention',
                 action: 'improve_retention'
             };
@@ -1840,7 +1877,7 @@ function selectBestPrompt(prompts) {
     
     // Sort by priority and recency
     const sortedPrompts = prompts.sort((a, b) => {
-        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        const priorityOrder = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
         return priorityOrder[b.priority] - priorityOrder[a.priority];
     });
     
@@ -1925,7 +1962,7 @@ function analyzeLikePatterns() {
         return {
             type: 'engagement',
             priority: 'medium',
-            message: '❤️ Like engagement is low. Try: "Drop a like if you\'re enjoying the stream!" or "Show some love chat!"',
+            message: `❤️ Like engagement is low (${metrics.likesPerMinute}/min). Try: "Drop a like if you're enjoying the stream!" or "Show some love chat!" to animate with current viewer count ${metrics.currentViewerCount}.`,
             trigger: 'low_likes',
             action: 'encourage_likes'
         };
@@ -1936,7 +1973,7 @@ function analyzeLikePatterns() {
         return {
             type: 'engagement',
             priority: 'medium',
-            message: '🚀 Like explosion! Something is resonating with chat - keep doing what you\'re doing!',
+            message: `🚀 Like explosion (${metrics.likesPerMinute}/min)! Something is resonating with chat - keep doing what you're doing! Consider tying into top keyword "${Object.keys(metrics.keywordFrequency)[0] || 'general'}" for growth.`,
             trigger: 'like_spike',
             action: 'maintain_momentum'
         };
@@ -1950,7 +1987,7 @@ function checkViewerMilestones() {
         return {
             type: 'milestone',
             priority: 'medium',
-            message: `🎉 ${metrics.currentViewerCount.toLocaleString()} viewers! Amazing milestone! Consider: "We\'re growing fast! What brought you here today?"`,
+            message: `🎉 ${metrics.currentViewerCount.toLocaleString()} viewers! Amazing milestone! Consider: "We're growing fast! What brought you here today?" to retain and celebrate with engagement trend "${metrics.predictiveMetrics.engagementTrend}".`,
             trigger: 'viewer_milestone',
             action: 'celebrate_milestone'
         };
@@ -2277,7 +2314,7 @@ async function changeTikTokUsername(newUsername, ws) {
             connection = null;
         }
         
-        // Update username variable
+        // Update username variable variable
         TIKTOK_USERNAME = newUsername;
         console.log(`✅ [USERNAME] Username updated to: ${TIKTOK_USERNAME}`);
         
@@ -2806,7 +2843,7 @@ async function connectToTikTok() {
             // Check multiple follower indicators from TikTok
             const isFollower = data.followRole === 1 || 
                               data.followStatus === 1 || 
-                              (data.followInfo && data.followInfo.followStatus === 1) ||
+                              data.followInfo && data.followInfo.followStatus === 1 ||
                               (data.displayType && data.displayType.includes('follow'));
             
             console.log(`🔍 [FOLLOWER CHECK] Checking ${metrics.viewers[userId].nickname} (${userId}) for follower status`);
@@ -2829,7 +2866,7 @@ async function connectToTikTok() {
             }
         }
 
-        // AI Welcome System for New Viewers
+        // AI Welcome System for New viewers
         connection.on('member', (data) => {
             const { userId, nickname } = getUserInfo(data);
             
@@ -2923,8 +2960,6 @@ async function connectToTikTok() {
                     const potentialTotals = numericValues.filter(val => val > 1000);
                     if (potentialTotals.length > 0) {
                         console.log(`🎯 [ROOM INFO] Found large numbers that might be totals:`, potentialTotals);
-                        // Try to extract room state from this data
-                        extractInitialRoomState(data);
                     }
                 }
                 
@@ -3295,5 +3330,3 @@ function setCurrentRoomTotals(likes = null, gifts = null, comments = null, viewe
 
 // Make manual override function available globally for testing
 global.setCurrentRoomTotals = setCurrentRoomTotals;
-
-            
