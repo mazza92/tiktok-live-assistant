@@ -1000,6 +1000,11 @@
             font-size: 1.8rem;
             filter: drop-shadow(0 2px 4px rgba(255, 0, 0, 0.3));
             animation: moodPulse 2s ease-in-out infinite;
+            color: #ff0000;
+            -webkit-text-fill-color: initial;
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
         }
 
         @keyframes moodPulse {
@@ -2526,6 +2531,8 @@
             text-shadow: none;
             position: relative;
             z-index: 2;
+            display: flex;
+            align-items: center;
         }
 
         .dashboard-header h1::before {
@@ -2535,6 +2542,12 @@
             font-size: 2.5rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
             animation: iconBounce 2s ease-in-out infinite;
+            -webkit-text-fill-color: initial;
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .connection-status {
@@ -4310,6 +4323,7 @@
             window.totalQuestionsProcessed = 0;
             window.totalResponseTime = 0;
             window.averageResponseTime = 0;
+            window.processedQuestionIds.clear(); // Clear processed question tracking
             showNoQuestionsCard();
             updateQuestionStatsRealTime();
             
@@ -4557,45 +4571,14 @@
             // Smart merge: preserve local question state and only add new questions
             const newQuestions = questions.reverse(); // Reverse to show latest first
             
-            // If we have local questions and protection is active, merge carefully
-            if (pendingQuestions.length > 0 && questionActionProtection) {
-                console.log('🛡️ [QUESTIONS] Smart merge: preserving local state during protection');
-                console.log(`🔄 [QUESTIONS] Local questions: ${pendingQuestions.length}, New questions: ${newQuestions.length}`);
-                
-                // Only add truly new questions that don't exist locally
-                let addedCount = 0;
-                newQuestions.forEach(newQuestion => {
-                    const existsLocally = pendingQuestions.some(localQuestion => 
-                        localQuestion.id === newQuestion.id
-                    );
-                    
-                    if (!existsLocally) {
-                        pendingQuestions.push(newQuestion);
-                        addedCount++;
-                        console.log(`➕ [QUESTIONS] Added new question: ${newQuestion.nickname}`);
-                    }
-                });
-                
-                console.log(`📊 [QUESTIONS] Smart merge complete: ${addedCount} new questions added`);
-                
-                // Sort by timestamp to maintain order
-                pendingQuestions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                
-                // If we added new questions, ensure they're displayed
-                if (addedCount > 0) {
-                    console.log(`🔄 [QUESTIONS] ${addedCount} new questions added, updating display`);
-                    updateQuestionSlideshow();
-                    
-                    // Force a refresh to ensure new questions are visible
-                    setTimeout(() => {
-                        updateQuestionSlideshow();
-                    }, 200);
-                }
-            } else {
-                // No protection active, safe to update completely
-                console.log('🔄 [QUESTIONS] Full update: no protection active, updating completely');
-                pendingQuestions = newQuestions;
-            }
+            // Use the new helper function for both cases
+            console.log('🔄 [QUESTIONS] Processing new questions with smart merge');
+            console.log(`🔄 [QUESTIONS] Local questions: ${pendingQuestions.length}, New questions: ${newQuestions.length}`);
+            
+            // Add new questions safely using the helper function
+            const addedCount = addNewQuestions(newQuestions);
+            
+            console.log(`📊 [QUESTIONS] Smart merge complete: ${addedCount} new questions added`);
             
             // Only reset index if we have no questions or if current index is out of bounds
             if (pendingQuestions.length === 0 || currentQuestionIndex >= pendingQuestions.length) {
@@ -4939,10 +4922,55 @@
         window.totalQuestionsProcessed = 0;
         window.totalResponseTime = 0;
         window.averageResponseTime = 0;
+        window.processedQuestionIds = new Set(); // Track processed question IDs to avoid duplicates
         
         // Initialize question stats display
         function initializeQuestionStats() {
             updateQuestionStatsRealTime();
+        }
+
+        // Function to check if a question is new and should be added
+        function shouldAddQuestion(newQuestion) {
+            // Check if question already exists in pending questions
+            const existsLocally = pendingQuestions.some(localQuestion => 
+                localQuestion.id === newQuestion.id
+            );
+            
+            // Check if question has already been processed
+            const alreadyProcessed = window.processedQuestionIds.has(newQuestion.id);
+            
+            return !existsLocally && !alreadyProcessed;
+        }
+
+        // Function to add new questions safely
+        function addNewQuestions(newQuestions) {
+            let addedCount = 0;
+            
+            newQuestions.forEach(newQuestion => {
+                if (shouldAddQuestion(newQuestion)) {
+                    pendingQuestions.push(newQuestion);
+                    addedCount++;
+                    console.log(`➕ [QUESTIONS] Added new question: ${newQuestion.nickname}`);
+                } else {
+                    console.log(`⏭️ [QUESTIONS] Skipping question: ${newQuestion.nickname} (exists: ${!shouldAddQuestion(newQuestion)})`);
+                }
+            });
+            
+            if (addedCount > 0) {
+                // Sort by timestamp to maintain order
+                pendingQuestions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                console.log(`📊 [QUESTIONS] Added ${addedCount} new questions, total pending: ${pendingQuestions.length}`);
+                
+                // Update display
+                updateQuestionSlideshow();
+                
+                // Force a refresh to ensure new questions are visible
+                setTimeout(() => {
+                    updateQuestionSlideshow();
+                }, 200);
+            }
+            
+            return addedCount;
         }
         
         // Call initialization when page loads
@@ -4992,6 +5020,9 @@
             window.totalQuestionsProcessed++;
             window.totalResponseTime += responseTime;
             window.averageResponseTime = window.totalResponseTime / window.totalQuestionsProcessed;
+            
+            // Mark this question as processed
+            window.processedQuestionIds.add(question.id);
             
             // Remove the answered question
             pendingQuestions.splice(questionIndex, 1);
@@ -5061,6 +5092,9 @@
             
             // Track ignored question for stats
             window.totalQuestionsProcessed++;
+            
+            // Mark this question as processed
+            window.processedQuestionIds.add(question.id);
             
             // Remove the ignored question
             pendingQuestions.splice(questionIndex, 1);
