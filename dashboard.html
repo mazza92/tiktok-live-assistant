@@ -2836,28 +2836,7 @@
             color: white;
         }
         
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #6c757d;
-            transition: all 0.3s ease;
-        }
-        
-        .status-indicator.connected {
-            background: #28a745;
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-        }
-        
-        .status-indicator.connecting {
-            background: #ffc107;
-            animation: pulse 1.5s infinite;
-        }
-        
-        .status-indicator.error {
-            background: #dc3545;
-            animation: pulse 1s infinite;
-        }
+
         
         .connection-details {
             display: flex;
@@ -3535,7 +3514,6 @@
             </div>
             <div class="current-stream-info" id="currentStreamInfo">
                 <div class="stream-status-container">
-                    <div class="status-indicator" id="streamStatusIndicator"></div>
                     <span id="streamStatus">Not connected</span>
                     <span id="streamerName"></span>
                 </div>
@@ -4042,13 +4020,7 @@
             const disconnectBtn = document.getElementById('disconnectBtn');
             const streamStatus = document.getElementById('streamStatus');
             const streamerName = document.getElementById('streamerName');
-            const statusIndicator = document.getElementById('streamStatusIndicator');
             const connectionDetails = document.getElementById('connectionDetails');
-            
-            // Update status indicator
-            if (statusIndicator) {
-                statusIndicator.className = `status-indicator ${state}`;
-            }
             
             switch (state) {
                 case 'connecting':
@@ -4128,6 +4100,9 @@
             
             // Update UI to connecting state
             updateConnectionUI('connecting', username);
+            
+            // Clear any existing gift queue to prevent overwhelm during connection
+            clearGiftQueue();
             
             // Save connection state
             saveConnectionState({
@@ -4209,6 +4184,9 @@
             
             // Clear connection state
             clearConnectionState();
+            
+            // Clear gift queue when disconnecting
+            clearGiftQueue();
             
             // Send disconnect request to server
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -6387,6 +6365,13 @@
         let autoCloseDelay = 8000; // 8 seconds before auto-close
 
         function showGiftAlert(giftData) {
+            // Check if we're in connecting state - don't show gifts during connection
+            const streamStatus = document.getElementById('streamStatus');
+            if (streamStatus && streamStatus.textContent.includes('Connecting')) {
+                console.log('🎁 [GIFT ALERT] Skipping gift during connection:', giftData.nickname);
+                return;
+            }
+            
             console.log('🎁 [GIFT ALERT] Received gift:', giftData.nickname, giftData.gift?.name);
             
             // Add gift to queue
@@ -6437,6 +6422,13 @@
         function processGiftQueue() {
             if (giftQueue.length === 0) {
                 isShowingGift = false;
+                return;
+            }
+            
+            // Check if we're in connecting state - don't process gifts during connection
+            const streamStatus = document.getElementById('streamStatus');
+            if (streamStatus && streamStatus.textContent.includes('Connecting')) {
+                console.log('🎁 [GIFT ALERT] Skipping gift processing during connection');
                 return;
             }
             
@@ -6517,8 +6509,22 @@
                 giftDisplayTimer = null;
             }
             
-            closeGiftAlert();
+            // Force close any open gift alert
+            const overlay = document.getElementById('giftAlertOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+            
+            // Hide gift counter badge
+            const giftCounterBadge = document.getElementById('giftCounterBadge');
+            if (giftCounterBadge) {
+                giftCounterBadge.style.display = 'none';
+            }
+            
             updateGiftQueueDisplay();
+            
+            // Add activity item to show gift queue was cleared
+            addActivityItem('🚨', 'System', 'Gift queue cleared - all pending gifts removed');
         }
         
         // Gift queue status function
