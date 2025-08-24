@@ -3719,10 +3719,10 @@
                 <div class="ai-prompt" id="aiGiftPrompt"></div>
             </div>
             <div class="gift-alert-actions">
-                <button class="gift-action-btn shoutout-btn" onclick="generateShoutout()">🎤 Shoutout</button>
-                <button class="gift-action-btn thank-btn" onclick="generateThankYou()">🙏 Thank You</button>
-                <button class="gift-action-btn close-btn" onclick="closeGiftAlert()">✕</button>
-                <button class="gift-action-btn emergency-btn" onclick="clearGiftQueue()" title="Emergency: Clear all pending gifts">🚨 Clear All</button>
+                <button class="gift-action-btn shoutout-btn" onclick="generateShoutout()" type="button">🎤 Shoutout</button>
+                <button class="gift-action-btn thank-btn" onclick="generateThankYou()" type="button">🙏 Thank You</button>
+                <button class="gift-action-btn close-btn" onclick="closeGiftAlert()" type="button">✕</button>
+                <button class="gift-action-btn emergency-btn" onclick="clearGiftQueue()" type="button" title="Emergency: Clear all pending gifts">🚨 Clear All</button>
             </div>
         </div>
             </div>
@@ -6588,9 +6588,14 @@
         }
 
         function closeGiftAlert() {
+            console.log('✕ [CLOSE] Close button clicked - closing gift alert');
+            
             const overlay = document.getElementById('giftAlertOverlay');
+            console.log('✕ [CLOSE] Overlay element found:', overlay);
+            
             if (overlay) {
                 overlay.classList.add('hidden');
+                console.log('✕ [CLOSE] Overlay hidden successfully');
             }
             
             // Hide gift counter badge
@@ -6641,28 +6646,44 @@
         }
 
         function generateShoutout() {
-            if (!currentGiftData) return;
+            console.log('🎤 [SHOUTOUT] Button clicked - starting shoutout generation');
             
-            const { nickname, gift, diamondCount } = currentGiftData;
-            const giftName = gift?.name || 'amazing gift';
+            // Get current gift data from the displayed gift alert
+            const senderName = document.getElementById('giftSenderName');
+            const giftName = document.getElementById('giftName');
+            const giftCounterBadge = document.getElementById('giftCounterBadge');
+            
+            console.log('🎤 [SHOUTOUT] Elements found:', { senderName, giftName, giftCounterBadge });
+            
+            if (!senderName || !giftName) {
+                console.warn('⚠️ [SHOUTOUT] Gift data not available');
+                return;
+            }
+            
+            const nickname = senderName.textContent.split(' (')[0]; // Remove gift count if present
+            const giftNameText = giftName.textContent;
+            const giftCount = giftCounterBadge && giftCounterBadge.style.display !== 'none' ? 
+                parseInt(giftCounterBadge.textContent) : 1;
+            
+            console.log('🎤 [SHOUTOUT] Generating shoutout for:', nickname, giftNameText, giftCount);
             
             // Generate shoutout message based on gift count
             let shoutoutMessages;
             if (giftCount > 1) {
                 shoutoutMessages = [
-                    `🔥 SHOUTOUT to ${nickname} for ${giftCount} AMAZING gifts including ${giftName}! You're absolutely legendary! 🔥`,
-                    `🎉 ${nickname} just dropped ${giftCount} gifts including ${giftName}! You're the real MVP! 🎉`,
-                    `💫 ${nickname} with ${giftCount} gifts including ${giftName}! You're making this stream incredible! 💫`,
-                    `🌟 ${nickname} thank you for ${giftCount} gifts including ${giftName}! You're absolutely amazing! 🌟`,
-                    `🚀 ${nickname} just sent ${giftCount} gifts including ${giftName}! You're taking this stream to the next level! 🚀`
+                    `🔥 SHOUTOUT to ${nickname} for ${giftCount} AMAZING gifts including ${giftNameText}! You're absolutely legendary! 🔥`,
+                    `🎉 ${nickname} just dropped ${giftCount} gifts including ${giftNameText}! You're the real MVP! 🎉`,
+                    `💫 ${nickname} with ${giftCount} gifts including ${giftNameText}! You're making this stream incredible! 💫`,
+                    `🌟 ${nickname} thank you for ${giftCount} gifts including ${giftNameText}! You're absolutely amazing! 🌟`,
+                    `🚀 ${nickname} just sent ${giftCount} gifts including ${giftNameText}! You're taking this stream to the next level! 🚀`
                 ];
             } else {
                 shoutoutMessages = [
-                    `🔥 SHOUTOUT to ${nickname} for the ${giftName}! You're absolutely amazing! 🔥`,
-                    `🎉 ${nickname} just dropped ${giftName}! You're the real MVP! 🎉`,
-                    `💫 ${nickname} with the ${giftName}! You're making this stream incredible! 💫`,
-                    `🌟 ${nickname} thank you for the ${giftName}! You're absolutely legendary! 🌟`,
-                    `🚀 ${nickname} just sent ${giftName}! You're taking this stream to the next level! 🚀`
+                    `🔥 SHOUTOUT to ${nickname} for the ${giftNameText}! You're absolutely amazing! 🔥`,
+                    `🎉 ${nickname} just dropped ${giftNameText}! You're the real MVP! 🎉`,
+                    `💫 ${nickname} with the ${giftNameText}! You're making this stream incredible! 💫`,
+                    `🌟 ${nickname} thank you for the ${giftNameText}! You're absolutely legendary! 🌟`,
+                    `🚀 ${nickname} just sent ${giftNameText}! You're taking this stream to the next level! 🚀`
                 ];
             }
             
@@ -6679,28 +6700,44 @@
         }
 
         function generateThankYou() {
-            if (!currentGiftData) return;
+            console.log('🙏 [THANK YOU] Button clicked - starting thank you generation');
             
-            const { nickname, gift, diamondCount } = currentGiftData;
-            const giftName = gift?.name || 'amazing gift';
+            // Get current gift data from the displayed gift alert
+            const senderName = document.getElementById('giftSenderName');
+            const giftName = document.getElementById('giftName');
+            const giftCounterBadge = document.getElementById('giftCounterBadge');
+            
+            console.log('🙏 [THANK YOU] Elements found:', { senderName, giftName, giftCounterBadge });
+            
+            if (!senderName || !giftName) {
+                console.warn('⚠️ [THANK YOU] Gift data not available');
+                return;
+            }
+            
+            const nickname = senderName.textContent.split(' (')[0]; // Remove gift count if present
+            const giftNameText = giftName.textContent;
+            const giftCount = giftCounterBadge && giftCounterBadge.style.display !== 'none' ? 
+                parseInt(giftCounterBadge.textContent) : 1;
+            
+            console.log('🙏 [THANK YOU] Generating thank you for:', nickname, giftNameText, giftCount);
             
             // Generate thank you message based on gift count
             let thankYouMessages;
             if (giftCount > 1) {
                 thankYouMessages = [
-                    `🙏 Thank you so much ${nickname} for ${giftCount} amazing gifts including ${giftName}! You're absolutely incredible! 🙏`,
-                    `💝 ${nickname}, I'm so grateful for ${giftCount} gifts including ${giftName}! You're the best! 💝`,
-                    `🥰 ${nickname} thank you for ${giftCount} gifts including ${giftName}! You're making my day! 🥰`,
-                    `✨ ${nickname} you're amazing! Thank you for ${giftCount} gifts including ${giftName}! ✨`,
-                    `💖 ${nickname} I can't thank you enough for ${giftCount} gifts including ${giftName}! You're wonderful! 💖`
+                    `🙏 Thank you so much ${nickname} for ${giftCount} amazing gifts including ${giftNameText}! You're absolutely incredible! 🙏`,
+                    `💝 ${nickname}, I'm so grateful for ${giftCount} gifts including ${giftNameText}! You're the best! 💝`,
+                    `🥰 ${nickname} thank you for ${giftCount} gifts including ${giftNameText}! You're making my day! 🥰`,
+                    `✨ ${nickname} you're amazing! Thank you for ${giftCount} gifts including ${giftNameText}! ✨`,
+                    `💖 ${nickname} I can't thank you enough for ${giftCount} gifts including ${giftNameText}! You're wonderful! 💖`
                 ];
             } else {
                 thankYouMessages = [
-                    `🙏 Thank you so much ${nickname} for the ${giftName}! You're incredible! 🙏`,
-                    `💝 ${nickname}, I'm so grateful for the ${giftName}! You're the best! 💝`,
-                    `🥰 ${nickname} thank you for the ${giftName}! You're making my day! 🥰`,
-                    `✨ ${nickname} you're amazing! Thank you for the ${giftName}! ✨`,
-                    `💖 ${nickname} I can't thank you enough for the ${giftName}! You're wonderful! 💖`
+                    `🙏 Thank you so much ${nickname} for the ${giftNameText}! You're incredible! 🙏`,
+                    `💝 ${nickname}, I'm so grateful for the ${giftNameText}! You're the best! 💝`,
+                    `🥰 ${nickname} thank you for the ${giftNameText}! You're making my day! 🥰`,
+                    `✨ ${nickname} you're amazing! Thank you for the ${giftNameText}! ✨`,
+                    `💖 ${nickname} I can't thank you enough for the ${giftNameText}! You're wonderful! 💖`
                 ];
             }
             
