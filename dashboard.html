@@ -2756,9 +2756,64 @@
         }
 
         .current-stream-info {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stream-status-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
             color: white;
-            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .status-indicator.connected {
+            background: #28a745;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+        
+        .status-indicator.connecting {
+            background: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-indicator.error {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        
+        .connection-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: #6c757d;
+            padding: 5px 10px;
+            background: rgba(108, 117, 125, 0.1);
+            border-radius: 15px;
+        }
+        
+        .connection-time {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .connection-duration {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         #streamStatus {
@@ -3439,13 +3494,20 @@
         <!-- Username Input Section -->
         <div class="username-section">
             <div class="username-input-container">
-                <input type="text" id="usernameInput" placeholder="Enter TikTok username (without @)" value="kameltoetonybu">
+                <input type="text" id="usernameInput" placeholder="Enter TikTok username (without @)" value="">
                 <button id="connectBtn" onclick="connectToStream()">🔗 Connect</button>
                 <button id="disconnectBtn" onclick="disconnectFromStream()" style="display: none;">❌ Disconnect</button>
             </div>
             <div class="current-stream-info" id="currentStreamInfo">
-                <span id="streamStatus">Not connected</span>
-                <span id="streamerName"></span>
+                <div class="stream-status-container">
+                    <div class="status-indicator" id="streamStatusIndicator"></div>
+                    <span id="streamStatus">Not connected</span>
+                    <span id="streamerName"></span>
+                </div>
+                <div class="connection-details" id="connectionDetails" style="display: none;">
+                    <span class="connection-time" id="connectionTime"></span>
+                    <span class="connection-duration" id="connectionDuration"></span>
+                </div>
             </div>
         </div>
 
@@ -3859,6 +3921,166 @@
             }
         }
 
+        // Connection state management
+        const CONNECTION_STORAGE_KEY = 'tiktok_live_connection_state';
+        
+        // Load connection state from localStorage
+        function loadConnectionState() {
+            try {
+                const savedState = localStorage.getItem(CONNECTION_STORAGE_KEY);
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    console.log('📱 [STATE] Loaded saved connection state:', state);
+                    return state;
+                }
+            } catch (error) {
+                console.error('❌ [STATE] Error loading connection state:', error);
+            }
+            return null;
+        }
+        
+        // Save connection state to localStorage
+        function saveConnectionState(state) {
+            try {
+                localStorage.setItem(CONNECTION_STORAGE_KEY, JSON.stringify(state));
+                console.log('💾 [STATE] Saved connection state:', state);
+            } catch (error) {
+                console.error('❌ [STATE] Error saving connection state:', error);
+            }
+        }
+        
+        // Clear connection state from localStorage
+        function clearConnectionState() {
+            try {
+                localStorage.removeItem(CONNECTION_STORAGE_KEY);
+                console.log('🗑️ [STATE] Cleared connection state');
+            } catch (error) {
+                console.error('❌ [STATE] Error clearing connection state:', error);
+            }
+        }
+        
+        // Restore connection state on page load
+        function restoreConnectionState() {
+            const savedState = loadConnectionState();
+            if (savedState && savedState.isConnected && savedState.username) {
+                console.log('🔄 [STATE] Restoring connection to:', savedState.username);
+                
+                // Update UI to show connected state
+                document.getElementById('usernameInput').value = savedState.username;
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('disconnectBtn').style.display = 'inline-block';
+                document.getElementById('streamStatus').textContent = 'Reconnecting...';
+                document.getElementById('streamerName').textContent = `@${savedState.username}`;
+                
+                // Attempt to reconnect
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ 
+                            type: 'changeUsername', 
+                            username: savedState.username 
+                        }));
+                        console.log('📤 [STATE] Sent reconnection request for:', savedState.username);
+                    } else if (window.httpPollInterval) {
+                        connectViaHttp(savedState.username);
+                    } else {
+                        // Wait for WebSocket connection then reconnect
+                        connectWebSocket();
+                        setTimeout(() => {
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ 
+                                    type: 'changeUsername', 
+                                    username: savedState.username 
+                                }));
+                            }
+                        }, 2000);
+                    }
+                }, 1000);
+            } else {
+                console.log('📱 [STATE] No saved connection state, starting fresh');
+                updateConnectionUI('disconnected', '');
+            }
+        }
+        
+        // Update connection UI based on state
+        function updateConnectionUI(state, username = '') {
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const streamStatus = document.getElementById('streamStatus');
+            const streamerName = document.getElementById('streamerName');
+            const statusIndicator = document.getElementById('streamStatusIndicator');
+            const connectionDetails = document.getElementById('connectionDetails');
+            
+            // Update status indicator
+            if (statusIndicator) {
+                statusIndicator.className = `status-indicator ${state}`;
+            }
+            
+            switch (state) {
+                case 'connecting':
+                    connectBtn.style.display = 'none';
+                    disconnectBtn.style.display = 'inline-block';
+                    streamStatus.textContent = 'Connecting...';
+                    streamerName.textContent = username ? `@${username}` : '';
+                    if (connectionDetails) connectionDetails.style.display = 'none';
+                    break;
+                    
+                case 'connected':
+                    connectBtn.style.display = 'none';
+                    disconnectBtn.style.display = 'inline-block';
+                    streamStatus.textContent = 'Connected';
+                    streamerName.textContent = username ? `@${username}` : '';
+                    if (connectionDetails) {
+                        connectionDetails.style.display = 'flex';
+                        updateConnectionDetails(username);
+                    }
+                    break;
+                    
+                case 'disconnected':
+                    connectBtn.style.display = 'inline-block';
+                    disconnectBtn.style.display = 'none';
+                    streamStatus.textContent = 'Not connected';
+                    streamerName.textContent = '';
+                    if (connectionDetails) connectionDetails.style.display = 'none';
+                    break;
+                    
+                case 'error':
+                    connectBtn.style.display = 'inline-block';
+                    disconnectBtn.style.display = 'none';
+                    streamStatus.textContent = 'Connection Error';
+                    streamerName.textContent = username ? `@${username}` : '';
+                    if (connectionDetails) connectionDetails.style.display = 'none';
+                    break;
+            }
+        }
+        
+        // Update connection details display
+        function updateConnectionDetails(username) {
+            const connectionTime = document.getElementById('connectionTime');
+            const connectionDuration = document.getElementById('connectionDuration');
+            
+            if (connectionTime && connectionDuration) {
+                const now = new Date();
+                const savedState = loadConnectionState();
+                
+                if (savedState && savedState.timestamp) {
+                    const connectionDate = new Date(savedState.timestamp);
+                    const duration = Math.floor((now - connectionDate) / 1000);
+                    
+                    connectionTime.textContent = `🕐 ${connectionDate.toLocaleTimeString()}`;
+                    connectionDuration.textContent = `⏱️ ${formatDuration(duration)}`;
+                }
+            }
+        }
+        
+        // Format duration in human-readable format
+        function formatDuration(seconds) {
+            if (seconds < 60) return `${seconds}s`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+        
         // Username management functions
         function connectToStream() {
             const username = document.getElementById('usernameInput').value.trim();
@@ -3869,18 +4091,32 @@
             
             console.log('🔗 [USERNAME] Attempting to connect to:', username);
             
-            // Update UI
-            document.getElementById('connectBtn').style.display = 'none';
-            document.getElementById('disconnectBtn').style.display = 'inline-block';
-            document.getElementById('streamStatus').textContent = 'Connecting...';
-            document.getElementById('streamerName').textContent = `@${username}`;
+            // Update UI to connecting state
+            updateConnectionUI('connecting', username);
+            
+            // Save connection state
+            saveConnectionState({
+                isConnected: false,
+                username: username,
+                timestamp: Date.now(),
+                status: 'connecting'
+            });
             
             // Set connection timeout (60 seconds - increased for slower connections)
             const connectionTimeout = setTimeout(() => {
                 console.log('⏰ [USERNAME] Connection timeout reached');
-                document.getElementById('streamStatus').textContent = 'Connection Timeout';
-                document.getElementById('connectBtn').style.display = 'inline-block';
-                document.getElementById('disconnectBtn').style.display = 'none';
+                
+                // Update UI to error state
+                updateConnectionUI('error', username);
+                
+                // Update connection state
+                saveConnectionState({
+                    isConnected: false,
+                    username: username,
+                    timestamp: Date.now(),
+                    status: 'timeout'
+                });
+                
                 alert('Connection timeout. Please check if the username is correct and the user is live streaming.');
             }, 60000);
             
@@ -3933,11 +4169,11 @@
         function disconnectFromStream() {
             console.log('❌ [USERNAME] Disconnecting from current stream');
             
-            // Update UI
-            document.getElementById('connectBtn').style.display = 'inline-block';
-            document.getElementById('disconnectBtn').style.display = 'none';
-            document.getElementById('streamStatus').textContent = 'Disconnected';
-            document.getElementById('streamerName').textContent = '';
+            // Update UI to disconnected state
+            updateConnectionUI('disconnected', '');
+            
+            // Clear connection state
+            clearConnectionState();
             
             // Send disconnect request to server
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -4066,12 +4302,21 @@
                             case 'usernameChanged':
                                 console.log('🔄 Username changed:', message.data);
                                 if (message.data && message.data.username) {
-                                    document.getElementById('streamStatus').textContent = 'Connected';
-                                    document.getElementById('streamerName').textContent = `@${message.data.username}`;
+                                    // Update UI to connected state
+                                    updateConnectionUI('connected', message.data.username);
+                                    
+                                    // Save successful connection state
+                                    saveConnectionState({
+                                        isConnected: true,
+                                        username: message.data.username,
+                                        timestamp: Date.now(),
+                                        status: 'connected'
+                                    });
+                                    
                                     addActivityItem('🔄', 'System', message.data.message || 'Username changed successfully', null, new Date());
                                 } else {
                                     console.warn('⚠️ Username changed message missing data:', message);
-                                    document.getElementById('streamStatus').textContent = 'Connected';
+                                    updateConnectionUI('connected', '');
                                     addActivityItem('🔄', 'System', 'Username changed successfully', null, new Date());
                                 }
                                 
@@ -7079,6 +7324,9 @@
             // Enable mobile optimizations first
             enableMobileOptimizations();
             
+            // Restore connection state from localStorage
+            restoreConnectionState();
+            
             connectWebSocket(); // Changed from initWebSocket()
             
             // Add initial activity item
@@ -7090,6 +7338,14 @@
                     testWebSocketConnection();
                 }
             }, 30000);
+            
+            // Update connection duration every second when connected
+            setInterval(() => {
+                const savedState = loadConnectionState();
+                if (savedState && savedState.isConnected && savedState.username) {
+                    updateConnectionDetails(savedState.username);
+                }
+            }, 1000);
         });
     </script>
 </body>
