@@ -793,6 +793,19 @@
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
+        
+        .emergency-btn {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            font-weight: bold;
+        }
+        
+        .emergency-btn:hover {
+            background: linear-gradient(135deg, #c82333, #a71e2a);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+        }
 
         /* Animations */
         @keyframes fadeIn {
@@ -2868,6 +2881,53 @@
         .refresh-btn:active {
             transform: translateY(0);
         }
+        
+        /* Gift Queue Status Styles */
+        .gift-queue-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            border-radius: 20px;
+            padding: 8px 12px;
+            margin-left: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        .queue-icon {
+            font-size: 16px;
+        }
+        
+        .queue-count {
+            background: #ffc107;
+            color: #000;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .queue-clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .queue-clear-btn:hover {
+            background: #c82333;
+            transform: scale(1.2);
+        }
 
         /* Responsive design for smaller screens */
         @media (max-width: 768px) {
@@ -3366,6 +3426,11 @@
         <div class="connection-status" id="connectionStatus">
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
+            <div class="gift-queue-status" id="giftQueueStatus" style="display: none;">
+                <span class="queue-icon">🎁</span>
+                <span class="queue-count" id="queueCount">0</span>
+                <button class="queue-clear-btn" onclick="clearGiftQueue()" title="Clear all pending gifts">🚨</button>
+            </div>
         </div>
     </div>
 
@@ -3544,6 +3609,7 @@
                 <button class="gift-action-btn shoutout-btn" onclick="generateShoutout()">🎤 Shoutout</button>
                 <button class="gift-action-btn thank-btn" onclick="generateThankYou()">🙏 Thank You</button>
                 <button class="gift-action-btn close-btn" onclick="closeGiftAlert()">✕</button>
+                <button class="gift-action-btn emergency-btn" onclick="clearGiftQueue()" title="Emergency: Clear all pending gifts">🚨 Clear All</button>
             </div>
         </div>
             </div>
@@ -6032,55 +6098,88 @@
             console.log(`🔄 [FOLLOWERS] Updated followers list with ${followersToShow.length} followers`);
         }
 
-        // Gift Alert Functions
-        let currentGiftData = null;
-        let currentGiftSender = null;
-        let giftCount = 0;
-        let giftTimer = null;
+        // Gift Alert Functions with Queue System
+        let giftQueue = [];
+        let isShowingGift = false;
+        let giftDisplayTimer = null;
+        let maxGiftQueueSize = 10; // Maximum gifts to queue
+        let giftDisplayDuration = 3000; // 3 seconds per gift
+        let autoCloseDelay = 8000; // 8 seconds before auto-close
 
         function showGiftAlert(giftData) {
-            const isSameSender = currentGiftSender === giftData.nickname;
+            console.log('🎁 [GIFT ALERT] Received gift:', giftData.nickname, giftData.gift?.name);
             
-            if (isSameSender) {
-                // Same user sending consecutive gifts - update existing popup
-                giftCount++;
-                updateGiftAlertForSameUser(giftData);
-                resetGiftTimer();
+            // Add gift to queue
+            addGiftToQueue(giftData);
+            
+            // Start processing if not already showing
+            if (!isShowingGift) {
+                processGiftQueue();
+            }
+        }
+        
+        function addGiftToQueue(giftData) {
+            // Check if sender already has gifts in queue
+            const existingGiftIndex = giftQueue.findIndex(g => g.nickname === giftData.nickname);
+            
+            if (existingGiftIndex !== -1) {
+                // Merge with existing gift from same sender
+                const existingGift = giftQueue[existingGiftIndex];
+                existingGift.giftCount = (existingGift.giftCount || 1) + 1;
+                existingGift.totalDiamonds = (existingGift.totalDiamonds || 0) + (giftData.diamondCount || 0);
+                existingGift.totalValue = (existingGift.totalValue || 0) + (giftData.usdValue || 0);
+                existingGift.timestamp = Date.now(); // Update timestamp
+                console.log(`🎁 [GIFT ALERT] Merged gift from ${giftData.nickname}, total: ${existingGift.giftCount}`);
             } else {
-                // Different user - show new popup
-                currentGiftSender = giftData.nickname;
-                giftCount = 1;
-                currentGiftData = giftData;
-                showNewGiftAlert(giftData);
+                // Add new gift to queue
+                const queuedGift = {
+                    ...giftData,
+                    giftCount: 1,
+                    totalDiamonds: giftData.diamondCount || 0,
+                    totalValue: giftData.usdValue || 0,
+                    timestamp: Date.now()
+                };
+                
+                giftQueue.push(queuedGift);
+                console.log(`🎁 [GIFT ALERT] Added new gift to queue from ${giftData.nickname}`);
             }
+            
+            // Limit queue size to prevent memory issues
+            if (giftQueue.length > maxGiftQueueSize) {
+                const removedGift = giftQueue.shift();
+                console.log(`🎁 [GIFT ALERT] Queue full, removed oldest gift from ${removedGift.nickname}`);
+            }
+            
+            // Update the display
+            updateGiftQueueDisplay();
         }
 
-        function updateGiftAlertForSameUser(giftData) {
-            // Update the existing gift alert with accumulated information
-            const senderName = document.getElementById('giftSenderName');
-            const giftName = document.getElementById('giftName');
-            const giftValue = document.getElementById('giftValue');
-            const aiPrompt = document.getElementById('aiGiftPrompt');
-            const giftCounterBadge = document.getElementById('giftCounterBadge');
-            
-            if (senderName) senderName.textContent = `${giftData.nickname} (${giftCount} gifts)`;
-            if (giftName) giftName.textContent = `${giftData.gift?.name || 'Unknown Gift'} +${giftCount > 1 ? ` (${giftCount} total)` : ''}`;
-            if (giftValue) giftValue.textContent = `${giftData.diamondCount || 0} diamonds`;
-            
-            // Show and update gift counter badge
-            if (giftCounterBadge) {
-                giftCounterBadge.style.display = 'flex';
-                giftCounterBadge.textContent = giftCount;
+        function processGiftQueue() {
+            if (giftQueue.length === 0) {
+                isShowingGift = false;
+                return;
             }
             
-            // Update AI prompt for multiple gifts
-            const prompt = generateGiftPrompt(giftData, giftCount);
-            if (aiPrompt) {
-                aiPrompt.innerHTML = `<div class="ai-prompt-text">🤖 ${prompt}</div>`;
-            }
+            isShowingGift = true;
+            const giftData = giftQueue.shift();
+            
+            console.log(`🎁 [GIFT ALERT] Processing gift from ${giftData.nickname}, ${giftData.giftCount} gifts`);
+            
+            // Display the gift
+            displayGiftAlert(giftData);
+            
+            // Schedule next gift or finish
+            giftDisplayTimer = setTimeout(() => {
+                closeGiftAlert();
+                
+                // Process next gift after a short delay
+                setTimeout(() => {
+                    processGiftQueue();
+                }, 500);
+            }, giftDisplayDuration);
         }
-
-        function showNewGiftAlert(giftData) {
+        
+        function displayGiftAlert(giftData) {
             // Update gift alert content
             const senderPic = document.getElementById('giftSenderPic');
             const senderName = document.getElementById('giftSenderName');
@@ -6090,17 +6189,22 @@
             const giftCounterBadge = document.getElementById('giftCounterBadge');
             
             if (senderPic) senderPic.src = giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+';
-            if (senderName) senderName.textContent = giftData.nickname || 'Anonymous';
+            if (senderName) senderName.textContent = `${giftData.nickname}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}`;
             if (giftName) giftName.textContent = giftData.gift?.name || 'Unknown Gift';
-            if (giftValue) giftValue.textContent = `${giftData.diamondCount || 0} diamonds`;
+            if (giftValue) giftValue.textContent = `${giftData.totalDiamonds || 0} diamonds ($${(giftData.totalValue || 0).toFixed(2)})`;
             
-            // Hide gift counter badge for new users
+            // Show gift counter badge for multiple gifts
             if (giftCounterBadge) {
-                giftCounterBadge.style.display = 'none';
+                if (giftData.giftCount > 1) {
+                    giftCounterBadge.style.display = 'flex';
+                    giftCounterBadge.textContent = giftData.giftCount;
+                } else {
+                    giftCounterBadge.style.display = 'none';
+                }
             }
             
             // Generate AI prompt
-            const prompt = generateGiftPrompt(giftData, giftCount);
+            const prompt = generateGiftPrompt(giftData, giftData.giftCount);
             if (aiPrompt) {
                 aiPrompt.innerHTML = `<div class="ai-prompt-text">🤖 ${prompt}</div>`;
             }
@@ -6111,20 +6215,52 @@
                 overlay.classList.remove('hidden');
             }
             
-            // Start auto-hide timer for new gift alerts
-            resetGiftTimer();
+            // Auto-close timer
+            setTimeout(() => {
+                if (isShowingGift) {
+                    closeGiftAlert();
+                    setTimeout(() => {
+                        processGiftQueue();
+                    }, 500);
+                }
+            }, autoCloseDelay);
         }
 
-        function resetGiftTimer() {
-            // Clear existing timer
-            if (giftTimer) {
-                clearTimeout(giftTimer);
+        // Emergency gift queue clear function
+        function clearGiftQueue() {
+            console.log('🚨 [GIFT ALERT] Emergency clearing gift queue');
+            giftQueue = [];
+            isShowingGift = false;
+            
+            if (giftDisplayTimer) {
+                clearTimeout(giftDisplayTimer);
+                giftDisplayTimer = null;
             }
             
-            // Set new timer for 5 seconds
-            giftTimer = setTimeout(() => {
-                closeGiftAlert();
-            }, 5000);
+            closeGiftAlert();
+            updateGiftQueueDisplay();
+        }
+        
+        // Gift queue status function
+        function getGiftQueueStatus() {
+            return {
+                queueLength: giftQueue.length,
+                isShowing: isShowingGift,
+                nextGift: giftQueue[0] || null
+            };
+        }
+        
+        // Update gift queue status display
+        function updateGiftQueueDisplay() {
+            const queueStatus = document.getElementById('giftQueueStatus');
+            const queueCount = document.getElementById('queueCount');
+            
+            if (giftQueue.length > 0) {
+                if (queueStatus) queueStatus.style.display = 'flex';
+                if (queueCount) queueCount.textContent = giftQueue.length;
+            } else {
+                if (queueStatus) queueStatus.style.display = 'none';
+            }
         }
 
         function closeGiftAlert() {
@@ -6139,16 +6275,14 @@
                 giftCounterBadge.style.display = 'none';
             }
             
-            // Reset all gift tracking variables
-            currentGiftData = null;
-            currentGiftSender = null;
-            giftCount = 0;
-            
-            // Clear the gift timer
-            if (giftTimer) {
-                clearTimeout(giftTimer);
-                giftTimer = null;
+            // Clear display timer
+            if (giftDisplayTimer) {
+                clearTimeout(giftDisplayTimer);
+                giftDisplayTimer = null;
             }
+            
+            // Mark as not showing
+            isShowingGift = false;
         }
 
         function generateGiftPrompt(giftData, giftCount = 1) {
