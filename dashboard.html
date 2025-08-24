@@ -3912,6 +3912,11 @@
                         <option value="50">50</option>
                     </select>
                 </div>
+                <div class="control-group">
+                    <button class="control-btn" onclick="togglePerformanceMode()" id="perfToggleBtn" title="Toggle between full feed and lightweight mode">
+                        🚀 Performance Mode
+                    </button>
+                </div>
                 <button class="control-btn" onclick="toggleActivityPause()" id="pauseBtn">
                     ⏸️ Pause
                 </button>
@@ -5985,7 +5990,10 @@
             if (followersGainsCountEl) followersGainsCountEl.textContent = activityCounters.followersGains;
         }
 
-        // Smart activity item management
+        // Smart activity item management with memory optimization
+        const MAX_ACTIVITY_ITEMS = 200; // Limit total stored items
+        const ACTIVITY_CLEANUP_INTERVAL = 5 * 60 * 1000; // Cleanup every 5 minutes
+        
         function addActivityItem(icon, nickname, content, sentiment = null, timestamp = null) {
             if (activityPaused) return;
             
@@ -5999,14 +6007,105 @@
                 type: getActivityType(icon)
             };
             
-            // Add to activity items array (no more auto-clear)
+            // Add to activity items array with memory management
             activityItems.unshift(activityItem);
             
-            // Update display
-            updateActivityDisplay();
+            // Limit total items to prevent memory issues
+            if (activityItems.length > MAX_ACTIVITY_ITEMS) {
+                // Remove oldest items, keeping only the most recent
+                activityItems = activityItems.slice(0, MAX_ACTIVITY_ITEMS);
+                console.log('🧹 [ACTIVITY] Cleaned up old activity items, kept latest', MAX_ACTIVITY_ITEMS);
+            }
+            
+            // Update display (debounced for performance)
+            debounceUpdateActivityDisplay();
             
             // Update counters
             updateActivityCounters(activityItem.type);
+        }
+        
+        // Debounced display update for better performance
+        let activityDisplayTimeout = null;
+        function debounceUpdateActivityDisplay() {
+            if (activityDisplayTimeout) {
+                clearTimeout(activityDisplayTimeout);
+            }
+            activityDisplayTimeout = setTimeout(() => {
+                updateActivityDisplay();
+                activityDisplayTimeout = null;
+            }, 100); // 100ms debounce
+        }
+        
+        // Performance monitoring and automatic cleanup
+        function startActivityCleanup() {
+            setInterval(() => {
+                const currentTime = new Date();
+                const oneHourAgo = new Date(currentTime.getTime() - 60 * 60 * 1000);
+                
+                // Remove old activity items to free memory
+                const initialLength = activityItems.length;
+                activityItems = activityItems.filter(item => {
+                    const itemTime = new Date(item.timestamp);
+                    return itemTime > oneHourAgo;
+                });
+                
+                const removedCount = initialLength - activityItems.length;
+                if (removedCount > 0) {
+                    console.log(`🧹 [ACTIVITY] Cleaned up ${removedCount} old activity items`);
+                    
+                    // Update display if items were removed
+                    debounceUpdateActivityDisplay();
+                }
+                
+                // Log memory usage for monitoring
+                if (activityItems.length > 150) {
+                    console.warn(`⚠️ [ACTIVITY] High activity count: ${activityItems.length}/${MAX_ACTIVITY_ITEMS}`);
+                }
+            }, ACTIVITY_CLEANUP_INTERVAL);
+        }
+        
+        // Alternative: Lightweight activity summary instead of full feed
+        function addActivitySummary(icon, nickname, content, type = 'other') {
+            // Only add summary for high-priority activities
+            if (type === 'gift' || type === 'comment' || icon === '🤖' || icon === '🎤') {
+                addActivityItem(icon, nickname, content);
+            } else {
+                // For low-priority items, just update counters without storing full details
+                updateActivityCounters(type);
+            }
+        }
+        
+        // Performance mode toggle
+        let performanceMode = false;
+        function togglePerformanceMode() {
+            performanceMode = !performanceMode;
+            const perfBtn = document.getElementById('perfToggleBtn');
+            
+            if (performanceMode) {
+                perfBtn.textContent = '🐌 Lightweight Mode';
+                perfBtn.title = 'Switch to full activity feed mode';
+                console.log('🚀 [PERFORMANCE] Enabled performance mode - lightweight activity tracking');
+                
+                // Clear old items and keep only recent important ones
+                const now = new Date();
+                const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+                activityItems = activityItems.filter(item => {
+                    const itemTime = new Date(item.timestamp);
+                    return itemTime > thirtyMinutesAgo && (
+                        item.type === 'gift' || 
+                        item.type === 'comment' || 
+                        item.icon === '🤖' || 
+                        item.icon === '🎤'
+                    );
+                });
+            } else {
+                perfBtn.textContent = '🚀 Performance Mode';
+                perfBtn.title = 'Switch to lightweight mode for better performance';
+                console.log('🐌 [PERFORMANCE] Disabled performance mode - full activity tracking');
+            }
+            
+            // Update display
+            updateActivityDisplay();
         }
 
         // Get activity type from icon
@@ -6019,12 +6118,12 @@
             return 'other';
         }
 
-        // Update activity display with pagination
+        // Update activity display with smart filtering and pagination
         function updateActivityDisplay() {
             const activityFeed = document.getElementById('activityFeed');
             if (!activityFeed) return;
             
-            // Filter by current tab
+            // Filter by current tab with smart defaults
             const currentTab = getCurrentActivityTab();
             let filteredItems = activityItems;
             
@@ -6035,6 +6134,20 @@
                     return true;
                 });
             }
+            
+            // Smart filtering: Show only recent and important items by default
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            
+            // Filter out old, low-priority items to reduce display load
+            filteredItems = filteredItems.filter(item => {
+                const itemTime = new Date(item.timestamp);
+                const isRecent = itemTime > oneHourAgo;
+                const isImportant = item.type === 'gift' || item.type === 'comment' || item.icon === '🤖' || item.icon === '🎤';
+                
+                // Keep recent items and important items, filter out old low-priority ones
+                return isRecent || isImportant;
+            });
             
             // Calculate pagination
             totalActivityPages = Math.ceil(filteredItems.length / maxActivityItems);
@@ -7462,6 +7575,9 @@
                     updateConnectionDetails(savedState.username);
                 }
             }, 1000);
+            
+            // Start activity cleanup system for performance optimization
+            startActivityCleanup();
         });
     </script>
 </body>
