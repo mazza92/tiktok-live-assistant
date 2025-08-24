@@ -2276,6 +2276,72 @@
             display: inline-block;
         }
         
+        /* Mobile-optimized actionable prompt layout */
+        @media (max-width: 768px) {
+            .actionable-prompt {
+                padding: 25px 20px;
+                margin-top: 20px;
+                border-radius: 20px;
+            }
+            
+            .prompt-content {
+                text-align: left;
+            }
+            
+            .prompt-icon {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+                text-align: center;
+            }
+            
+            .prompt-text {
+                font-size: 1.4rem;
+                line-height: 1.5;
+                margin-bottom: 12px;
+                text-align: left;
+                max-width: 100%;
+                word-wrap: break-word;
+                hyphens: auto;
+            }
+            
+            .prompt-trigger {
+                font-size: 0.85rem;
+                padding: 6px 12px;
+                text-align: center;
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            /* Ensure proper spacing on very small screens */
+            .actionable-prompt {
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+        }
+        
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .actionable-prompt {
+                padding: 20px 15px;
+                margin-top: 15px;
+            }
+            
+            .prompt-text {
+                font-size: 1.2rem;
+                line-height: 1.6;
+            }
+            
+            .prompt-icon {
+                font-size: 2rem;
+                margin-bottom: 12px;
+            }
+            
+            .prompt-trigger {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+            }
+        }
+        
         .prompt-history {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(15px);
@@ -2827,53 +2893,23 @@
             font-weight: bold;
         }
 
-        /* NEW: Completely redesigned connection status */
+        /* Clean, simple connection status */
         .connection-status {
-            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 16px 24px;
-            background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.15) 0%, 
-                rgba(255, 255, 255, 0.05) 100%);
-            border-radius: 20px;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            min-width: 200px;
-            max-width: 280px;
+            border-radius: 20px;
+            padding: 12px 20px;
+            backdrop-filter: blur(10px);
             transition: all 0.3s ease;
-            overflow: hidden;
         }
-
-        .connection-status::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.3) 50%, 
-                transparent 100%);
-        }
-
-        /* Status indicator removed - using simple text-based status */
 
         .status-text {
             color: #fff;
-            font-weight: 600;
-            font-size: 1rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            white-space: nowrap;
-            text-align: center;
-            letter-spacing: 0.5px;
-            position: relative;
-            z-index: 1;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
         /* NEW: Enhanced animations */
@@ -2881,27 +2917,7 @@
 
         /* connectedGlow animation removed */
 
-        /* SIMPLE: Status-based colors */
-        .connection-status.connecting {
-            border-color: #ffa500;
-            box-shadow: 
-                0 8px 32px rgba(255, 165, 0, 0.2),
-                inset 0 1px 0 rgba(255, 165, 0, 0.2);
-        }
 
-        .connection-status.connected {
-            border-color: #00ff88;
-            box-shadow: 
-                0 8px 32px rgba(0, 255, 136, 0.2),
-                inset 0 1px 0 rgba(0, 255, 136, 0.2);
-        }
-
-        .connection-status.disconnected {
-            border-color: #ff4757;
-            box-shadow: 
-                0 8px 32px rgba(255, 71, 87, 0.2),
-                inset 0 1px 0 rgba(255, 71, 87, 0.2);
-        }
 
         /* Hover effect */
         .connection-status:hover {
@@ -2998,17 +3014,36 @@
             }
             
             .connection-status {
-                min-width: 260px; /* Adjusted for new design */
-                max-width: 300px; /* Adjusted for mobile */
-                padding: 16px 20px;
+                min-width: 200px;
+                max-width: 280px;
+                padding: 10px 16px;
                 justify-content: center;
+                gap: 10px;
             }
             
-            /* Status indicator removed from mobile design */
-            
             .status-text {
-                font-size: 0.9rem;
-                letter-spacing: 0.3px;
+                font-size: 0.85rem;
+            }
+            
+            .gift-queue-status {
+                margin-left: 10px;
+                padding: 6px 10px;
+            }
+            
+            .queue-icon {
+                font-size: 14px;
+            }
+            
+            .queue-count {
+                width: 18px;
+                height: 18px;
+                font-size: 11px;
+            }
+            
+            .queue-clear-btn {
+                width: 18px;
+                height: 18px;
+                font-size: 9px;
             }
         }
 
