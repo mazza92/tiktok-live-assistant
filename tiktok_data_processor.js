@@ -17,20 +17,30 @@ app.use(express.static('.')); // Serve static files from current directory
 const sentiment = new Sentiment();
 
 // Gift value mapping (TikTok diamonds to USD conversion)
+// Based on TikTok's coin pricing: 70 coins = $0.89, so 1 coin ≈ $0.0127
+// TikTok diamonds are the same as TikTok coins
+// Source: https://www.dexerto.com/tiktok/what-are-tiktok-gifts-and-how-much-do-they-cost-2216794/
 const GIFT_VALUES = {
-    // Common gifts with their diamond costs and approximate USD values
-    'Rose': { diamonds: 1, usd: 0.01 },
-    'Heart': { diamonds: 1, usd: 0.01 },
-    'Kiss': { diamonds: 5, usd: 0.05 },
-    'Cake': { diamonds: 10, usd: 0.10 },
-    'Crown': { diamonds: 50, usd: 0.50 },
-    'Diamond': { diamonds: 100, usd: 1.00 },
-    'Rocket': { diamonds: 500, usd: 5.00 },
-    'Lion': { diamonds: 1000, usd: 10.00 },
-    'Dragon': { diamonds: 2000, usd: 20.00 },
-    'Unicorn': { diamonds: 5000, usd: 50.00 },
-    'Galaxy': { diamonds: 10000, usd: 100.00 },
-    'Universe': { diamonds: 50000, usd: 500.00 }
+    // Popular gifts with their diamond/coin costs and accurate USD values
+    'Rose': { diamonds: 1, usd: 0.0127 },
+    'Heart': { diamonds: 1, usd: 0.0127 },
+    'Dalgona Candy': { diamonds: 1, usd: 0.0127 },
+    'Brat': { diamonds: 1, usd: 0.0127 },
+    'Ice Cube': { diamonds: 1, usd: 0.0127 },
+    '2025': { diamonds: 1, usd: 0.0127 },
+    'Heart Me': { diamonds: 1, usd: 0.0127 },
+    'Kiss': { diamonds: 5, usd: 0.0635 },
+    'Cake': { diamonds: 10, usd: 0.127 },
+    'Crown': { diamonds: 50, usd: 0.635 },
+    'Diamond': { diamonds: 100, usd: 1.27 },
+    'Rocket': { diamonds: 500, usd: 6.35 },
+    'Lion': { diamonds: 1000, usd: 12.70 },
+    'Dragon': { diamonds: 2000, usd: 25.40 },
+    'Unicorn': { diamonds: 5000, usd: 63.50 },
+    'Galaxy': { diamonds: 10000, usd: 127.00 },
+    'Universe': { diamonds: 50000, usd: 635.00 },
+    'Castle': { diamonds: 10000, usd: 127.00 }, // Popular high-value gift
+    'Leopard': { diamonds: 5000, usd: 63.50 }  // Popular mid-value gift
 };
 
 // Data processing and metrics storage with memory optimization
@@ -2965,7 +2975,7 @@ async function connectToTikTok() {
             
             // Calculate USD value of the gift
             const giftName = gift.name || 'Unknown';
-            const giftValue = GIFT_VALUES[giftName] || { diamonds: totalDiamonds, usd: totalDiamonds * 0.01 }; // Default: 1 diamond = $0.01
+            const giftValue = GIFT_VALUES[giftName] || { diamonds: totalDiamonds, usd: totalDiamonds * 0.0127 }; // Default: 1 diamond = $0.0127 (based on TikTok pricing)
             const totalUSDValue = giftValue.usd * repeatCount;
             
             // Track viewer activity for watch time and update viewer's diamond count
