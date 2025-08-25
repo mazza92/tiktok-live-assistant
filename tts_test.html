@@ -57,6 +57,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            flex-wrap: wrap;
         }
         
         .tts-select {
@@ -72,6 +73,22 @@
         .tts-select option {
             background: #2c2c2c;
             color: white;
+        }
+        
+        .tts-control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 100px;
+        }
+        
+        .tts-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .tts-slider {
@@ -91,6 +108,13 @@
             background: #4caf50;
             border-radius: 50%;
             cursor: pointer;
+        }
+        
+        .tts-value {
+            color: #4caf50;
+            font-size: 10px;
+            font-weight: 600;
+            font-family: monospace;
         }
         
         .test-buttons {
@@ -155,6 +179,68 @@
             font-family: monospace;
             font-size: 12px;
         }
+        
+        /* Mobile Responsive TTS Controls */
+        @media (max-width: 768px) {
+            .tts-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .tts-settings {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 20px;
+            }
+            
+            .tts-control-group {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                min-width: auto;
+                gap: 15px;
+            }
+            
+            .tts-select {
+                min-width: auto;
+                flex: 1;
+            }
+            
+            .tts-slider {
+                width: 120px;
+                flex: 1;
+            }
+            
+            .tts-label {
+                min-width: 60px;
+                text-align: left;
+            }
+            
+            .tts-value {
+                min-width: 40px;
+                text-align: right;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tts-controls {
+                margin-bottom: 20px;
+            }
+            
+            .tts-settings {
+                gap: 25px;
+            }
+            
+            .tts-control-group {
+                gap: 20px;
+            }
+            
+            .tts-slider {
+                width: 100px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -166,13 +252,21 @@
             <button id="ttsToggle" class="tts-toggle-btn">
                 🔊 <span id="ttsStatus">OFF</span>
             </button>
-            <div class="tts-settings">
-                <select id="ttsVoice" class="tts-select" title="Select Voice">
-                    <option value="">Loading voices...</option>
-                </select>
-                <label>Speed: <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" title="Speech Speed"></label>
-                <label>Volume: <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" title="Volume"></label>
-            </div>
+                            <div class="tts-settings">
+                    <select id="ttsVoice" class="tts-select" title="Select Voice">
+                        <option value="">Loading voices...</option>
+                    </select>
+                    <div class="tts-control-group">
+                        <label for="ttsSpeed" class="tts-label">Speed</label>
+                        <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" title="Speech Speed">
+                        <span class="tts-value" id="ttsSpeedValue">1.0x</span>
+                    </div>
+                    <div class="tts-control-group">
+                        <label for="ttsVolume" class="tts-label">Volume</label>
+                        <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" title="Volume">
+                        <span class="tts-value" id="ttsVolumeValue">80%</span>
+                    </div>
+                </div>
         </div>
         
         <div class="status" id="ttsStatusDisplay">
@@ -319,15 +413,25 @@
             const voiceSelect = document.getElementById('ttsVoice');
             const speedSlider = document.getElementById('ttsSpeed');
             const volumeSlider = document.getElementById('ttsVolume');
+            const speedValue = document.getElementById('ttsSpeedValue');
+            const volumeValue = document.getElementById('ttsVolumeValue');
             
             if (voiceSelect) {
                 voiceSelect.addEventListener('change', saveTTSPreferences);
             }
-            if (speedSlider) {
-                speedSlider.addEventListener('input', saveTTSPreferences);
+            if (speedSlider && speedValue) {
+                speedSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    speedValue.textContent = `${value.toFixed(1)}x`;
+                    saveTTSPreferences();
+                });
             }
-            if (volumeSlider) {
-                volumeSlider.addEventListener('input', saveTTSPreferences);
+            if (volumeSlider && volumeValue) {
+                volumeSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    volumeValue.textContent = `${Math.round(value * 100)}%`;
+                    saveTTSPreferences();
+                });
             }
         }
         
@@ -437,11 +541,29 @@
         function loadTTSPreferences() {
             try {
                 const saved = localStorage.getItem('ttsTestPreferences');
-                return saved ? JSON.parse(saved) : {
+                const preferences = saved ? JSON.parse(saved) : {
                     voice: '',
                     speed: 1,
                     volume: 0.8
                 };
+                
+                // Update display values
+                const speedValue = document.getElementById('ttsSpeedValue');
+                const volumeValue = document.getElementById('ttsVolumeValue');
+                const speedSlider = document.getElementById('ttsSpeed');
+                const volumeSlider = document.getElementById('ttsVolume');
+                
+                if (speedValue && speedSlider) {
+                    speedSlider.value = preferences.speed;
+                    speedValue.textContent = `${preferences.speed.toFixed(1)}x`;
+                }
+                
+                if (volumeValue && volumeSlider) {
+                    volumeSlider.value = preferences.volume;
+                    volumeValue.textContent = `${Math.round(preferences.volume * 100)}%`;
+                }
+                
+                return preferences;
             } catch (error) {
                 return { voice: '', speed: 1, volume: 0.8 };
             }
