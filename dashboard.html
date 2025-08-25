@@ -3453,6 +3453,144 @@
             font-style: italic;
         }
         
+        /* TTS Controls Styles */
+        .tts-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: auto;
+        }
+        
+        .tts-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tts-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .tts-toggle-btn.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+            color: #4caf50;
+        }
+        
+        .tts-settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .tts-settings.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .tts-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            min-width: 120px;
+        }
+        
+        .tts-select option {
+            background: #2c2c2c;
+            color: white;
+        }
+        
+        .tts-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .tts-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4caf50;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .tts-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #4caf50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .alert-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .alert-tts-btn {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            color: #4caf50;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .alert-tts-btn:hover {
+            background: rgba(76, 175, 80, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .tts-speaking-indicator {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            color: #4caf50;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        .tts-speaking-indicator.hidden {
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
         /* Activity Pagination Styles */
         .activity-pagination {
             display: flex;
@@ -3648,12 +3786,29 @@
 
         <!-- Actionable Prompt Section -->
         <div class="actionable-prompt">
-            <div class="feed-header">🎯 LIVE ASSISTANT</div>
+            <div class="feed-header">
+                🎯 LIVE ASSISTANT
+                <div class="tts-controls">
+                    <button id="ttsToggle" class="tts-toggle-btn" title="Toggle Text-to-Speech (Ctrl+Shift+T)">
+                        🔊 <span id="ttsStatus">OFF</span>
+                    </button>
+                    <div class="tts-settings" id="ttsSettings">
+                        <select id="ttsVoice" class="tts-select" title="Select Voice">
+                            <option value="">Loading voices...</option>
+                        </select>
+                        <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" title="Speech Speed">
+                        <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" title="Volume">
+                    </div>
+                </div>
+            </div>
             <div id="actionablePrompt">
                 <div class="prompt-content">
                     <div class="prompt-icon">🤖</div>
                     <div class="prompt-text">Waiting for AI insights...</div>
                     <div class="prompt-trigger">No triggers detected yet</div>
+                    <div id="ttsSpeakingIndicator" class="tts-speaking-indicator hidden">
+                        🔊 Speaking...
+                    </div>
                 </div>
             </div>
         </div>
@@ -6805,6 +6960,11 @@
             // Add to activity feed
             addActivityItem('🎤', 'AI Assistant', `Generated shoutout: "${randomMessage}"`);
             
+            // Speak the shoutout using TTS if enabled
+            if (ttsEnabled) {
+                speakText(randomMessage, 'high');
+            }
+            
             // Close the alert
             closeGiftAlert();
             
@@ -6859,6 +7019,11 @@
             // Add to activity feed
             addActivityItem('🙏', 'AI Assistant', `Generated thank you: "${randomMessage}"`);
             
+            // Speak the thank you using TTS if enabled
+            if (ttsEnabled) {
+                speakText(randomMessage, 'high');
+            }
+            
             // Close the alert
             closeGiftAlert();
             
@@ -6901,6 +7066,11 @@
                     </div>
                     <div class="alert-tip">
                         💡 <strong>Tip:</strong> Ask them about their day or interests to build connection
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-tts-btn" onclick="speakWelcome('${viewer.nickname}')" title="Speak welcome message">
+                            🔊 Speak Welcome
+                        </button>
                     </div>
                 </div>
                 <button class="alert-close-btn" onclick="this.parentElement.remove()">✕</button>
@@ -7423,6 +7593,11 @@
             // Add priority-based styling
             promptElement.className = `actionable-prompt ${prompt.priority || 'medium'}-priority`;
             
+            // Speak the prompt using TTS if enabled
+            if (ttsEnabled && prompt.message) {
+                speakText(prompt.message, prompt.priority || 'medium');
+            }
+            
             console.log('🎯 Updated actionable prompt:', prompt.message);
         }
         
@@ -7524,6 +7699,12 @@
             } else if (mediumPriorityPrompts.length > 0) {
                 updateActionablePrompt(mediumPriorityPrompts[0]);
             }
+            
+            // Speak the first prompt if TTS is enabled
+            if (ttsEnabled && prompts.length > 0) {
+                const firstPrompt = prompts[0];
+                speakText(firstPrompt.message, firstPrompt.priority || 'medium');
+            }
         }
 
 
@@ -7578,7 +7759,288 @@
             
             // Start activity cleanup system for performance optimization
             startActivityCleanup();
+            
+            // Initialize TTS functionality
+            initializeTTS();
         });
+        
+        // Text-to-Speech (TTS) Functionality
+        let ttsEnabled = false;
+        let speechSynthesis = null;
+        let currentUtterance = null;
+        
+        function initializeTTS() {
+            // Check if speech synthesis is supported
+            if ('speechSynthesis' in window) {
+                speechSynthesis = window.speechSynthesis;
+                loadTTSVoices();
+                
+                // Set up TTS toggle button
+                const ttsToggle = document.getElementById('ttsToggle');
+                if (ttsToggle) {
+                    ttsToggle.addEventListener('click', toggleTTS);
+                }
+                
+                // Set up TTS settings controls
+                setupTTSSettings();
+                
+                // Load TTS preferences from localStorage
+                loadTTSPreferences();
+                
+                // Add keyboard shortcut (Ctrl+Shift+T) for TTS toggle
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                        e.preventDefault();
+                        toggleTTS();
+                    }
+                });
+                
+                console.log('🔊 TTS initialized successfully');
+            } else {
+                console.warn('⚠️ Speech synthesis not supported in this browser');
+                disableTTSControls();
+            }
+        }
+        
+        function loadTTSVoices() {
+            if (!speechSynthesis) return;
+            
+            const voiceSelect = document.getElementById('ttsVoice');
+            if (!voiceSelect) return;
+            
+            // Load voices when they become available
+            const loadVoices = () => {
+                const voices = speechSynthesis.getVoices();
+                voiceSelect.innerHTML = '';
+                
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Voice';
+                voiceSelect.appendChild(defaultOption);
+                
+                // Add available voices
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+                
+                // Restore selected voice from preferences
+                const preferences = loadTTSPreferences();
+                if (preferences.voice && voices.find(v => v.name === preferences.voice)) {
+                    voiceSelect.value = preferences.voice;
+                }
+            };
+            
+            // Load voices immediately if available
+            if (speechSynthesis.getVoices().length > 0) {
+                loadVoices();
+            } else {
+                // Wait for voices to load
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+            }
+        }
+        
+        function setupTTSSettings() {
+            const voiceSelect = document.getElementById('ttsVoice');
+            const speedSlider = document.getElementById('ttsSpeed');
+            const volumeSlider = document.getElementById('ttsVolume');
+            
+            if (voiceSelect) {
+                voiceSelect.addEventListener('change', (e) => {
+                    saveTTSPreferences();
+                });
+            }
+            
+            if (speedSlider) {
+                speedSlider.addEventListener('input', (e) => {
+                    saveTTSPreferences();
+                });
+            }
+            
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', (e) => {
+                    saveTTSPreferences();
+                });
+            }
+        }
+        
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const ttsToggle = document.getElementById('ttsToggle');
+            const ttsStatus = document.getElementById('ttsStatus');
+            const ttsSettings = document.getElementById('ttsSettings');
+            
+            if (ttsToggle && ttsStatus) {
+                if (ttsEnabled) {
+                    ttsToggle.classList.add('active');
+                    ttsStatus.textContent = 'ON';
+                    ttsSettings.classList.add('visible');
+                    console.log('🔊 TTS enabled');
+                } else {
+                    ttsToggle.classList.remove('active');
+                    ttsStatus.textContent = 'OFF';
+                    ttsSettings.classList.remove('visible');
+                    stopTTS();
+                    console.log('🔇 TTS disabled');
+                }
+            }
+            
+            saveTTSPreferences();
+        }
+        
+        function speakText(text, priority = 'medium') {
+            if (!ttsEnabled || !speechSynthesis || !text) return;
+            
+            // Stop any current speech
+            stopTTS();
+            
+            // Create new utterance
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            
+            // Get TTS preferences
+            const preferences = loadTTSPreferences();
+            
+            // Set voice
+            if (preferences.voice) {
+                const voices = speechSynthesis.getVoices();
+                const selectedVoice = voices.find(v => v.name === preferences.voice);
+                if (selectedVoice) {
+                    currentUtterance.voice = selectedVoice;
+                }
+            }
+            
+            // Set speed and volume
+            currentUtterance.rate = preferences.speed || 1;
+            currentUtterance.volume = preferences.volume || 0.8;
+            
+            // Set pitch based on priority
+            if (priority === 'high') {
+                currentUtterance.pitch = 1.2; // Higher pitch for high priority
+            } else if (priority === 'low') {
+                currentUtterance.pitch = 0.8; // Lower pitch for low priority
+            } else {
+                currentUtterance.pitch = 1.0; // Normal pitch for medium priority
+            }
+            
+            // Add event listeners
+            currentUtterance.onstart = () => {
+                console.log('🔊 TTS started:', text.substring(0, 50) + '...');
+                showSpeakingIndicator();
+            };
+            
+            currentUtterance.onend = () => {
+                console.log('🔊 TTS completed');
+                currentUtterance = null;
+                hideSpeakingIndicator();
+            };
+            
+            currentUtterance.onerror = (event) => {
+                console.error('🔊 TTS error:', event.error);
+                currentUtterance = null;
+                hideSpeakingIndicator();
+            };
+            
+            // Speak the text
+            speechSynthesis.speak(currentUtterance);
+        }
+        
+        function stopTTS() {
+            if (speechSynthesis && currentUtterance) {
+                speechSynthesis.cancel();
+                currentUtterance = null;
+            }
+            hideSpeakingIndicator();
+        }
+        
+        function showSpeakingIndicator() {
+            const indicator = document.getElementById('ttsSpeakingIndicator');
+            if (indicator) {
+                indicator.classList.remove('hidden');
+            }
+        }
+        
+        function hideSpeakingIndicator() {
+            const indicator = document.getElementById('ttsSpeakingIndicator');
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
+        }
+        
+        function loadTTSPreferences() {
+            try {
+                const saved = localStorage.getItem('ttsPreferences');
+                return saved ? JSON.parse(saved) : {
+                    voice: '',
+                    speed: 1,
+                    volume: 0.8
+                };
+            } catch (error) {
+                console.error('Error loading TTS preferences:', error);
+                return {
+                    voice: '',
+                    speed: 1,
+                    volume: 0.8
+                };
+            }
+        }
+        
+        function saveTTSPreferences() {
+            try {
+                const voiceSelect = document.getElementById('ttsVoice');
+                const speedSlider = document.getElementById('ttsSpeed');
+                const volumeSlider = document.getElementById('ttsVolume');
+                
+                const preferences = {
+                    voice: voiceSelect ? voiceSelect.value : '',
+                    speed: speedSlider ? parseFloat(speedSlider.value) : 1,
+                    volume: volumeSlider ? parseFloat(volumeSlider.value) : 0.8
+                };
+                
+                localStorage.setItem('ttsPreferences', JSON.stringify(preferences));
+            } catch (error) {
+                console.error('Error saving TTS preferences:', error);
+            }
+        }
+        
+        function disableTTSControls() {
+            const ttsToggle = document.getElementById('ttsToggle');
+            const ttsSettings = document.getElementById('ttsSettings');
+            
+            if (ttsToggle) {
+                ttsToggle.disabled = true;
+                ttsToggle.title = 'TTS not supported in this browser';
+            }
+            
+            if (ttsSettings) {
+                ttsSettings.style.display = 'none';
+            }
+        }
+        
+        // Additional TTS helper functions
+        function speakWelcome(viewerName) {
+            if (!ttsEnabled) {
+                alert('Please enable TTS first using the 🔊 button in the LIVE ASSISTANT section.');
+                return;
+            }
+            
+            const welcomeMessage = `Welcome ${viewerName}! Thank you for joining the stream!`;
+            speakText(welcomeMessage, 'medium');
+        }
+        
+        function speakEmergency(message) {
+            if (ttsEnabled) {
+                speakText(`EMERGENCY: ${message}`, 'high');
+            }
+        }
+        
+        function speakMilestone(message) {
+            if (ttsEnabled) {
+                speakText(`Milestone achieved: ${message}`, 'medium');
+            }
+        }
     </script>
 </body>
 </html>

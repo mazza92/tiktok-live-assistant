@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Test - Live Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tts-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .tts-toggle-btn {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4caf50;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tts-toggle-btn:hover {
+            background: rgba(76, 175, 80, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .tts-toggle-btn.active {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.7);
+        }
+        
+        .tts-settings {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .tts-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+        
+        .tts-select option {
+            background: #2c2c2c;
+            color: white;
+        }
+        
+        .tts-slider {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .tts-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4caf50;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .test-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .test-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .test-btn.emergency {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+            color: #f44336;
+        }
+        
+        .test-btn.emergency:hover {
+            background: rgba(244, 67, 54, 0.4);
+        }
+        
+        .test-btn.milestone {
+            background: rgba(255, 193, 7, 0.3);
+            border-color: rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+        
+        .test-btn.milestone:hover {
+            background: rgba(255, 193, 7, 0.4);
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .status.error {
+            border-left-color: #f44336;
+        }
+        
+        .keyboard-shortcut {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔊 Text-to-Speech Test - Live Assistant</h1>
+    
+    <div class="test-section">
+        <h2>🎯 TTS Controls</h2>
+        <div class="tts-controls">
+            <button id="ttsToggle" class="tts-toggle-btn">
+                🔊 <span id="ttsStatus">OFF</span>
+            </button>
+            <div class="tts-settings">
+                <select id="ttsVoice" class="tts-select" title="Select Voice">
+                    <option value="">Loading voices...</option>
+                </select>
+                <label>Speed: <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" title="Speech Speed"></label>
+                <label>Volume: <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" title="Volume"></label>
+            </div>
+        </div>
+        
+        <div class="status" id="ttsStatusDisplay">
+            TTS is ready. Click the toggle button to enable.
+        </div>
+        
+        <p><strong>Keyboard Shortcut:</strong> Press <span class="keyboard-shortcut">Ctrl+Shift+T</span> to toggle TTS on/off</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>🧪 Test AI Assistant Prompts</h2>
+        <p>These simulate the types of prompts your Live Assistant will generate:</p>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testPrompt('💬 Comment volume is low! Try asking viewers a question or starting a conversation!', 'high')">
+                📉 Low Engagement Alert
+            </button>
+            
+            <button class="test-btn" onclick="testPrompt('😔 Sentiment is trending negative. Consider changing topics or telling a joke!', 'high')">
+                😔 Negative Sentiment
+            </button>
+            
+            <button class="test-btn" onclick="testPrompt('🔥 Amazing engagement! Keep the energy up!', 'medium')">
+                🔥 High Engagement
+            </button>
+            
+            <button class="test-btn" onclick="testPrompt('🎉 1000 viewers! Amazing milestone!', 'medium')">
+                🎉 Viewer Milestone
+            </button>
+            
+            <button class="test-btn" onclick="testPrompt('❤️ Ask viewers to show some love with likes!', 'medium')">
+                ❤️ Like Engagement
+            </button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎁 Test Gift Responses</h2>
+        <p>Simulate AI-generated gift responses:</p>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testPrompt('🔥 SHOUTOUT to TestUser for the AMAZING gift! You\'re absolutely legendary! 🔥', 'high')">
+                🎤 Shoutout Response
+            </button>
+            
+            <button class="test-btn" onclick="testPrompt('🙏 Thank you so much TestUser for the gift! You\'re incredible! 🙏', 'high')">
+                🙏 Thank You Response
+            </button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚨 Test Emergency & Milestone Alerts</h2>
+        <p>Test high-priority alerts:</p>
+        
+        <div class="test-buttons">
+            <button class="test-btn emergency" onclick="testPrompt('EMERGENCY: Stream connection lost! Attempting to reconnect...', 'high')">
+                🚨 Emergency Alert
+            </button>
+            
+            <button class="test-btn milestone" onclick="testPrompt('Milestone achieved: 5000 followers! Thank you everyone!', 'medium')">
+                🏆 Milestone Alert
+            </button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 Custom Text Test</h2>
+        <p>Test your own text:</p>
+        <textarea id="customText" placeholder="Enter text to speak..." rows="3" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; margin-bottom: 15px;"></textarea>
+        <button class="test-btn" onclick="testCustomText()">🔊 Speak Custom Text</button>
+    </div>
+
+    <script>
+        // TTS Functionality
+        let ttsEnabled = false;
+        let speechSynthesis = null;
+        let currentUtterance = null;
+        
+        function initializeTTS() {
+            if ('speechSynthesis' in window) {
+                speechSynthesis = window.speechSynthesis;
+                loadTTSVoices();
+                setupTTSSettings();
+                loadTTSPreferences();
+                
+                // Set up TTS toggle button
+                const ttsToggle = document.getElementById('ttsToggle');
+                if (ttsToggle) {
+                    ttsToggle.addEventListener('click', toggleTTS);
+                }
+                
+                // Add keyboard shortcut
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                        e.preventDefault();
+                        toggleTTS();
+                    }
+                });
+                
+                updateStatus('TTS initialized successfully', false);
+            } else {
+                updateStatus('Speech synthesis not supported in this browser', true);
+                disableTTSControls();
+            }
+        }
+        
+        function loadTTSVoices() {
+            if (!speechSynthesis) return;
+            
+            const voiceSelect = document.getElementById('ttsVoice');
+            if (!voiceSelect) return;
+            
+            const loadVoices = () => {
+                const voices = speechSynthesis.getVoices();
+                voiceSelect.innerHTML = '';
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Voice';
+                voiceSelect.appendChild(defaultOption);
+                
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+                
+                const preferences = loadTTSPreferences();
+                if (preferences.voice && voices.find(v => v.name === preferences.voice)) {
+                    voiceSelect.value = preferences.voice;
+                }
+            };
+            
+            if (speechSynthesis.getVoices().length > 0) {
+                loadVoices();
+            } else {
+                speechSynthesis.addEventListener('voiceschanged', loadVoices);
+            }
+        }
+        
+        function setupTTSSettings() {
+            const voiceSelect = document.getElementById('ttsVoice');
+            const speedSlider = document.getElementById('ttsSpeed');
+            const volumeSlider = document.getElementById('ttsVolume');
+            
+            if (voiceSelect) {
+                voiceSelect.addEventListener('change', saveTTSPreferences);
+            }
+            if (speedSlider) {
+                speedSlider.addEventListener('input', saveTTSPreferences);
+            }
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', saveTTSPreferences);
+            }
+        }
+        
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const ttsToggle = document.getElementById('ttsToggle');
+            const ttsStatus = document.getElementById('ttsStatus');
+            
+            if (ttsToggle && ttsStatus) {
+                if (ttsEnabled) {
+                    ttsToggle.classList.add('active');
+                    ttsStatus.textContent = 'ON';
+                    updateStatus('TTS enabled - AI prompts will now be spoken aloud', false);
+                } else {
+                    ttsToggle.classList.remove('active');
+                    ttsStatus.textContent = 'OFF';
+                    stopTTS();
+                    updateStatus('TTS disabled', false);
+                }
+            }
+            
+            saveTTSPreferences();
+        }
+        
+        function speakText(text, priority = 'medium') {
+            if (!ttsEnabled || !speechSynthesis || !text) {
+                if (!ttsEnabled) {
+                    updateStatus('Please enable TTS first!', true);
+                }
+                return;
+            }
+            
+            stopTTS();
+            
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            
+            const preferences = loadTTSPreferences();
+            
+            if (preferences.voice) {
+                const voices = speechSynthesis.getVoices();
+                const selectedVoice = voices.find(v => v.name === preferences.voice);
+                if (selectedVoice) {
+                    currentUtterance.voice = selectedVoice;
+                }
+            }
+            
+            currentUtterance.rate = preferences.speed || 1;
+            currentUtterance.volume = preferences.volume || 0.8;
+            
+            if (priority === 'high') {
+                currentUtterance.pitch = 1.2;
+            } else if (priority === 'low') {
+                currentUtterance.pitch = 0.8;
+            } else {
+                currentUtterance.pitch = 1.0;
+            }
+            
+            currentUtterance.onstart = () => {
+                updateStatus(`Speaking: "${text.substring(0, 50)}..."`, false);
+            };
+            
+            currentUtterance.onend = () => {
+                updateStatus('TTS completed', false);
+                currentUtterance = null;
+            };
+            
+            currentUtterance.onerror = (event) => {
+                updateStatus(`TTS error: ${event.error}`, true);
+                currentUtterance = null;
+            };
+            
+            speechSynthesis.speak(currentUtterance);
+        }
+        
+        function stopTTS() {
+            if (speechSynthesis && currentUtterance) {
+                speechSynthesis.cancel();
+                currentUtterance = null;
+            }
+        }
+        
+        function testPrompt(message, priority) {
+            if (!ttsEnabled) {
+                updateStatus('Please enable TTS first!', true);
+                return;
+            }
+            speakText(message, priority);
+        }
+        
+        function testCustomText() {
+            const customText = document.getElementById('customText').value.trim();
+            if (!customText) {
+                updateStatus('Please enter some text to speak!', true);
+                return;
+            }
+            speakText(customText, 'medium');
+        }
+        
+        function updateStatus(message, isError) {
+            const statusDisplay = document.getElementById('ttsStatusDisplay');
+            if (statusDisplay) {
+                statusDisplay.textContent = message;
+                statusDisplay.className = `status ${isError ? 'error' : ''}`;
+            }
+        }
+        
+        function loadTTSPreferences() {
+            try {
+                const saved = localStorage.getItem('ttsTestPreferences');
+                return saved ? JSON.parse(saved) : {
+                    voice: '',
+                    speed: 1,
+                    volume: 0.8
+                };
+            } catch (error) {
+                return { voice: '', speed: 1, volume: 0.8 };
+            }
+        }
+        
+        function saveTTSPreferences() {
+            try {
+                const voiceSelect = document.getElementById('ttsVoice');
+                const speedSlider = document.getElementById('ttsSpeed');
+                const volumeSlider = document.getElementById('ttsVolume');
+                
+                const preferences = {
+                    voice: voiceSelect ? voiceSelect.value : '',
+                    speed: speedSlider ? parseFloat(speedSlider.value) : 1,
+                    volume: volumeSlider ? parseFloat(volumeSlider.value) : 0.8
+                };
+                
+                localStorage.setItem('ttsTestPreferences', JSON.stringify(preferences));
+            } catch (error) {
+                console.error('Error saving TTS preferences:', error);
+            }
+        }
+        
+        function disableTTSControls() {
+            const ttsToggle = document.getElementById('ttsToggle');
+            if (ttsToggle) {
+                ttsToggle.disabled = true;
+                ttsToggle.title = 'TTS not supported in this browser';
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeTTS);
+    </script>
+</body>
+</html>
