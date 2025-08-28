@@ -3887,7 +3887,7 @@
         </div>
         
         <div class="entertainment-gauge">
-            <h3>Live Mood Score</h3>
+            <h3>Live Chat Score</h3>
             
             <!-- Main Entertainment Score -->
             <div class="entertainment-main">
@@ -4296,7 +4296,7 @@
                 reconnecting: "Reconnecting...",
                 
                 // Entertainment Gauge
-                liveMoodScore: "Live Mood Score",
+                liveMoodScore: "Live Chat Score",
                 neutral: "Neutral",
                 boring: "Boring",
                 meh: "Meh",
@@ -4414,7 +4414,7 @@
                 reconnecting: "Reconnexion...",
                 
                 // Entertainment Gauge
-                liveMoodScore: "Score d'Humeur en Direct",
+                liveMoodScore: "Live Chat Score",
                 neutral: "Neutre",
                 boring: "Ennuyeux",
                 meh: "Bof",
@@ -4426,9 +4426,9 @@
                 // Metrics
                 liveViewers: "Spectateurs en Direct",
                 newFollowers: "Nouveaux Abonnés",
-                totalLikes: "Total des J'aime",
+                totalLikes: "Total des Likes",
                 totalGifts: "Total des Cadeaux",
-                likesPerMinute: "J'aime par Minute",
+                likesPerMinute: "Likes par Minute",
                 totalShares: "Total des Partages",
                 followersGained: "gagnés ce stream",
                 totalValue: "valeur totale",
@@ -4547,102 +4547,115 @@
             const t = translations[currentLanguage];
             console.log('🔄 Updating content for language:', currentLanguage);
             
-            // Update dashboard title
-            const titleElement = document.querySelector('.dashboard-header h1');
-            if (titleElement) {
-                titleElement.textContent = t.dashboardTitle;
-                console.log('✅ Updated dashboard title');
-            }
+            // Comprehensive text replacement for the entire dashboard
+            translateAllTextContent();
             
-            // Update username placeholder
-            const usernameInput = document.getElementById('usernameInput');
-            if (usernameInput) usernameInput.placeholder = t.usernamePlaceholder;
+            // Update specific elements that need special handling
+            updateSpecificElements();
+        }
+
+        // Comprehensive text translation function
+        function translateAllTextContent() {
+            const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
             
-            // Update button texts
-            const connectBtn = document.getElementById('connectBtn');
-            if (connectBtn) connectBtn.textContent = t.connectBtn;
+            console.log('🔄 Starting comprehensive text translation...');
             
-            const disconnectBtn = document.getElementById('disconnectBtn');
-            if (disconnectBtn) disconnectBtn.textContent = t.disconnectBtn;
+            // Get all text nodes in the document
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        // Skip script and style content
+                        if (node.parentElement && 
+                            (node.parentElement.tagName === 'SCRIPT' || 
+                             node.parentElement.tagName === 'STYLE')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        // Only process nodes with actual text content
+                        if (node.textContent.trim().length > 0) {
+                            return NodeFilter.FILTER_ACCEPT;
+                        }
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
             
-            // Update stream status
-            const streamStatus = document.getElementById('streamStatus');
-            if (streamStatus && (streamStatus.textContent === 'Not connected' || streamStatus.textContent === 'Non connecté')) {
-                streamStatus.textContent = t.streamStatus;
-            }
+            let textNode;
+            let translationCount = 0;
             
-            // Update entertainment gauge
-            const entertainmentTitle = document.querySelector('.entertainment-gauge h3');
-            if (entertainmentTitle) entertainmentTitle.textContent = t.liveMoodScore;
-            
-            // Update progress labels
-            const progressLabels = document.querySelectorAll('.progress-labels span');
-            if (progressLabels.length >= 5) {
-                progressLabels[0].textContent = t.boring;
-                progressLabels[1].textContent = t.meh;
-                progressLabels[2].textContent = t.good;
-                progressLabels[3].textContent = t.entertaining;
-                progressLabels[4].textContent = t.fire;
-            }
-            
-            // Update breakdown labels
-            const breakdownLabel = document.querySelector('.breakdown-label');
-            if (breakdownLabel) breakdownLabel.textContent = t.engagement;
-            
-            // Update performance monitor
-            const perfTitle = document.querySelector('.performance-monitor h3');
-            if (perfTitle) perfTitle.textContent = t.systemPerformance;
-            
-            const perfLabels = document.querySelectorAll('.perf-label');
-            if (perfLabels.length >= 4) {
-                perfLabels[0].textContent = t.memoryUsage;
-                perfLabels[1].textContent = t.uptime;
-                perfLabels[2].textContent = t.activeViewers;
-                perfLabels[3].textContent = t.connectionMode;
-            }
-            
-            const perfRefreshBtn = document.querySelector('.perf-refresh-btn');
-            if (perfRefreshBtn) perfRefreshBtn.textContent = t.refresh;
-            
-            // Update refresh button title
-            const refreshBtn = document.getElementById('refreshBtn');
-            if (refreshBtn) refreshBtn.title = t.manualReconnectTitle;
-            
-            // Update gift queue elements
-            const giftQueueStatus = document.getElementById('giftQueueStatus');
-            if (giftQueueStatus) {
-                const queueIcon = giftQueueStatus.querySelector('.queue-icon');
-                if (queueIcon) queueIcon.textContent = t.queueIcon;
+            while (textNode = walker.nextNode()) {
+                const originalText = textNode.textContent.trim();
+                if (originalText.length === 0) continue;
                 
-                const clearGiftsBtn = giftQueueStatus.querySelector('.queue-clear-btn');
-                if (clearGiftsBtn) {
-                    clearGiftsBtn.title = t.clearGiftsTitle;
+                // Try to find a translation for this text
+                const translatedText = findTranslation(originalText, t, tEn, tFr);
+                
+                if (translatedText && translatedText !== originalText) {
+                    textNode.textContent = translatedText;
+                    translationCount++;
+                    console.log(`🔄 Translated: "${originalText}" → "${translatedText}"`);
                 }
             }
             
-            // Update metrics labels if they exist
-            updateMetricsLabels();
+            console.log(`✅ Comprehensive translation complete. Updated ${translationCount} text elements.`);
+        }
+
+        // Find translation for a given text
+        function findTranslation(text, t, tEn, tFr) {
+            // Direct text matches
+            for (const [key, value] of Object.entries(tEn)) {
+                if (text === value) {
+                    return t[key];
+                }
+            }
             
-            // Update entertainment breakdown labels
-            updateEntertainmentBreakdown();
+            // French text matches (for switching back to English)
+            for (const [key, value] of Object.entries(tFr)) {
+                if (text === value) {
+                    return t[key];
+                }
+            }
             
-            // Update AI insights section
-            updateAIInsights();
+            // Partial matches for common patterns
+            if (text.includes('Live Chat Score')) return t.liveMoodScore;
+            if (text.includes('Live Mood Score')) return t.liveMoodScore;
+            if (text.includes('Score d\'Humeur en Direct')) return t.liveMoodScore;
             
-            // Update questions section
-            updateQuestionsSection();
+            // Return null if no translation found
+            return null;
+        }
+
+        // Update specific elements that need special handling
+        function updateSpecificElements() {
+            const t = translations[currentLanguage];
             
-            // Update viewer analytics section
-            updateViewerAnalytics();
+            // Update HTML lang attribute
+            document.documentElement.lang = currentLanguage;
             
-            // Update predictive analytics section
-            updatePredictiveAnalytics();
+            // Update input placeholders
+            const inputs = document.querySelectorAll('input[placeholder]');
+            inputs.forEach(input => {
+                if (input.placeholder.includes('Enter TikTok username') || 
+                    input.placeholder.includes('Nom d\'utilisateur TikTok')) {
+                    input.placeholder = t.usernamePlaceholder;
+                }
+            });
             
-            // Update chat activity section
-            updateChatActivity();
-            
-            // Update performance and users section
-            updatePerformanceAndUsers();
+            // Update button titles and tooltips
+            const buttons = document.querySelectorAll('button[title]');
+            buttons.forEach(button => {
+                if (button.title.includes('Manual Reconnect') || 
+                    button.title.includes('Reconnexion Manuelle')) {
+                    button.title = t.manualReconnectTitle;
+                }
+                if (button.title.includes('Clear all pending gifts') || 
+                    button.title.includes('Effacer tous les cadeaux')) {
+                    button.title = t.clearGiftsTitle;
+                }
+            });
         }
 
         // Update metrics labels and subtitles
@@ -4693,21 +4706,7 @@
         }
 
         // Update entertainment breakdown labels
-        function updateEntertainmentBreakdown() {
-            const t = translations[currentLanguage];
-            const tEn = translations.en;
-            const tFr = translations.fr;
-            
-            // Find and update breakdown labels
-            const breakdownLabels = document.querySelectorAll('.breakdown-label');
-            breakdownLabels.forEach(label => {
-                const currentText = label.textContent.trim();
-                // Check both English and French versions
-                if (currentText === 'Content' || currentText === tFr.content) label.textContent = t.content;
-                else if (currentText === 'Energy' || currentText === tFr.energy) label.textContent = t.energy;
-                else if (currentText === 'Retention' || currentText === tFr.retention) label.textContent = t.retention;
-            });
-        }
+
 
         // Update AI insights section
         function updateAIInsights() {
