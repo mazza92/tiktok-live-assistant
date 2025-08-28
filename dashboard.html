@@ -6878,6 +6878,9 @@
             
             initializeQuestionStats();
             showNoQuestionsCard(); // Ensure question display is initialized
+            
+            // Initialize gift management panel
+            updateGiftManagementPanel();
         });
 
         // Question action functions
@@ -7711,10 +7714,13 @@
             if (giftQueue.length > maxGiftQueueSize) {
                 const removedGift = giftQueue.shift();
                 console.log(`🎁 [GIFT ALERT] Queue full, removed oldest gift from ${removedGift.nickname}`);
+                
+                // Update the gift management panel count after removing gift
+                updateGiftManagementPanel();
             }
             
-            // Update the display
-            updateGiftQueueDisplay();
+            // Update the gift management panel count
+            updateGiftManagementPanel();
         }
 
                 // New non-blocking gift notification system
@@ -7829,6 +7835,9 @@
             
             if (indicatorCount) {
                 indicatorCount.textContent = giftQueue.length;
+                console.log(`🎁 [GIFT PANEL] Updated count to: ${giftQueue.length}`);
+            } else {
+                console.warn('⚠️ [GIFT PANEL] Could not find giftIndicatorCount element');
             }
         }
         
