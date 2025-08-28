@@ -26,10 +26,6 @@
 
         /* Language Switcher Styles */
         .language-switcher {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
             display: flex;
             gap: 10px;
             background: rgba(0, 0, 0, 0.2);
@@ -66,6 +62,24 @@
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
         }
 
+        /* Header Layout Styles */
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .header-top-row h1 {
+            margin: 0;
+            flex: 1;
+        }
+
+        .language-switcher {
+            flex-shrink: 0;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -83,9 +97,13 @@
 
         /* Mobile responsive layout */
         @media (max-width: 768px) {
+            .header-top-row {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
             .language-switcher {
-                top: 15px;
-                right: 15px;
                 padding: 6px;
             }
             
@@ -112,9 +130,6 @@
             }
             
             .dashboard-header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
                 padding: 20px;
             }
             
@@ -3806,14 +3821,14 @@
     </style>
 </head>
 <body>
-    <!-- Language Switcher -->
-    <div class="language-switcher">
-        <button class="language-btn active" onclick="switchLanguage('en')">🇺🇸 EN</button>
-        <button class="language-btn" onclick="switchLanguage('fr')">🇫🇷 FR</button>
-    </div>
-    
     <div class="dashboard-header">
-        <h1> TikTok Live Assistant </h1>
+        <div class="header-top-row">
+            <h1> TikTok Live Assistant </h1>
+            <div class="language-switcher">
+                <button class="language-btn active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+                <button class="language-btn" onclick="switchLanguage('fr')">🇫🇷 FR</button>
+            </div>
+        </div>
         <div class="connection-status" id="connectionStatus">
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
