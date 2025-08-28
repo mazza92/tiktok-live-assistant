@@ -3960,29 +3960,13 @@
             border: 2px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            min-width: 60px;
-            max-width: 60px;
-            overflow: hidden;
+            padding: 8px 12px;
         }
 
-        .gift-queue-indicator.expanded {
-            max-width: 200px;
-        }
-
-        .gift-indicator-header {
+        .gift-indicator-content {
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
-            padding: 10px;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s ease;
-            min-height: 44px;
-        }
-
-        .gift-indicator-header:hover {
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .gift-indicator-icon {
@@ -4000,39 +3984,17 @@
             text-align: center;
         }
 
-        .gift-indicator-toggle {
-            color: white;
-            font-size: 0.7rem;
-            transition: transform 0.3s ease;
-        }
-
-        .gift-queue-indicator.expanded .gift-indicator-toggle {
-            transform: rotate(180deg);
-        }
-
-        .gift-indicator-content {
-            padding: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: center;
-        }
-
-        .gift-indicator-actions {
-            display: flex;
-            gap: 5px;
-        }
-
         .gift-indicator-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 6px 8px;
+            padding: 4px 6px;
             border-radius: 6px;
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
-            min-width: 32px;
+            min-width: 28px;
             text-align: center;
         }
 
@@ -4052,12 +4014,27 @@
             .gift-queue-indicator {
                 bottom: 15px;
                 right: 15px;
-                min-width: 50px;
-                max-width: 50px;
+                padding: 6px 10px;
             }
             
-            .gift-queue-indicator.expanded {
-                max-width: 180px;
+            .gift-indicator-content {
+                gap: 6px;
+            }
+            
+            .gift-indicator-icon {
+                font-size: 1rem;
+            }
+            
+            .gift-indicator-count {
+                padding: 1px 4px;
+                font-size: 0.65rem;
+                min-width: 16px;
+            }
+            
+            .gift-indicator-btn {
+                padding: 3px 5px;
+                min-width: 24px;
+                font-size: 0.75rem;
             }
             
             .gift-notification {
@@ -4273,17 +4250,12 @@
             
             <!-- Compact Gift Queue Indicator -->
             <div id="giftQueueIndicator" class="gift-queue-indicator">
-                <div class="gift-indicator-header" onclick="toggleGiftIndicator()">
+                <div class="gift-indicator-content">
                     <span class="gift-indicator-icon">🎁</span>
                     <span class="gift-indicator-count" id="giftIndicatorCount">0</span>
-                    <span class="gift-indicator-toggle">▼</span>
-                </div>
-                <div class="gift-indicator-content">
-                    <div class="gift-indicator-actions">
-                        <button class="gift-indicator-btn" onclick="clearGiftQueue()" title="Clear all gifts">🚨</button>
-                        <button class="gift-indicator-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause">⏸️</button>
-                        <button class="gift-indicator-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume" style="display: none;">▶️</button>
-                    </div>
+                    <button class="gift-indicator-btn" onclick="clearGiftQueue()" title="Clear all gifts">🚨</button>
+                    <button class="gift-indicator-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause">⏸️</button>
+                    <button class="gift-indicator-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume" style="display: none;">▶️</button>
                 </div>
             </div>
 
@@ -7860,12 +7832,7 @@
             }
         }
         
-        function toggleGiftIndicator() {
-            const indicator = document.getElementById('giftQueueIndicator');
-            if (indicator) {
-                indicator.classList.toggle('expanded');
-            }
-        }
+
         
         function pauseGiftNotifications() {
             giftNotificationsPaused = true;
