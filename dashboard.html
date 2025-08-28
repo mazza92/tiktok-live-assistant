@@ -4567,7 +4567,7 @@
             
             // Update stream status
             const streamStatus = document.getElementById('streamStatus');
-            if (streamStatus && streamStatus.textContent === 'Not connected') {
+            if (streamStatus && (streamStatus.textContent === 'Not connected' || streamStatus.textContent === 'Non connecté')) {
                 streamStatus.textContent = t.streamStatus;
             }
             
@@ -4648,6 +4648,8 @@
         // Update metrics labels and subtitles
         function updateMetricsLabels() {
             const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
             console.log('🔄 Updating metrics labels for language:', currentLanguage);
             
             // Find and update metric cards
@@ -4658,38 +4660,32 @@
                 const subtitleElement = card.querySelector('.metric-subtitle');
                 
                 if (labelElement) {
-                    // Update labels based on current text content
+                    // Update labels based on current text content (check both languages)
                     const currentLabel = labelElement.textContent.trim();
                     
-                    switch(currentLabel) {
-                        case 'Live Viewers':
-                            labelElement.textContent = t.liveViewers;
-                            break;
-                        case 'New Followers':
-                            labelElement.textContent = t.newFollowers;
-                            break;
-                        case 'Total Likes':
-                            labelElement.textContent = t.totalLikes;
-                            break;
-                        case 'Total Gifts':
-                            labelElement.textContent = t.totalGifts;
-                            break;
-                        case 'Likes per Minute':
-                            labelElement.textContent = t.likesPerMinute;
-                            break;
-                        case 'Total Shares':
-                            labelElement.textContent = t.totalShares;
-                            break;
+                    // Check for both English and French versions
+                    if (currentLabel === 'Live Viewers' || currentLabel === tFr.liveViewers) {
+                        labelElement.textContent = t.liveViewers;
+                    } else if (currentLabel === 'New Followers' || currentLabel === tFr.newFollowers) {
+                        labelElement.textContent = t.newFollowers;
+                    } else if (currentLabel === 'Total Likes' || currentLabel === tFr.totalLikes) {
+                        labelElement.textContent = t.totalLikes;
+                    } else if (currentLabel === 'Total Gifts' || currentLabel === tFr.totalGifts) {
+                        labelElement.textContent = t.totalGifts;
+                    } else if (currentLabel === 'Likes per Minute' || currentLabel === tFr.likesPerMinute) {
+                        labelElement.textContent = t.likesPerMinute;
+                    } else if (currentLabel === 'Total Shares' || currentLabel === tFr.totalShares) {
+                        labelElement.textContent = t.totalShares;
                     }
                 }
                 
                 if (subtitleElement) {
-                    // Update subtitles based on current text content
+                    // Update subtitles based on current text content (check both languages)
                     const currentSubtitle = subtitleElement.textContent.trim();
                     
-                    if (currentSubtitle.includes('gained this stream')) {
+                    if (currentSubtitle.includes('gained this stream') || currentSubtitle.includes('gagnés ce stream')) {
                         subtitleElement.textContent = t.followersGained;
-                    } else if (currentSubtitle.includes('total value')) {
+                    } else if (currentSubtitle.includes('total value') || currentSubtitle.includes('valeur totale')) {
                         subtitleElement.textContent = t.totalValue;
                     }
                 }
@@ -4699,27 +4695,32 @@
         // Update entertainment breakdown labels
         function updateEntertainmentBreakdown() {
             const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
             
             // Find and update breakdown labels
             const breakdownLabels = document.querySelectorAll('.breakdown-label');
             breakdownLabels.forEach(label => {
                 const currentText = label.textContent.trim();
-                if (currentText === 'Content') label.textContent = t.content;
-                else if (currentText === 'Energy') label.textContent = t.energy;
-                else if (currentText === 'Retention') label.textContent = t.retention;
+                // Check both English and French versions
+                if (currentText === 'Content' || currentText === tFr.content) label.textContent = t.content;
+                else if (currentText === 'Energy' || currentText === tFr.energy) label.textContent = t.energy;
+                else if (currentText === 'Retention' || currentText === tFr.retention) label.textContent = t.retention;
             });
         }
 
         // Update AI insights section
         function updateAIInsights() {
             const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
             
             // Update AI insights waiting text
             const aiInsightsElements = document.querySelectorAll('*');
             aiInsightsElements.forEach(element => {
-                if (element.textContent === 'Waiting for AI insights...') {
+                if (element.textContent === 'Waiting for AI insights...' || element.textContent === tFr.waitingForAIInsights) {
                     element.textContent = t.waitingForAIInsights;
-                } else if (element.textContent === 'No triggers detected yet') {
+                } else if (element.textContent === 'No triggers detected yet' || element.textContent === tFr.noTriggersDetected) {
                     element.textContent = t.noTriggersDetected;
                 }
             });
@@ -4728,10 +4729,12 @@
         // Update questions section
         function updateQuestionsSection() {
             const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
             
             // Update questions header
             const questionsHeader = document.querySelector('.feed-header');
-            if (questionsHeader && questionsHeader.textContent.includes('Viewers Questions')) {
+            if (questionsHeader && (questionsHeader.textContent.includes('Viewers Questions') || questionsHeader.textContent.includes('Questions des Spectateurs'))) {
                 questionsHeader.textContent = t.viewersQuestions;
             }
             
@@ -4739,23 +4742,23 @@
             const statLabels = document.querySelectorAll('.stat-label');
             statLabels.forEach(label => {
                 const currentText = label.textContent.trim();
-                if (currentText === 'Total') label.textContent = t.total;
-                else if (currentText === 'Response Rate') label.textContent = t.responseRate;
-                else if (currentText === 'Avg Time') label.textContent = t.avgTime;
-                else if (currentText === 'Priority') label.textContent = t.priority;
+                if (currentText === 'Total' || currentText === tFr.total) label.textContent = t.total;
+                else if (currentText === 'Response Rate' || currentText === tFr.responseRate) label.textContent = t.responseRate;
+                else if (currentText === 'Avg Time' || currentText === tFr.avgTime) label.textContent = t.avgTime;
+                else if (currentText === 'Priority' || currentText === tFr.priority) label.textContent = t.priority;
             });
             
             // Update question action buttons
             const actionButtons = document.querySelectorAll('.action-btn');
             actionButtons.forEach(btn => {
-                if (btn.textContent === '✅ ANSWERED') btn.textContent = '✅ ' + t.answered;
-                else if (btn.textContent === '❌ IGNORE') btn.textContent = '❌ ' + t.ignore;
+                if (btn.textContent === '✅ ANSWERED' || btn.textContent === '✅ ' + tFr.answered) btn.textContent = '✅ ' + t.answered;
+                else if (btn.textContent === '❌ IGNORE' || btn.textContent === '❌ ' + tFr.ignore) btn.textContent = '❌ ' + t.ignore;
             });
             
             // Update no questions text
             const noQuestionsElements = document.querySelectorAll('*');
             noQuestionsElements.forEach(element => {
-                if (element.textContent === 'No pending questions...') {
+                if (element.textContent === 'No pending questions...' || element.textContent === tFr.noPendingQuestions) {
                     element.textContent = t.noPendingQuestions;
                 }
             });
