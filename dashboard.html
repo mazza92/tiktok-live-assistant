@@ -3818,6 +3818,285 @@
             border-color: #28a745;
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
         }
+
+        /* Non-blocking Gift Notification Styles */
+        .gift-notifications-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+            pointer-events: none;
+        }
+
+        .gift-notification {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.95) 0%, rgba(255, 165, 0, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.3s ease-out;
+            pointer-events: auto;
+            max-height: 200px;
+            overflow: hidden;
+        }
+
+        .gift-notification.slide-out {
+            animation: slideOutRight 0.3s ease-in forwards;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .gift-notification-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .gift-notification-icon {
+            font-size: 1.5rem;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+
+        .gift-notification-title {
+            font-weight: bold;
+            color: #8B4513;
+            font-size: 0.9rem;
+        }
+
+        .gift-notification-sender {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .gift-sender-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .gift-sender-name {
+            font-weight: 600;
+            color: #8B4513;
+            font-size: 0.9rem;
+        }
+
+        .gift-notification-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .gift-name {
+            font-weight: 600;
+            color: #8B4513;
+            font-size: 0.85rem;
+        }
+
+        .gift-value {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #8B4513;
+            font-weight: 600;
+        }
+
+        .gift-notification-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+
+        .gift-action-mini {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #8B4513;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .gift-action-mini:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Gift Management Panel Styles */
+        .gift-management-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            max-width: 300px;
+        }
+
+        .gift-management-panel.collapsed {
+            max-height: 50px;
+            overflow: hidden;
+        }
+
+        .gift-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .gift-panel-header:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .gift-panel-icon {
+            font-size: 1.2rem;
+        }
+
+        .gift-panel-title {
+            color: white;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .gift-panel-count {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .gift-panel-toggle {
+            color: white;
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .gift-management-panel:not(.collapsed) .gift-panel-toggle {
+            transform: rotate(180deg);
+        }
+
+        .gift-panel-content {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gift-panel-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .gift-panel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .gift-panel-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .gift-queue-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .gift-queue-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        .gift-queue-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .gift-queue-info {
+            flex: 1;
+        }
+
+        .gift-queue-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .gift-queue-details {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .gift-notifications-container {
+                top: 70px;
+                right: 10px;
+                max-width: 280px;
+            }
+            
+            .gift-management-panel {
+                top: 70px;
+                left: 10px;
+                max-width: 250px;
+            }
+            
+            .gift-notification {
+                padding: 12px;
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -3832,11 +4111,7 @@
         <div class="connection-status" id="connectionStatus">
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
-            <div class="gift-queue-status" id="giftQueueStatus" style="display: none;">
-                <span class="queue-icon">🎁</span>
-                <span class="queue-count" id="queueCount">0</span>
-                <button class="queue-clear-btn" onclick="clearGiftQueue()" title="Clear all pending gifts">🚨</button>
-            </div>
+
         </div>
     </div>
 
@@ -4023,32 +4298,29 @@
         </div>
 
         <!-- Viewer Watch Time Statistics -->
-            <!-- Gift Alert Overlay -->
-    <div id="giftAlertOverlay" class="gift-alert-overlay hidden">
-        <div class="gift-alert-content">
-            <div class="gift-alert-header">
-                <span class="gift-icon">🎁</span>
-                <span class="gift-title">Gift Received!</span>
-                <div class="gift-counter-badge" id="giftCounterBadge" style="display: none;">1</div>
+            <!-- Non-blocking Gift Notifications -->
+            <div id="giftNotificationsContainer" class="gift-notifications-container">
+                <!-- Gift notifications will be dynamically added here -->
             </div>
-            <div class="gift-alert-body">
-                <div class="gift-sender">
-                    <img id="giftSenderPic" class="gift-sender-pic" src="" alt="Profile Picture">
-                    <span id="giftSenderName" class="gift-sender-name"></span>
+            
+            <!-- Gift Management Panel (Collapsible) -->
+            <div id="giftManagementPanel" class="gift-management-panel collapsed">
+                <div class="gift-panel-header" onclick="toggleGiftPanel()">
+                    <span class="gift-panel-icon">🎁</span>
+                    <span class="gift-panel-title">Gift Queue</span>
+                    <span class="gift-panel-count" id="giftPanelCount">0</span>
+                    <span class="gift-panel-toggle">▼</span>
                 </div>
-                <div class="gift-details">
-                    <div class="gift-name" id="giftName"></div>
-                    <div class="gift-value" id="giftValue"></div>
+                <div class="gift-panel-content">
+                    <div class="gift-panel-actions">
+                        <button class="gift-panel-btn" onclick="clearGiftQueue()" title="Clear all pending gifts">🚨 Clear All</button>
+                        <button class="gift-panel-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause gift notifications">⏸️ Pause</button>
+                        <button class="gift-panel-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume gift notifications" style="display: none;">▶️ Resume</button>
+                    </div>
+                    <div class="gift-queue-list" id="giftQueueList">
+                        <!-- Gift queue items will be listed here -->
+                    </div>
                 </div>
-                <div class="ai-prompt" id="aiGiftPrompt"></div>
-            </div>
-            <div class="gift-alert-actions">
-                <button class="gift-action-btn shoutout-btn" onclick="generateShoutout()" type="button">🎤 Shoutout</button>
-                <button class="gift-action-btn thank-btn" onclick="generateThankYou()" type="button">🙏 Thank You</button>
-                <button class="gift-action-btn close-btn" onclick="closeGiftAlert()" type="button">✕</button>
-                <button class="gift-action-btn emergency-btn" onclick="clearGiftQueue()" type="button" title="Emergency: Clear all pending gifts">🚨 Clear All</button>
-            </div>
-        </div>
             </div>
 
         <div class="question-highlight">
@@ -7509,9 +7781,12 @@
             updateGiftQueueDisplay();
         }
 
+                // New non-blocking gift notification system
+        let giftNotificationsPaused = false;
+        let maxVisibleNotifications = 3; // Maximum notifications visible at once
+        
         function processGiftQueue() {
-            if (giftQueue.length === 0) {
-                isShowingGift = false;
+            if (giftQueue.length === 0 || giftNotificationsPaused) {
                 return;
             }
             
@@ -7522,96 +7797,163 @@
                 return;
             }
             
-            isShowingGift = true;
-            const giftData = giftQueue.shift();
+            // Process gifts in batches for better performance
+            const giftsToProcess = Math.min(3, giftQueue.length);
+            for (let i = 0; i < giftsToProcess; i++) {
+                const giftData = giftQueue.shift();
+                if (giftData) {
+                    displayGiftNotification(giftData);
+                }
+            }
             
-            console.log(`🎁 [GIFT ALERT] Processing gift from ${giftData.nickname}, ${giftData.giftCount} gifts`);
+            // Update the gift management panel
+            updateGiftManagementPanel();
             
-            // Display the gift
-            displayGiftAlert(giftData);
-            
-            // Schedule next gift or finish
-            giftDisplayTimer = setTimeout(() => {
-                closeGiftAlert();
-                
-                // Process next gift after a short delay
+            // Continue processing if there are more gifts
+            if (giftQueue.length > 0) {
                 setTimeout(() => {
                     processGiftQueue();
-                }, 500);
-            }, giftDisplayDuration);
+                }, 1000); // 1 second delay between batches
+            }
         }
         
-        function displayGiftAlert(giftData) {
-            // Update gift alert content
-            const senderPic = document.getElementById('giftSenderPic');
-            const senderName = document.getElementById('giftSenderName');
-            const giftName = document.getElementById('giftName');
-            const giftValue = document.getElementById('giftValue');
-            const aiPrompt = document.getElementById('aiGiftPrompt');
-            const giftCounterBadge = document.getElementById('giftCounterBadge');
+        function displayGiftNotification(giftData) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'gift-notification';
+            notification.id = `gift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             
-            if (senderPic) senderPic.src = giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+';
-            if (senderName) senderName.textContent = `${giftData.nickname}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}`;
-            if (giftName) giftName.textContent = giftData.gift?.name || 'Unknown Gift';
-            if (giftValue) giftValue.textContent = `${giftData.totalDiamonds || 0} diamonds ($${(giftData.totalValue || 0).toFixed(2)})`;
+            // Set notification content
+            notification.innerHTML = `
+                <div class="gift-notification-header">
+                    <span class="gift-notification-icon">🎁</span>
+                    <span class="gift-notification-title">Gift Received!</span>
+                </div>
+                <div class="gift-notification-sender">
+                    <img class="gift-sender-avatar" src="${giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
+                    <span class="gift-sender-name">${giftData.nickname}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}</span>
+                </div>
+                <div class="gift-notification-details">
+                    <div class="gift-name">${giftData.gift?.name || 'Unknown Gift'}</div>
+                    <div class="gift-value">${giftData.totalDiamonds || 0} 💎</div>
+                </div>
+                <div class="gift-notification-actions">
+                    <button class="gift-action-mini" onclick="generateShoutout('${giftData.nickname}')" title="Generate shoutout">🎤</button>
+                    <button class="gift-action-mini" onclick="generateThankYou('${giftData.nickname}')" title="Generate thank you">🙏</button>
+                    <button class="gift-action-mini" onclick="removeGiftNotification('${notification.id}')" title="Dismiss">✕</button>
+                </div>
+            `;
             
-            // Show gift counter badge for multiple gifts
-            if (giftCounterBadge) {
-                if (giftData.giftCount > 1) {
-                    giftCounterBadge.style.display = 'flex';
-                    giftCounterBadge.textContent = giftData.giftCount;
-                } else {
-                    giftCounterBadge.style.display = 'none';
-                }
-            }
-            
-            // Generate AI prompt
-            const prompt = generateGiftPrompt(giftData, giftData.giftCount);
-            if (aiPrompt) {
-                aiPrompt.innerHTML = `<div class="ai-prompt-text">🤖 ${prompt}</div>`;
-            }
-            
-            // Show the overlay
-            const overlay = document.getElementById('giftAlertOverlay');
-            if (overlay) {
-                overlay.classList.remove('hidden');
-            }
-            
-            // Auto-close timer
-            setTimeout(() => {
-                if (isShowingGift) {
-                    closeGiftAlert();
+            // Add to notifications container
+            const container = document.getElementById('giftNotificationsContainer');
+            if (container) {
+                container.appendChild(notification);
+                
+                // Limit visible notifications
+                const notifications = container.querySelectorAll('.gift-notification');
+                if (notifications.length > maxVisibleNotifications) {
+                    // Remove oldest notification
+                    const oldestNotification = notifications[0];
+                    oldestNotification.classList.add('slide-out');
                     setTimeout(() => {
-                        processGiftQueue();
-                    }, 500);
+                        if (oldestNotification.parentNode) {
+                            oldestNotification.parentNode.removeChild(oldestNotification);
+                        }
+                    }, 300);
                 }
-            }, autoCloseDelay);
+                
+                // Auto-remove notification after 8 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.classList.add('slide-out');
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 300);
+                    }
+                }, 8000);
+            }
         }
-
+        
+        function removeGiftNotification(notificationId) {
+            const notification = document.getElementById(notificationId);
+            if (notification) {
+                notification.classList.add('slide-out');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }
+        
+        function updateGiftManagementPanel() {
+            const panelCount = document.getElementById('giftPanelCount');
+            const queueList = document.getElementById('giftQueueList');
+            
+            if (panelCount) {
+                panelCount.textContent = giftQueue.length;
+            }
+            
+            if (queueList) {
+                queueList.innerHTML = '';
+                
+                // Show recent gifts in the queue
+                const recentGifts = giftQueue.slice(0, 5); // Show last 5
+                recentGifts.forEach((gift, index) => {
+                    const queueItem = document.createElement('div');
+                    queueItem.className = 'gift-queue-item';
+                    queueItem.innerHTML = `
+                        <img class="gift-queue-avatar" src="${gift.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
+                        <div class="gift-queue-info">
+                            <div class="gift-queue-name">${gift.nickname}</div>
+                            <div class="gift-queue-details">${gift.gift?.name || 'Unknown'} - ${gift.totalDiamonds || 0}💎</div>
+                        </div>
+                    `;
+                    queueList.appendChild(queueItem);
+                });
+            }
+        }
+        
+        function toggleGiftPanel() {
+            const panel = document.getElementById('giftManagementPanel');
+            if (panel) {
+                panel.classList.toggle('collapsed');
+            }
+        }
+        
+        function pauseGiftNotifications() {
+            giftNotificationsPaused = true;
+            document.getElementById('pauseGiftBtn').style.display = 'none';
+            document.getElementById('resumeGiftBtn').style.display = 'inline-block';
+            console.log('⏸️ [GIFT ALERT] Gift notifications paused');
+        }
+        
+        function resumeGiftNotifications() {
+            giftNotificationsPaused = false;
+            document.getElementById('resumeGiftBtn').style.display = 'none';
+            document.getElementById('pauseGiftBtn').style.display = 'inline-block';
+            console.log('▶️ [GIFT ALERT] Gift notifications resumed');
+            // Process any pending gifts
+            if (giftQueue.length > 0) {
+                processGiftQueue();
+            }
+        }
+        
         // Emergency gift queue clear function
         function clearGiftQueue() {
             console.log('🚨 [GIFT ALERT] Emergency clearing gift queue');
             giftQueue = [];
-            isShowingGift = false;
             
-            if (giftDisplayTimer) {
-                clearTimeout(giftDisplayTimer);
-                giftDisplayTimer = null;
+            // Clear all visible notifications
+            const container = document.getElementById('giftNotificationsContainer');
+            if (container) {
+                container.innerHTML = '';
             }
             
-            // Force close any open gift alert
-            const overlay = document.getElementById('giftAlertOverlay');
-            if (overlay) {
-                overlay.classList.add('hidden');
-            }
-            
-            // Hide gift counter badge
-            const giftCounterBadge = document.getElementById('giftCounterBadge');
-            if (giftCounterBadge) {
-                giftCounterBadge.style.display = 'none';
-            }
-            
-            updateGiftQueueDisplay();
+            // Update the management panel
+            updateGiftManagementPanel();
             
             // Add activity item to show gift queue was cleared
             addActivityItem('🚨', 'System', 'Gift queue cleared - all pending gifts removed');
@@ -7621,49 +7963,8 @@
         function getGiftQueueStatus() {
             return {
                 queueLength: giftQueue.length,
-                isShowing: isShowingGift,
-                nextGift: giftQueue[0] || null
+                isPaused: giftNotificationsPaused
             };
-        }
-        
-        // Update gift queue status display
-        function updateGiftQueueDisplay() {
-            const queueStatus = document.getElementById('giftQueueStatus');
-            const queueCount = document.getElementById('queueCount');
-            
-            if (giftQueue.length > 0) {
-                if (queueStatus) queueStatus.style.display = 'flex';
-                if (queueCount) queueCount.textContent = giftQueue.length;
-            } else {
-                if (queueStatus) queueStatus.style.display = 'none';
-            }
-        }
-
-        function closeGiftAlert() {
-            console.log('✕ [CLOSE] Close button clicked - closing gift alert');
-            
-            const overlay = document.getElementById('giftAlertOverlay');
-            console.log('✕ [CLOSE] Overlay element found:', overlay);
-            
-            if (overlay) {
-                overlay.classList.add('hidden');
-                console.log('✕ [CLOSE] Overlay hidden successfully');
-            }
-            
-            // Hide gift counter badge
-            const giftCounterBadge = document.getElementById('giftCounterBadge');
-            if (giftCounterBadge) {
-                giftCounterBadge.style.display = 'none';
-            }
-            
-            // Clear display timer
-            if (giftDisplayTimer) {
-                clearTimeout(giftDisplayTimer);
-                giftDisplayTimer = null;
-            }
-            
-            // Mark as not showing
-            isShowingGift = false;
         }
 
         function generateGiftPrompt(giftData, giftCount = 1) {
