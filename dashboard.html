@@ -4306,12 +4306,14 @@
                 engagement: "Engagement",
                 
                 // Metrics
-                viewers: "Viewers",
-                live: "Live",
-                gifts: "Gifts",
-                received: "Received",
-                comments: "Comments",
-                total: "Total",
+                liveViewers: "Live Viewers",
+                newFollowers: "New Followers",
+                totalLikes: "Total Likes",
+                totalGifts: "Total Gifts",
+                likesPerMinute: "Likes per Minute",
+                totalShares: "Total Shares",
+                followersGained: "gained this stream",
+                totalValue: "total value",
                 
                 // Performance Monitor
                 systemPerformance: "🖥️ System Performance",
@@ -4367,12 +4369,14 @@
                 engagement: "Engagement",
                 
                 // Metrics
-                viewers: "Spectateurs",
-                live: "En Direct",
-                gifts: "Cadeaux",
-                received: "Reçus",
-                comments: "Commentaires",
-                total: "Total",
+                liveViewers: "Spectateurs en Direct",
+                newFollowers: "Nouveaux Abonnés",
+                totalLikes: "Total des J'aime",
+                totalGifts: "Total des Cadeaux",
+                likesPerMinute: "J'aime par Minute",
+                totalShares: "Total des Partages",
+                followersGained: "gagnés ce stream",
+                totalValue: "valeur totale",
                 
                 // Performance Monitor
                 systemPerformance: "🖥️ Performance du Système",
@@ -4408,6 +4412,7 @@
         function switchLanguage(lang) {
             if (lang === currentLanguage) return;
             
+            console.log('🔄 Switching language to:', lang);
             currentLanguage = lang;
             
             // Update language buttons
@@ -4424,15 +4429,20 @@
             
             // Save language preference
             localStorage.setItem('dashboard_language', lang);
+            console.log('✅ Language switched to:', lang);
         }
 
         // Update all text content based on current language
         function updateLanguageContent() {
             const t = translations[currentLanguage];
+            console.log('🔄 Updating content for language:', currentLanguage);
             
             // Update dashboard title
             const titleElement = document.querySelector('.dashboard-header h1');
-            if (titleElement) titleElement.textContent = t.dashboardTitle;
+            if (titleElement) {
+                titleElement.textContent = t.dashboardTitle;
+                console.log('✅ Updated dashboard title');
+            }
             
             // Update username placeholder
             const usernameInput = document.getElementById('usernameInput');
@@ -4507,28 +4517,49 @@
         // Update metrics labels and subtitles
         function updateMetricsLabels() {
             const t = translations[currentLanguage];
+            console.log('🔄 Updating metrics labels for language:', currentLanguage);
             
             // Find and update metric cards
             const metricCards = document.querySelectorAll('.metric-card');
-            metricCards.forEach((card, index) => {
-                // Update metric labels based on position or content
+            console.log('📊 Found metric cards:', metricCards.length);
+            metricCards.forEach((card) => {
                 const labelElement = card.querySelector('.metric-label');
                 const subtitleElement = card.querySelector('.metric-subtitle');
                 
-                if (labelElement && subtitleElement) {
-                    switch(index) {
-                        case 0: // First card - Viewers
-                            labelElement.textContent = t.viewers;
-                            subtitleElement.textContent = t.live;
+                if (labelElement) {
+                    // Update labels based on current text content
+                    const currentLabel = labelElement.textContent.trim();
+                    
+                    switch(currentLabel) {
+                        case 'Live Viewers':
+                            labelElement.textContent = t.liveViewers;
                             break;
-                        case 1: // Second card - Gifts
-                            labelElement.textContent = t.gifts;
-                            subtitleElement.textContent = t.received;
+                        case 'New Followers':
+                            labelElement.textContent = t.newFollowers;
                             break;
-                        case 2: // Third card - Comments
-                            labelElement.textContent = t.comments;
-                            subtitleElement.textContent = t.total;
+                        case 'Total Likes':
+                            labelElement.textContent = t.totalLikes;
                             break;
+                        case 'Total Gifts':
+                            labelElement.textContent = t.totalGifts;
+                            break;
+                        case 'Likes per Minute':
+                            labelElement.textContent = t.likesPerMinute;
+                            break;
+                        case 'Total Shares':
+                            labelElement.textContent = t.totalShares;
+                            break;
+                    }
+                }
+                
+                if (subtitleElement) {
+                    // Update subtitles based on current text content
+                    const currentSubtitle = subtitleElement.textContent.trim();
+                    
+                    if (currentSubtitle.includes('gained this stream')) {
+                        subtitleElement.textContent = t.followersGained;
+                    } else if (currentSubtitle.includes('total value')) {
+                        subtitleElement.textContent = t.totalValue;
                     }
                 }
             });
