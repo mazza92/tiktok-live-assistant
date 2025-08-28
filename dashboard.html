@@ -4324,7 +4324,20 @@
                 // Activity Feed
                 liveActivity: "Live Activity",
                 waitingForConnection: "Waiting for connection to stream...",
-                now: "Now"
+                now: "Now",
+                
+                // Additional Elements
+                streamStatus: "Not connected",
+                streamerName: "",
+                connectionTime: "",
+                connectionDuration: "",
+                giftQueueStatus: "Gift Queue",
+                queueIcon: "🎁",
+                queueCount: "0",
+                clearGifts: "🚨",
+                clearGiftsTitle: "Clear all pending gifts",
+                manualReconnect: "🔄",
+                manualReconnectTitle: "Manual Reconnect"
             },
             fr: {
                 // Dashboard Header
@@ -4372,7 +4385,20 @@
                 // Activity Feed
                 liveActivity: "Activité en Direct",
                 waitingForConnection: "En attente de connexion au stream...",
-                now: "Maintenant"
+                now: "Maintenant",
+                
+                // Additional Elements
+                streamStatus: "Non connecté",
+                streamerName: "",
+                connectionTime: "",
+                connectionDuration: "",
+                giftQueueStatus: "File d'Attente des Cadeaux",
+                queueIcon: "🎁",
+                queueCount: "0",
+                clearGifts: "🚨",
+                clearGiftsTitle: "Effacer tous les cadeaux en attente",
+                manualReconnect: "🔄",
+                manualReconnectTitle: "Reconnexion Manuelle"
             }
         };
 
@@ -4419,6 +4445,12 @@
             const disconnectBtn = document.getElementById('disconnectBtn');
             if (disconnectBtn) disconnectBtn.textContent = t.disconnectBtn;
             
+            // Update stream status
+            const streamStatus = document.getElementById('streamStatus');
+            if (streamStatus && streamStatus.textContent === 'Not connected') {
+                streamStatus.textContent = t.streamStatus;
+            }
+            
             // Update entertainment gauge
             const entertainmentTitle = document.querySelector('.entertainment-gauge h3');
             if (entertainmentTitle) entertainmentTitle.textContent = t.liveMoodScore;
@@ -4451,6 +4483,55 @@
             
             const perfRefreshBtn = document.querySelector('.perf-refresh-btn');
             if (perfRefreshBtn) perfRefreshBtn.textContent = t.refresh;
+            
+            // Update refresh button title
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) refreshBtn.title = t.manualReconnectTitle;
+            
+            // Update gift queue elements
+            const giftQueueStatus = document.getElementById('giftQueueStatus');
+            if (giftQueueStatus) {
+                const queueIcon = giftQueueStatus.querySelector('.queue-icon');
+                if (queueIcon) queueIcon.textContent = t.queueIcon;
+                
+                const clearGiftsBtn = giftQueueStatus.querySelector('.queue-clear-btn');
+                if (clearGiftsBtn) {
+                    clearGiftsBtn.title = t.clearGiftsTitle;
+                }
+            }
+            
+            // Update metrics labels if they exist
+            updateMetricsLabels();
+        }
+
+        // Update metrics labels and subtitles
+        function updateMetricsLabels() {
+            const t = translations[currentLanguage];
+            
+            // Find and update metric cards
+            const metricCards = document.querySelectorAll('.metric-card');
+            metricCards.forEach((card, index) => {
+                // Update metric labels based on position or content
+                const labelElement = card.querySelector('.metric-label');
+                const subtitleElement = card.querySelector('.metric-subtitle');
+                
+                if (labelElement && subtitleElement) {
+                    switch(index) {
+                        case 0: // First card - Viewers
+                            labelElement.textContent = t.viewers;
+                            subtitleElement.textContent = t.live;
+                            break;
+                        case 1: // Second card - Gifts
+                            labelElement.textContent = t.gifts;
+                            subtitleElement.textContent = t.received;
+                            break;
+                        case 2: // Third card - Comments
+                            labelElement.textContent = t.comments;
+                            subtitleElement.textContent = t.total;
+                            break;
+                    }
+                }
+            });
         }
 
         // Load saved language preference on page load
@@ -4495,6 +4576,16 @@
                 refreshBtn.style.display = 'inline-block';
             } else {
                 refreshBtn.style.display = 'none';
+            }
+            
+            // Update language-specific status text if needed
+            if (currentLanguage === 'fr') {
+                const t = translations.fr;
+                if (status === 'Connecting...') text.textContent = t.connecting;
+                else if (status === 'Connected') text.textContent = t.connected;
+                else if (status === 'Disconnected') text.textContent = t.disconnected;
+                else if (status.includes('Failed')) text.textContent = t.failed;
+                else if (status.includes('Error')) text.textContent = t.error;
             }
         }
 
