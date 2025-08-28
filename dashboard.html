@@ -3948,134 +3948,97 @@
             transform: translateY(-1px);
         }
 
-        /* Gift Management Panel Styles */
-        .gift-management-panel {
+        /* Compact Gift Queue Indicator Styles */
+        .gift-queue-indicator {
             position: fixed;
             top: 80px;
             left: 20px;
             z-index: 999;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(20px);
-            border-radius: 15px;
+            border-radius: 12px;
             border: 2px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            max-width: 300px;
-        }
-
-        .gift-management-panel.collapsed {
-            max-height: 50px;
+            min-width: 60px;
+            max-width: 60px;
             overflow: hidden;
         }
 
-        .gift-panel-header {
+        .gift-queue-indicator.expanded {
+            max-width: 200px;
+        }
+
+        .gift-indicator-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
             cursor: pointer;
             user-select: none;
             transition: background 0.2s ease;
+            min-height: 44px;
         }
 
-        .gift-panel-header:hover {
+        .gift-indicator-header:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .gift-panel-icon {
+        .gift-indicator-icon {
             font-size: 1.2rem;
         }
 
-        .gift-panel-title {
-            color: white;
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .gift-panel-count {
+        .gift-indicator-count {
             background: linear-gradient(135deg, #ff6b6b, #ee5a24);
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7rem;
             font-weight: bold;
-            min-width: 20px;
+            min-width: 18px;
             text-align: center;
         }
 
-        .gift-panel-toggle {
+        .gift-indicator-toggle {
             color: white;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             transition: transform 0.3s ease;
         }
 
-        .gift-management-panel:not(.collapsed) .gift-panel-toggle {
+        .gift-queue-indicator.expanded .gift-indicator-toggle {
             transform: rotate(180deg);
         }
 
-        .gift-panel-content {
-            padding: 15px;
+        .gift-indicator-content {
+            padding: 10px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .gift-panel-actions {
             display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
+            justify-content: center;
         }
 
-        .gift-panel-btn {
+        .gift-indicator-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .gift-indicator-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
+            min-width: 32px;
+            text-align: center;
         }
 
-        .gift-panel-btn:hover {
+        .gift-indicator-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
-        }
-
-        .gift-queue-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .gift-queue-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin-bottom: 5px;
-            font-size: 0.8rem;
-            color: white;
-        }
-
-        .gift-queue-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-
-        .gift-queue-info {
-            flex: 1;
-        }
-
-        .gift-queue-name {
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .gift-queue-details {
-            font-size: 0.75rem;
-            opacity: 0.8;
         }
 
         /* Mobile responsive adjustments */
@@ -4086,10 +4049,15 @@
                 max-width: 280px;
             }
             
-            .gift-management-panel {
+            .gift-queue-indicator {
                 top: 70px;
                 left: 10px;
-                max-width: 250px;
+                min-width: 50px;
+                max-width: 50px;
+            }
+            
+            .gift-queue-indicator.expanded {
+                max-width: 180px;
             }
             
             .gift-notification {
@@ -4303,22 +4271,18 @@
                 <!-- Gift notifications will be dynamically added here -->
             </div>
             
-            <!-- Gift Management Panel (Collapsible) -->
-            <div id="giftManagementPanel" class="gift-management-panel collapsed">
-                <div class="gift-panel-header" onclick="toggleGiftPanel()">
-                    <span class="gift-panel-icon">🎁</span>
-                    <span class="gift-panel-title">Gift Queue</span>
-                    <span class="gift-panel-count" id="giftPanelCount">0</span>
-                    <span class="gift-panel-toggle">▼</span>
+            <!-- Compact Gift Queue Indicator -->
+            <div id="giftQueueIndicator" class="gift-queue-indicator">
+                <div class="gift-indicator-header" onclick="toggleGiftIndicator()">
+                    <span class="gift-indicator-icon">🎁</span>
+                    <span class="gift-indicator-count" id="giftIndicatorCount">0</span>
+                    <span class="gift-indicator-toggle">▼</span>
                 </div>
-                <div class="gift-panel-content">
-                    <div class="gift-panel-actions">
-                        <button class="gift-panel-btn" onclick="clearGiftQueue()" title="Clear all pending gifts">🚨 Clear All</button>
-                        <button class="gift-panel-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause gift notifications">⏸️ Pause</button>
-                        <button class="gift-panel-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume gift notifications" style="display: none;">▶️ Resume</button>
-                    </div>
-                    <div class="gift-queue-list" id="giftQueueList">
-                        <!-- Gift queue items will be listed here -->
+                <div class="gift-indicator-content">
+                    <div class="gift-indicator-actions">
+                        <button class="gift-indicator-btn" onclick="clearGiftQueue()" title="Clear all gifts">🚨</button>
+                        <button class="gift-indicator-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause">⏸️</button>
+                        <button class="gift-indicator-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume" style="display: none;">▶️</button>
                     </div>
                 </div>
             </div>
@@ -7889,37 +7853,17 @@
         }
         
         function updateGiftManagementPanel() {
-            const panelCount = document.getElementById('giftPanelCount');
-            const queueList = document.getElementById('giftQueueList');
+            const indicatorCount = document.getElementById('giftIndicatorCount');
             
-            if (panelCount) {
-                panelCount.textContent = giftQueue.length;
-            }
-            
-            if (queueList) {
-                queueList.innerHTML = '';
-                
-                // Show recent gifts in the queue
-                const recentGifts = giftQueue.slice(0, 5); // Show last 5
-                recentGifts.forEach((gift, index) => {
-                    const queueItem = document.createElement('div');
-                    queueItem.className = 'gift-queue-item';
-                    queueItem.innerHTML = `
-                        <img class="gift-queue-avatar" src="${gift.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
-                        <div class="gift-queue-info">
-                            <div class="gift-queue-name">${gift.nickname}</div>
-                            <div class="gift-queue-details">${gift.gift?.name || 'Unknown'} - ${gift.totalDiamonds || 0}💎</div>
-                        </div>
-                    `;
-                    queueList.appendChild(queueItem);
-                });
+            if (indicatorCount) {
+                indicatorCount.textContent = giftQueue.length;
             }
         }
         
-        function toggleGiftPanel() {
-            const panel = document.getElementById('giftManagementPanel');
-            if (panel) {
-                panel.classList.toggle('collapsed');
+        function toggleGiftIndicator() {
+            const indicator = document.getElementById('giftQueueIndicator');
+            if (indicator) {
+                indicator.classList.toggle('expanded');
             }
         }
         
