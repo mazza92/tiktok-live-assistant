@@ -24,6 +24,48 @@
             overflow-x: hidden;
         }
 
+        /* Language Switcher Styles */
+        .language-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .language-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .language-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .language-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -41,6 +83,17 @@
 
         /* Mobile responsive layout */
         @media (max-width: 768px) {
+            .language-switcher {
+                top: 15px;
+                right: 15px;
+                padding: 6px;
+            }
+            
+            .language-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+            
             :root {
                 --animation-duration: 0.3s;
                 --transition-duration: 0.2s;
@@ -3753,6 +3806,12 @@
     </style>
 </head>
 <body>
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <button class="language-btn active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+        <button class="language-btn" onclick="switchLanguage('fr')">🇫🇷 FR</button>
+    </div>
+    
     <div class="dashboard-header">
         <h1> TikTok Live Assistant </h1>
         <div class="connection-status" id="connectionStatus">
@@ -4202,6 +4261,203 @@
     </div>
 
     <script>
+        // Language and Translations
+        const translations = {
+            en: {
+                // Dashboard Header
+                dashboardTitle: "TikTok Live Assistant",
+                connectionStatus: "Connection Status",
+                connecting: "Connecting...",
+                connected: "Connected",
+                disconnected: "Disconnected",
+                failed: "Connection Failed",
+                error: "Connection Error",
+                
+                // Username Section
+                usernamePlaceholder: "Enter TikTok username (without @)",
+                connectBtn: "🔗 Connect",
+                disconnectBtn: "❌ Disconnect",
+                notConnected: "Not connected",
+                reconnecting: "Reconnecting...",
+                
+                // Entertainment Gauge
+                liveMoodScore: "Live Mood Score",
+                neutral: "Neutral",
+                boring: "Boring",
+                meh: "Meh",
+                good: "Good",
+                entertaining: "Entertaining",
+                fire: "Fire!",
+                engagement: "Engagement",
+                
+                // Metrics
+                viewers: "Viewers",
+                live: "Live",
+                gifts: "Gifts",
+                received: "Received",
+                comments: "Comments",
+                total: "Total",
+                
+                // Performance Monitor
+                systemPerformance: "🖥️ System Performance",
+                memoryUsage: "Memory Usage:",
+                uptime: "Uptime:",
+                activeViewers: "Active Viewers:",
+                connectionMode: "Connection Mode:",
+                refresh: "🔄 Refresh",
+                
+                // Activity Feed
+                liveActivity: "Live Activity",
+                waitingForConnection: "Waiting for connection to stream...",
+                now: "Now"
+            },
+            fr: {
+                // Dashboard Header
+                dashboardTitle: "Assistant TikTok Live",
+                connectionStatus: "Statut de la Connexion",
+                connecting: "Connexion...",
+                connected: "Connecté",
+                disconnected: "Déconnecté",
+                failed: "Échec de Connexion",
+                error: "Erreur de Connexion",
+                
+                // Username Section
+                usernamePlaceholder: "Nom d'utilisateur TikTok (sans @)",
+                connectBtn: "🔗 Se Connecter",
+                disconnectBtn: "❌ Se Déconnecter",
+                notConnected: "Non Connecté",
+                reconnecting: "Reconnexion...",
+                
+                // Entertainment Gauge
+                liveMoodScore: "Score d'Humeur en Direct",
+                neutral: "Neutre",
+                boring: "Ennuyeux",
+                meh: "Bof",
+                good: "Bien",
+                entertaining: "Divertissant",
+                fire: "Feu!",
+                engagement: "Engagement",
+                
+                // Metrics
+                viewers: "Spectateurs",
+                live: "En Direct",
+                gifts: "Cadeaux",
+                received: "Reçus",
+                comments: "Commentaires",
+                total: "Total",
+                
+                // Performance Monitor
+                systemPerformance: "🖥️ Performance du Système",
+                memoryUsage: "Utilisation Mémoire:",
+                uptime: "Temps de Fonctionnement:",
+                activeViewers: "Spectateurs Actifs:",
+                connectionMode: "Mode de Connexion:",
+                refresh: "🔄 Actualiser",
+                
+                // Activity Feed
+                liveActivity: "Activité en Direct",
+                waitingForConnection: "En attente de connexion au stream...",
+                now: "Maintenant"
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        // Language switching functionality
+        function switchLanguage(lang) {
+            if (lang === currentLanguage) return;
+            
+            currentLanguage = lang;
+            
+            // Update language buttons
+            document.querySelectorAll('.language-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update HTML lang attribute
+            document.documentElement.lang = lang;
+            
+            // Update page content
+            updateLanguageContent();
+            
+            // Save language preference
+            localStorage.setItem('dashboard_language', lang);
+        }
+
+        // Update all text content based on current language
+        function updateLanguageContent() {
+            const t = translations[currentLanguage];
+            
+            // Update dashboard title
+            const titleElement = document.querySelector('.dashboard-header h1');
+            if (titleElement) titleElement.textContent = t.dashboardTitle;
+            
+            // Update username placeholder
+            const usernameInput = document.getElementById('usernameInput');
+            if (usernameInput) usernameInput.placeholder = t.usernamePlaceholder;
+            
+            // Update button texts
+            const connectBtn = document.getElementById('connectBtn');
+            if (connectBtn) connectBtn.textContent = t.connectBtn;
+            
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            if (disconnectBtn) disconnectBtn.textContent = t.disconnectBtn;
+            
+            // Update entertainment gauge
+            const entertainmentTitle = document.querySelector('.entertainment-gauge h3');
+            if (entertainmentTitle) entertainmentTitle.textContent = t.liveMoodScore;
+            
+            // Update progress labels
+            const progressLabels = document.querySelectorAll('.progress-labels span');
+            if (progressLabels.length >= 5) {
+                progressLabels[0].textContent = t.boring;
+                progressLabels[1].textContent = t.meh;
+                progressLabels[2].textContent = t.good;
+                progressLabels[3].textContent = t.entertaining;
+                progressLabels[4].textContent = t.fire;
+            }
+            
+            // Update breakdown labels
+            const breakdownLabel = document.querySelector('.breakdown-label');
+            if (breakdownLabel) breakdownLabel.textContent = t.engagement;
+            
+            // Update performance monitor
+            const perfTitle = document.querySelector('.performance-monitor h3');
+            if (perfTitle) perfTitle.textContent = t.systemPerformance;
+            
+            const perfLabels = document.querySelectorAll('.perf-label');
+            if (perfLabels.length >= 4) {
+                perfLabels[0].textContent = t.memoryUsage;
+                perfLabels[1].textContent = t.uptime;
+                perfLabels[2].textContent = t.activeViewers;
+                perfLabels[3].textContent = t.connectionMode;
+            }
+            
+            const perfRefreshBtn = document.querySelector('.perf-refresh-btn');
+            if (perfRefreshBtn) perfRefreshBtn.textContent = t.refresh;
+        }
+
+        // Load saved language preference on page load
+        function loadLanguagePreference() {
+            const savedLang = localStorage.getItem('dashboard_language');
+            if (savedLang && (savedLang === 'en' || savedLang === 'fr')) {
+                currentLanguage = savedLang;
+                document.documentElement.lang = savedLang;
+                
+                // Update language button states
+                document.querySelectorAll('.language-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent.includes(savedLang === 'en' ? 'EN' : 'FR')) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // Update content
+                updateLanguageContent();
+            }
+        }
+
         // WebSocket connection
         let ws = null;
         let reconnectAttempts = 0;
@@ -5979,6 +6235,9 @@
         
         // Call initialization when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Load language preference first
+            loadLanguagePreference();
+            
             initializeQuestionStats();
             showNoQuestionsCard(); // Ensure question display is initialized
         });
