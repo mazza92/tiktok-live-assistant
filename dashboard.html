@@ -4003,9 +4003,158 @@
             transform: translateY(-1px);
         }
 
+        /* Viewer Notification Styles */
+        .viewer-notifications-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 998;
+            max-width: 300px;
+            max-height: 60vh;
+            overflow-y: auto;
+            pointer-events: none;
+        }
+        
+        .viewer-notification {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            animation: slideInRight 0.4s ease-out;
+            pointer-events: auto;
+            backdrop-filter: blur(20px);
+        }
+        
+        .viewer-notification-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .viewer-notification-icon {
+            font-size: 1.2rem;
+            animation: bounce 1.5s infinite;
+        }
+        
+        .viewer-notification-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .viewer-notification-sender {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .viewer-sender-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            object-fit: cover;
+        }
+        
+        .viewer-sender-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .viewer-notification-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .viewer-action-mini {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .viewer-action-mini:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        /* Viewer Counter Indicator Styles */
+        .viewer-counter-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            padding: 8px 12px;
+        }
+        
+        .viewer-indicator-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .viewer-indicator-icon {
+            font-size: 1.2rem;
+        }
+        
+        .viewer-indicator-count {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .viewer-indicator-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            min-width: 28px;
+            text-align: center;
+        }
+        
+        .viewer-indicator-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        
         /* Mobile responsive adjustments */
         @media (max-width: 768px) {
             .gift-notifications-container {
+                top: 70px;
+                right: 10px;
+                max-width: 280px;
+            }
+            
+            .viewer-notifications-container {
                 top: 70px;
                 right: 10px;
                 max-width: 280px;
@@ -4017,7 +4166,17 @@
                 padding: 6px 10px;
             }
             
+            .viewer-counter-indicator {
+                bottom: 15px;
+                left: 15px;
+                padding: 6px 10px;
+            }
+            
             .gift-indicator-content {
+                gap: 6px;
+            }
+            
+            .viewer-indicator-content {
                 gap: 6px;
             }
             
@@ -4025,7 +4184,17 @@
                 font-size: 1rem;
             }
             
+            .viewer-indicator-icon {
+                font-size: 1rem;
+            }
+            
             .gift-indicator-count {
+                padding: 1px 4px;
+                font-size: 0.65rem;
+                min-width: 16px;
+            }
+            
+            .viewer-indicator-count {
                 padding: 1px 4px;
                 font-size: 0.65rem;
                 min-width: 16px;
@@ -4037,7 +4206,18 @@
                 font-size: 0.75rem;
             }
             
+            .viewer-indicator-btn {
+                padding: 3px 5px;
+                min-width: 24px;
+                font-size: 0.75rem;
+            }
+            
             .gift-notification {
+                padding: 12px;
+                font-size: 0.85rem;
+            }
+            
+            .viewer-notification {
                 padding: 12px;
                 font-size: 0.85rem;
             }
@@ -4248,6 +4428,11 @@
                 <!-- Gift notifications will be dynamically added here -->
             </div>
             
+            <!-- Non-blocking Viewer Notifications -->
+            <div id="viewerNotificationsContainer" class="viewer-notifications-container">
+                <!-- Viewer notifications will be dynamically added here -->
+            </div>
+            
             <!-- Compact Gift Queue Indicator -->
             <div id="giftQueueIndicator" class="gift-queue-indicator">
                 <div class="gift-indicator-content">
@@ -4256,6 +4441,17 @@
                     <button class="gift-indicator-btn" onclick="clearGiftQueue()" title="Clear all gifts">🚨</button>
                     <button class="gift-indicator-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause">⏸️</button>
                     <button class="gift-indicator-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume" style="display: none;">▶️</button>
+                </div>
+            </div>
+            
+            <!-- Compact Viewer Counter Indicator -->
+            <div id="viewerCounterIndicator" class="viewer-counter-indicator">
+                <div class="viewer-indicator-content">
+                    <span class="viewer-indicator-icon">👋</span>
+                    <span class="viewer-indicator-count" id="viewerIndicatorCount">0</span>
+                    <button class="viewer-indicator-btn" onclick="clearViewerHistory()" title="Clear viewer history">🗑️</button>
+                    <button class="viewer-indicator-btn" onclick="pauseViewerNotifications()" id="pauseViewerBtn" title="Pause">⏸️</button>
+                    <button class="viewer-indicator-btn" onclick="resumeViewerNotifications()" id="resumeViewerBtn" title="Resume" style="display: none;">▶️</button>
                 </div>
             </div>
 
@@ -6881,6 +7077,9 @@
             
             // Initialize gift management panel
             updateGiftManagementPanel();
+            
+            // Initialize viewer counter
+            updateViewerCounter();
         });
 
         // Question action functions
@@ -8053,43 +8252,135 @@
         }
 
         function showWelcomeNotification(viewer, welcomeMessage, engagementTips, viewerCount) {
-            // Create a clean, prominent welcome alert for the streamer
-            const alert = document.createElement('div');
-            alert.className = 'streamer-welcome-alert';
-            alert.innerHTML = `
-                <div class="alert-header">
-                    <span class="alert-icon">👋</span>
-                    <span class="alert-title">NEW VIEWER ALERT</span>
+            // Add welcome message to activity feed
+            addActivityItem('👋', 'New Viewer', `Welcome ${viewer.nickname}!`);
+            
+            // Add engagement tips to activity feed
+            engagementTips.forEach(tip => {
+                addActivityItem('💡', 'AI Tips', tip);
+            });
+            
+            // Show non-blocking viewer notification
+            displayViewerNotification(viewer);
+            
+            // Update viewer counter
+            updateViewerCounter();
+        }
+        
+        // Non-blocking viewer notification system
+        let viewerNotificationsPaused = false;
+        let maxVisibleViewerNotifications = 3;
+        let viewerNotificationQueue = [];
+        
+        function displayViewerNotification(viewer) {
+            // Check if viewer notifications are paused
+            if (viewerNotificationsPaused) {
+                console.log('⏸️ [VIEWER] Skipping viewer notification - paused');
+                return;
+            }
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'viewer-notification';
+            notification.id = `viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Set notification content
+            notification.innerHTML = `
+                <div class="viewer-notification-header">
+                    <span class="viewer-notification-icon">👋</span>
+                    <span class="viewer-notification-title">New Viewer!</span>
                 </div>
-                <div class="alert-body">
-                    <div class="alert-viewer">
-                        <img class="alert-viewer-pic" src="${viewer.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
-                        <span class="alert-viewer-name">${viewer.nickname}</span>
-                    </div>
-                    <div class="alert-message">
-                        <strong>SAY: "Welcome ${viewer.nickname}! 👋"</strong>
-                    </div>
-                    <div class="alert-tip">
-                        💡 <strong>Tip:</strong> Ask them about their day or interests to build connection
-                    </div>
-                    <div class="alert-actions">
-                        <button class="alert-tts-btn" onclick="speakWelcome('${viewer.nickname}')" title="Speak welcome message">
-                            🔊 Speak Welcome
-                        </button>
-                    </div>
+                <div class="viewer-notification-sender">
+                    <img class="viewer-sender-avatar" src="${viewer.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
+                    <span class="viewer-sender-name">${viewer.nickname}</span>
                 </div>
-                <button class="alert-close-btn" onclick="this.parentElement.remove()">✕</button>
+                <div class="viewer-notification-actions">
+                    <button class="viewer-action-mini" onclick="speakWelcome('${viewer.nickname}')" title="Speak welcome">🔊</button>
+                    <button class="viewer-action-mini" onclick="removeViewerNotification('${notification.id}')" title="Dismiss">✕</button>
+                </div>
             `;
             
-            // Add to the page
-            document.body.appendChild(alert);
-            
-            // Auto-remove after 5 seconds for quick streamer focus
-            setTimeout(() => {
-                if (alert.parentElement) {
-                    alert.remove();
+            // Add to notifications container
+            const container = document.getElementById('viewerNotificationsContainer');
+            if (container) {
+                container.appendChild(notification);
+                
+                // Limit visible notifications
+                const notifications = container.querySelectorAll('.viewer-notification');
+                if (notifications.length > maxVisibleViewerNotifications) {
+                    // Remove oldest notification
+                    const oldestNotification = notifications[0];
+                    oldestNotification.classList.add('slide-out');
+                    setTimeout(() => {
+                        if (oldestNotification.parentNode) {
+                            oldestNotification.parentNode.removeChild(oldestNotification);
+                        }
+                    }, 300);
                 }
-            }, 5000);
+                
+                // Auto-remove notification after 6 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.classList.add('slide-out');
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 300);
+                    }
+                }, 6000);
+            }
+        }
+        
+        function removeViewerNotification(notificationId) {
+            const notification = document.getElementById(notificationId);
+            if (notification) {
+                notification.classList.add('slide-out');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }
+        
+        function updateViewerCounter() {
+            const viewerCountElement = document.getElementById('viewerIndicatorCount');
+            if (viewerCountElement) {
+                // Get count from activity feed (new viewers)
+                const viewerItems = document.querySelectorAll('.activity-item:has(.activity-icon:contains("👋"))');
+                viewerCountElement.textContent = viewerItems.length;
+            }
+        }
+        
+        function clearViewerHistory() {
+            console.log('🗑️ [VIEWER] Clearing viewer history');
+            
+            // Clear all visible viewer notifications
+            const container = document.getElementById('viewerNotificationsContainer');
+            if (container) {
+                container.innerHTML = '';
+            }
+            
+            // Reset viewer counter
+            updateViewerCounter();
+            
+            // Add activity item to show viewer history was cleared
+            addActivityItem('🗑️', 'System', 'Viewer history cleared - all notifications removed');
+        }
+        
+        function pauseViewerNotifications() {
+            viewerNotificationsPaused = true;
+            document.getElementById('pauseViewerBtn').style.display = 'none';
+            document.getElementById('resumeViewerBtn').style.display = 'inline-block';
+            console.log('⏸️ [VIEWER] Viewer notifications paused');
+        }
+        
+        function resumeViewerNotifications() {
+            viewerNotificationsPaused = false;
+            document.getElementById('resumeViewerBtn').style.display = 'none';
+            document.getElementById('pauseViewerBtn').style.display = 'inline-block';
+            console.log('▶️ [VIEWER] Viewer notifications resumed');
         }
         
         // Update AI insights display
