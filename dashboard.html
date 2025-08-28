@@ -5358,6 +5358,13 @@
         
         // Restore connection state on page load
         function restoreConnectionState() {
+            // Check if user manually disconnected
+            if (window.manualDisconnect) {
+                console.log('🚫 [STATE] Manual disconnect detected, skipping auto-reconnection');
+                updateConnectionUI('disconnected', '');
+                return;
+            }
+            
             const savedState = loadConnectionState();
             if (savedState && savedState.isConnected && savedState.username) {
                 console.log('🔄 [STATE] Restoring connection to:', savedState.username);
@@ -5482,6 +5489,12 @@
             
             console.log('🔗 [USERNAME] Attempting to connect to:', username);
             
+            // Reset manual disconnect flag for new connection
+            window.manualDisconnect = false;
+            
+            // Clean up any existing connections first
+            cleanupAllConnections();
+            
             // Update UI to connecting state
             updateConnectionUI('connecting', username);
             
@@ -5563,6 +5576,9 @@
         function disconnectFromStream() {
             console.log('❌ [USERNAME] Disconnecting from current stream');
             
+            // Set manual disconnect flag to prevent auto-reconnection
+            window.manualDisconnect = true;
+            
             // Update UI to disconnected state
             updateConnectionUI('disconnected', '');
             
@@ -5572,6 +5588,12 @@
             // Clear gift queue when disconnecting
             clearGiftQueue();
             
+            // Clear viewer notifications when disconnecting
+            const viewerContainer = document.getElementById('viewerNotificationsContainer');
+            if (viewerContainer) {
+                viewerContainer.innerHTML = '';
+            }
+            
             // Send disconnect request to server
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ 
@@ -5579,8 +5601,61 @@
                 }));
             }
             
+            // Comprehensive connection cleanup
+            cleanupAllConnections();
+            
             // Reset dashboard
             resetDashboardCounters();
+            
+            // Force UI refresh
+            setTimeout(() => {
+                updateConnectionUI('disconnected', '');
+            }, 100);
+        }
+        
+        function cleanupAllConnections() {
+            console.log('🧹 [CLEANUP] Starting comprehensive connection cleanup');
+            
+            // Clear connection timeout
+            if (window.connectionTimeout) {
+                clearTimeout(window.connectionTimeout);
+                window.connectionTimeout = null;
+                console.log('🧹 [CLEANUP] Cleared connection timeout');
+            }
+            
+            // Clear progress interval
+            if (window.progressInterval) {
+                clearInterval(window.progressInterval);
+                window.progressInterval = null;
+                console.log('🧹 [CLEANUP] Cleared progress interval');
+            }
+            
+            // Clear HTTP polling interval
+            if (window.httpPollInterval) {
+                clearInterval(window.httpPollInterval);
+                window.httpPollInterval = null;
+                console.log('🧹 [CLEANUP] Cleared HTTP polling interval');
+            }
+            
+            // Close WebSocket connection
+            if (ws) {
+                console.log('🧹 [CLEANUP] Closing WebSocket connection');
+                ws.close();
+                ws = null;
+            }
+            
+            // Clear any remaining timers
+            if (window.reconnectTimer) {
+                clearTimeout(window.reconnectTimer);
+                window.reconnectTimer = null;
+                console.log('🧹 [CLEANUP] Cleared reconnect timer');
+            }
+            
+            // Reset connection flags
+            window.isConnecting = false;
+            window.isConnected = false;
+            
+            console.log('🧹 [CLEANUP] Connection cleanup completed');
         }
 
         function connectWebSocket() {
@@ -6402,6 +6477,13 @@
             activityItems = [];
             updateActivityDisplay();
             
+            // Clear activity feed display
+            const activityFeed = document.getElementById('activityFeed');
+            if (activityFeed) {
+                activityFeed.innerHTML = '';
+                console.log('🔄 [DASHBOARD] Cleared activity feed display');
+            }
+            
             // Reset viewers display
             updateViewersDisplay({});
             
@@ -6421,6 +6503,10 @@
             window.processedQuestionIds.clear(); // Clear processed question tracking
             showNoQuestionsCard();
             updateQuestionStatsRealTime();
+            
+            // Reset viewer and gift counters
+            updateGiftManagementPanel();
+            updateViewerCounter();
             
             console.log('✅ [DASHBOARD] Dashboard counters reset complete');
         }
