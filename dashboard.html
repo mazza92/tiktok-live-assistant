@@ -4441,6 +4441,7 @@
                     <button class="gift-indicator-btn" onclick="clearGiftQueue()" title="Clear all gifts">🚨</button>
                     <button class="gift-indicator-btn" onclick="pauseGiftNotifications()" id="pauseGiftBtn" title="Pause">⏸️</button>
                     <button class="gift-indicator-btn" onclick="resumeGiftNotifications()" id="resumeGiftBtn" title="Resume" style="display: none;">▶️</button>
+                    <button class="gift-indicator-btn" onclick="testGift()" title="Test gift" style="background: rgba(255, 255, 0, 0.2);">🧪</button>
                 </div>
             </div>
             
@@ -7884,6 +7885,9 @@
         }
         
         function addGiftToQueue(giftData) {
+            console.log(`🎁 [GIFT ALERT] addGiftToQueue called with:`, giftData);
+            console.log(`🎁 [GIFT ALERT] Current queue length: ${giftQueue.length}`);
+            
             // Check if sender already has gifts in queue
             const existingGiftIndex = giftQueue.findIndex(g => g.nickname === giftData.nickname);
             
@@ -7908,6 +7912,8 @@
                 giftQueue.push(queuedGift);
                 console.log(`🎁 [GIFT ALERT] Added new gift to queue from ${giftData.nickname}`);
             }
+            
+            console.log(`🎁 [GIFT ALERT] Queue length after adding: ${giftQueue.length}`);
             
             // Limit queue size to prevent memory issues
             if (giftQueue.length > maxGiftQueueSize) {
@@ -8032,6 +8038,10 @@
         function updateGiftManagementPanel() {
             const indicatorCount = document.getElementById('giftIndicatorCount');
             
+            console.log(`🎁 [GIFT PANEL] updateGiftManagementPanel called`);
+            console.log(`🎁 [GIFT PANEL] Current giftQueue.length: ${giftQueue.length}`);
+            console.log(`🎁 [GIFT PANEL] indicatorCount element:`, indicatorCount);
+            
             if (indicatorCount) {
                 indicatorCount.textContent = giftQueue.length;
                 console.log(`🎁 [GIFT PANEL] Updated count to: ${giftQueue.length}`);
@@ -8056,6 +8066,33 @@
             console.log('▶️ [GIFT ALERT] Gift notifications resumed');
             // Process any pending gifts
             if (giftQueue.length > 0) {
+                processGiftQueue();
+            }
+        }
+        
+        // Test function to simulate gifts for debugging
+        function testGift() {
+            console.log('🧪 [TEST] Simulating test gift');
+            
+            const testGiftData = {
+                nickname: 'TestUser' + Math.floor(Math.random() * 1000),
+                gift: {
+                    name: 'Test Gift',
+                    diamondCount: Math.floor(Math.random() * 100) + 10
+                },
+                diamondCount: Math.floor(Math.random() * 100) + 10,
+                usdValue: Math.random() * 5,
+                profilePic: null,
+                timestamp: Date.now()
+            };
+            
+            console.log('🧪 [TEST] Test gift data:', testGiftData);
+            
+            // Add gift to queue
+            addGiftToQueue(testGiftData);
+            
+            // Start processing if not already showing
+            if (!isShowingGift) {
                 processGiftQueue();
             }
         }
