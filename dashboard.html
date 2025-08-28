@@ -4339,7 +4339,62 @@
                 clearGifts: "🚨",
                 clearGiftsTitle: "Clear all pending gifts",
                 manualReconnect: "🔄",
-                manualReconnectTitle: "Manual Reconnect"
+                manualReconnectTitle: "Manual Reconnect",
+                
+                // Entertainment Breakdown
+                content: "Content",
+                energy: "Energy",
+                retention: "Retention",
+                
+                // AI Insights
+                waitingForAIInsights: "Waiting for AI insights...",
+                noTriggersDetected: "No triggers detected yet",
+                
+                // Questions Section
+                viewersQuestions: "Viewers Questions ❓",
+                total: "Total",
+                responseRate: "Response Rate",
+                avgTime: "Avg Time",
+                priority: "Priority",
+                noPendingQuestions: "No pending questions...",
+                answered: "ANSWERED",
+                ignore: "IGNORE",
+                
+                // Viewer Analytics
+                viewerWatchTimeAnalytics: "👥 Viewer Watch Time Analytics",
+                totalJoinedViewers: "Total Joined Viewers",
+                averageWatchTime: "Average Watch Time",
+                longestWatchTime: "Longest Watch Time",
+                viewerRetention: "Viewer Retention",
+                currentTotalUnique: "Current / Total Unique",
+                liveStreamInsightsTrends: "Live Stream Insights & Trends",
+                waitingForAIAnalysis: "Waiting for AI analysis...",
+                
+                // Predictive Analytics
+                predictiveAnalytics: "🔮 Predictive Analytics",
+                churnRisk: "Churn Risk",
+                stable: "Stable",
+                monetizationOpportunity: "Monetization Opportunity",
+                low: "Low",
+                sentimentVolatility: "Sentiment Volatility",
+                waitingForPredictiveAnalysis: "Waiting for predictive analysis...",
+                
+                // Chat Activity
+                chatActivity: "📊 Chat Activity",
+                all: "All",
+                messages: "💬 Messages",
+                engagements: "❤️ Engagements",
+                itemsPerPage: "Items per Page:",
+                
+                // Performance & Users
+                performanceMode: "🚀 Performance Mode",
+                pause: "⏸️ Pause",
+                topEngagedUsers: "🏆 Top Engaged Users",
+                waitingForEngagementData: "Waiting for engagement data...",
+                newFollowers: "🆕 New Followers",
+                noNewFollowersYet: "No new followers yet...",
+                promptHistory: "📜 Prompt History",
+                noPromptsGeneratedYet: "No prompts generated yet..."
             },
             fr: {
                 // Dashboard Header
@@ -4402,7 +4457,62 @@
                 clearGifts: "🚨",
                 clearGiftsTitle: "Effacer tous les cadeaux en attente",
                 manualReconnect: "🔄",
-                manualReconnectTitle: "Reconnexion Manuelle"
+                manualReconnectTitle: "Reconnexion Manuelle",
+                
+                // Entertainment Breakdown
+                content: "Contenu",
+                energy: "Énergie",
+                retention: "Rétention",
+                
+                // AI Insights
+                waitingForAIInsights: "En attente des insights IA...",
+                noTriggersDetected: "Aucun déclencheur détecté encore",
+                
+                // Questions Section
+                viewersQuestions: "Questions des Spectateurs ❓",
+                total: "Total",
+                responseRate: "Taux de Réponse",
+                avgTime: "Temps Moyen",
+                priority: "Priorité",
+                noPendingQuestions: "Aucune question en attente...",
+                answered: "RÉPONDU",
+                ignore: "IGNORER",
+                
+                // Viewer Analytics
+                viewerWatchTimeAnalytics: "👥 Analyse du Temps de Visionnage",
+                totalJoinedViewers: "Total des Spectateurs Rejoints",
+                averageWatchTime: "Temps de Visionnage Moyen",
+                longestWatchTime: "Temps de Visionnage le Plus Long",
+                viewerRetention: "Rétention des Spectateurs",
+                currentTotalUnique: "Actuel / Total Unique",
+                liveStreamInsightsTrends: "Insights et Tendances du Stream en Direct",
+                waitingForAIAnalysis: "En attente de l'analyse IA...",
+                
+                // Predictive Analytics
+                predictiveAnalytics: "🔮 Analyse Prédictive",
+                churnRisk: "Risque de Perte",
+                stable: "Stable",
+                monetizationOpportunity: "Opportunité de Monétisation",
+                low: "Faible",
+                sentimentVolatility: "Volatilité du Sentiment",
+                waitingForPredictiveAnalysis: "En attente de l'analyse prédictive...",
+                
+                // Chat Activity
+                chatActivity: "📊 Activité du Chat",
+                all: "Tout",
+                messages: "💬 Messages",
+                engagements: "❤️ Engagements",
+                itemsPerPage: "Éléments par Page:",
+                
+                // Performance & Users
+                performanceMode: "🚀 Mode Performance",
+                pause: "⏸️ Pause",
+                topEngagedUsers: "🏆 Top des Utilisateurs Engagés",
+                waitingForEngagementData: "En attente des données d'engagement...",
+                newFollowers: "🆕 Nouveaux Abonnés",
+                noNewFollowersYet: "Aucun nouvel abonné encore...",
+                promptHistory: "📜 Historique des Prompts",
+                noPromptsGeneratedYet: "Aucun prompt généré encore..."
             }
         };
 
@@ -4512,6 +4622,27 @@
             
             // Update metrics labels if they exist
             updateMetricsLabels();
+            
+            // Update entertainment breakdown labels
+            updateEntertainmentBreakdown();
+            
+            // Update AI insights section
+            updateAIInsights();
+            
+            // Update questions section
+            updateQuestionsSection();
+            
+            // Update viewer analytics section
+            updateViewerAnalytics();
+            
+            // Update predictive analytics section
+            updatePredictiveAnalytics();
+            
+            // Update chat activity section
+            updateChatActivity();
+            
+            // Update performance and users section
+            updatePerformanceAndUsers();
         }
 
         // Update metrics labels and subtitles
@@ -4562,6 +4693,166 @@
                         subtitleElement.textContent = t.totalValue;
                     }
                 }
+            });
+        }
+
+        // Update entertainment breakdown labels
+        function updateEntertainmentBreakdown() {
+            const t = translations[currentLanguage];
+            
+            // Find and update breakdown labels
+            const breakdownLabels = document.querySelectorAll('.breakdown-label');
+            breakdownLabels.forEach(label => {
+                const currentText = label.textContent.trim();
+                if (currentText === 'Content') label.textContent = t.content;
+                else if (currentText === 'Energy') label.textContent = t.energy;
+                else if (currentText === 'Retention') label.textContent = t.retention;
+            });
+        }
+
+        // Update AI insights section
+        function updateAIInsights() {
+            const t = translations[currentLanguage];
+            
+            // Update AI insights waiting text
+            const aiInsightsElements = document.querySelectorAll('*');
+            aiInsightsElements.forEach(element => {
+                if (element.textContent === 'Waiting for AI insights...') {
+                    element.textContent = t.waitingForAIInsights;
+                } else if (element.textContent === 'No triggers detected yet') {
+                    element.textContent = t.noTriggersDetected;
+                }
+            });
+        }
+
+        // Update questions section
+        function updateQuestionsSection() {
+            const t = translations[currentLanguage];
+            
+            // Update questions header
+            const questionsHeader = document.querySelector('.feed-header');
+            if (questionsHeader && questionsHeader.textContent.includes('Viewers Questions')) {
+                questionsHeader.textContent = t.viewersQuestions;
+            }
+            
+            // Update question stats labels
+            const statLabels = document.querySelectorAll('.stat-label');
+            statLabels.forEach(label => {
+                const currentText = label.textContent.trim();
+                if (currentText === 'Total') label.textContent = t.total;
+                else if (currentText === 'Response Rate') label.textContent = t.responseRate;
+                else if (currentText === 'Avg Time') label.textContent = t.avgTime;
+                else if (currentText === 'Priority') label.textContent = t.priority;
+            });
+            
+            // Update question action buttons
+            const actionButtons = document.querySelectorAll('.action-btn');
+            actionButtons.forEach(btn => {
+                if (btn.textContent === '✅ ANSWERED') btn.textContent = '✅ ' + t.answered;
+                else if (btn.textContent === '❌ IGNORE') btn.textContent = '❌ ' + t.ignore;
+            });
+            
+            // Update no questions text
+            const noQuestionsElements = document.querySelectorAll('*');
+            noQuestionsElements.forEach(element => {
+                if (element.textContent === 'No pending questions...') {
+                    element.textContent = t.noPendingQuestions;
+                }
+            });
+        }
+
+        // Update viewer analytics section
+        function updateViewerAnalytics() {
+            const t = translations[currentLanguage];
+            
+            // Update viewer analytics header
+            const analyticsHeaders = document.querySelectorAll('h3, .feed-header');
+            analyticsHeaders.forEach(header => {
+                if (header.textContent.includes('Viewer Watch Time Analytics')) {
+                    header.textContent = t.viewerWatchTimeAnalytics;
+                } else if (header.textContent.includes('Live Stream Insights & Trends')) {
+                    header.textContent = t.liveStreamInsightsTrends;
+                }
+            });
+            
+            // Update analytics labels
+            const analyticsLabels = document.querySelectorAll('*');
+            analyticsLabels.forEach(element => {
+                if (element.textContent === 'Total Joined Viewers') element.textContent = t.totalJoinedViewers;
+                else if (element.textContent === 'Average Watch Time') element.textContent = t.averageWatchTime;
+                else if (element.textContent === 'Longest Watch Time') element.textContent = t.longestWatchTime;
+                else if (element.textContent === 'Viewer Retention') element.textContent = t.viewerRetention;
+                else if (element.textContent === 'Current / Total Unique') element.textContent = t.currentTotalUnique;
+                else if (element.textContent === 'Waiting for AI analysis...') element.textContent = t.waitingForAIAnalysis;
+            });
+        }
+
+        // Update predictive analytics section
+        function updatePredictiveAnalytics() {
+            const t = translations[currentLanguage];
+            
+            // Update predictive analytics header
+            const predHeaders = document.querySelectorAll('h3, .feed-header');
+            predHeaders.forEach(header => {
+                if (header.textContent.includes('Predictive Analytics')) {
+                    header.textContent = t.predictiveAnalytics;
+                }
+            });
+            
+            // Update predictive analytics labels
+            const predLabels = document.querySelectorAll('*');
+            predLabels.forEach(element => {
+                if (element.textContent === 'Churn Risk') element.textContent = t.churnRisk;
+                else if (element.textContent === 'Stable') element.textContent = t.stable;
+                else if (element.textContent === 'Monetization Opportunity') element.textContent = t.monetizationOpportunity;
+                else if (element.textContent === 'Low') element.textContent = t.low;
+                else if (element.textContent === 'Sentiment Volatility') element.textContent = t.sentimentVolatility;
+                else if (element.textContent === 'Waiting for predictive analysis...') element.textContent = t.waitingForPredictiveAnalysis;
+            });
+        }
+
+        // Update chat activity section
+        function updateChatActivity() {
+            const t = translations[currentLanguage];
+            
+            // Update chat activity header
+            const chatHeaders = document.querySelectorAll('h3, .feed-header');
+            chatHeaders.forEach(header => {
+                if (header.textContent.includes('Chat Activity')) {
+                    header.textContent = t.chatActivity;
+                }
+            });
+            
+            // Update chat activity labels
+            const chatLabels = document.querySelectorAll('*');
+            chatLabels.forEach(element => {
+                if (element.textContent === 'All') element.textContent = t.all;
+                else if (element.textContent === '💬 Messages') element.textContent = t.messages;
+                else if (element.textContent === '❤️ Engagements') element.textContent = t.engagements;
+                else if (element.textContent === 'Items per Page:') element.textContent = t.itemsPerPage;
+            });
+        }
+
+        // Update performance and users section
+        function updatePerformanceAndUsers() {
+            const t = translations[currentLanguage];
+            
+            // Update performance and users headers
+            const perfHeaders = document.querySelectorAll('h3, .feed-header');
+            perfHeaders.forEach(header => {
+                if (header.textContent.includes('Performance Mode')) header.textContent = t.performanceMode;
+                else if (header.textContent.includes('Top Engaged Users')) header.textContent = t.topEngagedUsers;
+                else if (header.textContent.includes('New Followers')) header.textContent = t.newFollowers;
+                else if (header.textContent.includes('Prompt History')) header.textContent = t.promptHistory;
+            });
+            
+            // Update performance and users labels
+            const perfLabels = document.querySelectorAll('*');
+            perfLabels.forEach(element => {
+                if (element.textContent === '⏸️ Pause') element.textContent = t.pause;
+                else if (element.textContent === 'Waiting for engagement data...') element.textContent = t.waitingForEngagementData;
+                else if (element.textContent === 'No new followers yet...') element.textContent = t.noNewFollowersYet;
+                else if (element.textContent === 'No prompts generated yet...') element.textContent = t.noPromptsGeneratedYet;
             });
         }
 
