@@ -8590,8 +8590,17 @@
             const viewerCountElement = document.getElementById('viewerIndicatorCount');
             if (viewerCountElement) {
                 // Get count from activity feed (new viewers)
-                const viewerItems = document.querySelectorAll('.activity-item:has(.activity-icon:contains("👋"))');
-                viewerCountElement.textContent = viewerItems.length;
+                const activityItems = document.querySelectorAll('.activity-item');
+                let viewerCount = 0;
+                
+                activityItems.forEach(item => {
+                    const iconElement = item.querySelector('.activity-icon');
+                    if (iconElement && iconElement.textContent.includes('👋')) {
+                        viewerCount++;
+                    }
+                });
+                
+                viewerCountElement.textContent = viewerCount;
             }
         }
         
