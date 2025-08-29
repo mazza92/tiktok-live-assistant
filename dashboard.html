@@ -7557,6 +7557,29 @@
         function addActivityItem(icon, nickname, content, sentiment = null, timestamp = null) {
             if (activityPaused) return;
             
+            // Special handling for follower events to prevent duplicates
+            if (icon === '🆕' && content === 'started following!') {
+                // Check if this follower already exists in recent activity items
+                const recentFollowers = activityItems.filter(item => 
+                    item.icon === '🆕' && 
+                    item.content === 'started following!' && 
+                    item.nickname === nickname
+                );
+                
+                // If we have this follower in recent items (last 5 minutes), skip adding
+                if (recentFollowers.length > 0) {
+                    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                    const hasRecentDuplicate = recentFollowers.some(item => 
+                        new Date(item.timestamp) > fiveMinutesAgo
+                    );
+                    
+                    if (hasRecentDuplicate) {
+                        console.log(`🔄 [ACTIVITY] Skipping duplicate follower activity for ${nickname}`);
+                        return;
+                    }
+                }
+            }
+            
             const activityItem = {
                 id: Date.now() + Math.random(),
                 icon: icon,

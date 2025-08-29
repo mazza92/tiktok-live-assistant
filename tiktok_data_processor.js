@@ -134,7 +134,10 @@ let metrics = {
     streamStartTime: new Date(),
     streamPhase: 'start', // 'start', 'mid', 'end' – updated periodically
     // New: Prompt history to avoid repetition and rotate suggestions
-    promptHistory: [] // Array of recent prompt triggers
+    promptHistory: [], // Array of recent prompt triggers
+    
+    // Deduplication tracking for followers to prevent duplicates
+    processedFollowers: new Set() // Track processed follower IDs to prevent duplicates
 };
 
 // Time-based tracking for per-minute calculations
@@ -150,6 +153,12 @@ function resetSessionMetrics() {
     metrics.sessionFollowersGained = 0;
     metrics.newFollowers = [];
     followersGainedInLastMinute = [];
+    
+    // Reset processed followers tracking to prevent duplicates in new sessions
+    if (metrics.processedFollowers) {
+        metrics.processedFollowers.clear();
+        console.log('🧹 [METRICS] Cleared processed followers tracking for new session');
+    }
     
     // Clean up any existing duplicates
     if (typeof cleanupDuplicateFollowers === 'function') {
@@ -541,6 +550,19 @@ function addNewFollower(userId, nickname, profilePic) {
         console.log(`⚠️ [ADD FOLLOWER] ${nickname} (${userId}) already in newFollowers list - skipping duplicate`);
         return;
     }
+    
+    // Also check if we've already processed this follower in this session to prevent duplicates
+    if (!metrics.processedFollowers) {
+        metrics.processedFollowers = new Set();
+    }
+    
+    if (metrics.processedFollowers.has(userId)) {
+        console.log(`⚠️ [ADD FOLLOWER] ${nickname} (${userId}) already processed this session - skipping duplicate`);
+        return;
+    }
+    
+    // Mark this follower as processed for this session
+    metrics.processedFollowers.add(userId);
     
     // Create follow data
     const followData = {
@@ -2981,7 +3003,7 @@ async function connectToTikTok() {
                     updateViewerActivity(userId, 'follow');
                 }
                 
-                // Use the centralized function to add new follower
+                // Use the centralized function to add new follower (has built-in deduplication)
                 addNewFollower(userId, nickname, data.user?.avatarThumb?.urlList?.[0] || null);
             }
         });
@@ -3072,6 +3094,11 @@ async function connectToTikTok() {
         // Helper function to check if user is a follower
         function checkAndUpdateFollowerStatus(userId, data) {
             if (!userId || !metrics.viewers[userId]) return;
+            
+            // Skip if we already know this user is a follower
+            if (metrics.viewers[userId].isFollower) {
+                return;
+            }
             
             // Check multiple follower indicators from TikTok
             const isFollower = data.followRole === 1 || 
@@ -3836,6 +3863,12 @@ function resetMetrics() {
     
     // Reset last update
     metrics.lastUpdate = new Date();
+    
+    // Reset processed followers tracking to prevent duplicates in new sessions
+    if (metrics.processedFollowers) {
+        metrics.processedFollowers.clear();
+        console.log('🧹 [METRICS] Cleared processed followers tracking');
+    }
     
     console.log('✅ [METRICS] All metrics reset successfully');
 }
