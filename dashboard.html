@@ -5495,6 +5495,9 @@
                     disconnectBtn.style.display = 'none';
                     streamStatus.textContent = 'Not connected';
                     streamerName.textContent = '';
+                    // Clear username input field
+                    const usernameInput = document.getElementById('usernameInput');
+                    if (usernameInput) usernameInput.value = '';
                     if (connectionDetails) connectionDetails.style.display = 'none';
                     break;
                     
@@ -5645,8 +5648,9 @@
             // Clear restoration flag
             window.isRestoringConnection = false;
             
-            // Update UI to disconnected state
+            // Update UI to disconnected state (both username section and dashboard header)
             updateConnectionUI('disconnected', '');
+            updateConnectionStatus('Disconnected', 'disconnected');
             
             // Clear connection state
             clearConnectionState();
@@ -5935,8 +5939,30 @@
                                 
                             case 'streamDisconnected':
                                 console.log('❌ Stream disconnected:', message.data);
-                                document.getElementById('streamStatus').textContent = 'Disconnected';
-                                document.getElementById('streamerName').textContent = '';
+                                // Update both connection status and UI consistently
+                                updateConnectionStatus('Disconnected', 'disconnected');
+                                updateConnectionUI('disconnected', '');
+                                
+                                // Clear any ongoing data updates
+                                if (window.connectionTimeout) {
+                                    clearTimeout(window.connectionTimeout);
+                                    window.connectionTimeout = null;
+                                }
+                                if (window.progressInterval) {
+                                    clearInterval(window.progressInterval);
+                                    window.progressInterval = null;
+                                }
+                                if (window.httpPollInterval) {
+                                    clearInterval(window.httpPollInterval);
+                                    window.httpPollInterval = null;
+                                }
+                                
+                                // Reset dashboard counters
+                                resetDashboardCounters();
+                                
+                                // Clear connection state
+                                clearConnectionState();
+                                
                                 if (message.data && message.data.message) {
                                     addActivityItem('❌', 'System', message.data.message, null, new Date());
                                 } else {
@@ -6021,13 +6047,23 @@
                 
                 ws.onclose = function(event) {
                     console.log(`🖥️  WebSocket disconnected (Code: ${event.code})`);
+                    
+                    // Check if this was a manual disconnect
+                    if (window.manualDisconnect) {
+                        console.log('✅ [WEBSOCKET] Manual disconnect detected, not attempting reconnection');
+                        updateConnectionStatus('Disconnected', 'disconnected');
+                        updateConnectionUI('disconnected', '');
+                        return;
+                    }
+                    
                     updateConnectionStatus('Disconnected', 'disconnected');
+                    updateConnectionUI('disconnected', '');
                     
                     if (event.code === 1006) {
                         console.log('⚠️  Abnormal closure detected - attempting reconnection...');
                     }
                     
-                    // Attempt to reconnect if not a normal closure
+                    // Attempt to reconnect if not a normal closure and not manually disconnected
                     if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
                         reconnectAttempts++;
                         console.log(`🔄 Reconnection attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);

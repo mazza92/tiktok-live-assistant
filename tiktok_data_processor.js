@@ -1793,7 +1793,7 @@ function analyzeSentimentIntelligence() {
     if (metrics.commentSentiments.length < 20) return null;
     
     const recentSentiments = metrics.commentSentiments.slice(-20);
-    const avgSentiment = recentSentiments.reduce((a, b) => a + b, 0) / recentSentiments.length;
+    const avgSentiment = recentSentiment.reduce((a, b) => a + b, 0) / recentSentiment.length;
     const sentimentVariance = calculateVariance(recentSentiments);
     
     // Detect specific sentiment patterns
@@ -3673,6 +3673,203 @@ app.get('/api/viewers', (req, res) => {
         });
     }
 });
+
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+    console.log('🖥️ [WEBSOCKET] Dashboard connected');
+    
+    ws.on('message', async (message) => {
+        try {
+            const data = JSON.parse(message);
+            console.log('📨 [WEBSOCKET] Received message:', data.type);
+            
+            switch (data.type) {
+                case 'changeUsername':
+                    console.log('🔄 [WEBSOCKET] Username change request:', data.username);
+                    try {
+                        await changeTikTokUsername(data.username, ws);
+                    } catch (error) {
+                        console.error('❌ [WEBSOCKET] Username change error:', error);
+                        ws.send(JSON.stringify({
+                            type: 'usernameChangeError',
+                            data: { error: error.message }
+                        }));
+                    }
+                    break;
+                    
+                case 'disconnectStream':
+                    console.log('❌ [WEBSOCKET] Disconnect request received');
+                    try {
+                        if (connection) {
+                            console.log('🔌 [WEBSOCKET] Disconnecting TikTok connection...');
+                            
+                            // Remove all event listeners before disconnecting
+                            connection.removeAllListeners();
+                            
+                            // Disconnect the connection
+                            try {
+                                connection.disconnect();
+                            } catch (disconnectError) {
+                                console.log('⚠️ [WEBSOCKET] Error during disconnect (continuing cleanup):', disconnectError.message);
+                            }
+                            
+                            // Set connection to null
+                            connection = null;
+                            
+                            // Reset connection flags
+                            isConnecting = false;
+                            reconnectAttempts = 0;
+                            
+                            console.log('✅ [WEBSOCKET] Stream disconnected successfully');
+                            
+                            // Reset metrics
+                            resetMetrics();
+                            
+                            // Broadcast disconnect to all connected WebSocket clients
+                            wss.clients.forEach(client => {
+                                if (client.readyState === WebSocket.OPEN) {
+                                    client.send(JSON.stringify({
+                                        type: 'streamDisconnected',
+                                        data: { message: 'Stream disconnected successfully' }
+                                    }));
+                                }
+                            });
+                        } else {
+                            console.log('⚠️ [WEBSOCKET] No active connection to disconnect');
+                            wss.clients.forEach(client => {
+                                if (client.readyState === WebSocket.OPEN) {
+                                    client.send(JSON.stringify({
+                                        type: 'streamDisconnected',
+                                        data: { message: 'No active connection' }
+                                    }));
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('❌ [WEBSOCKET] Disconnect error:', error);
+                        wss.clients.forEach(client => {
+                            if (client.readyState === WebSocket.OPEN) {
+                                client.send(JSON.stringify({
+                                    type: 'streamDisconnected',
+                                    data: { message: 'Error disconnecting: ' + error.message }
+                                }));
+                            }
+                        });
+                    }
+                    break;
+                    
+                case 'test':
+                    console.log('🧪 [WEBSOCKET] Test message received');
+                    ws.send(JSON.stringify({ type: 'test', data: 'pong' }));
+                    break;
+                    
+                default:
+                    console.log('❓ [WEBSOCKET] Unknown message type:', data.type);
+            }
+        } catch (error) {
+            console.error('❌ [WEBSOCKET] Error parsing message:', error);
+            ws.send(JSON.stringify({
+                type: 'error',
+                data: { error: 'Invalid message format' }
+            }));
+        }
+    });
+    
+    ws.on('close', () => {
+        console.log('🖥️ [WEBSOCKET] Dashboard disconnected');
+    });
+    
+    ws.on('error', (error) => {
+        console.error('❌ [WEBSOCKET] WebSocket error:', error);
+    });
+});
+
+// Function to reset all metrics when disconnecting
+function resetMetrics() {
+    console.log('🔄 [METRICS] Resetting all metrics...');
+    
+    // Reset session-specific metrics
+    resetSessionMetrics();
+    
+    // Reset cumulative totals
+    metrics.totalLikes = 0;
+    metrics.totalGifts = 0;
+    metrics.totalGiftDiamonds = 0;
+    metrics.totalGiftValue = 0;
+    metrics.totalComments = 0;
+    metrics.totalShares = 0;
+    metrics.sessionFollowersGained = 0;
+    
+    // Reset per-minute metrics
+    metrics.likesPerMinute = 0;
+    metrics.giftsPerMinute = 0;
+    metrics.giftsPerMinuteDiamonds = 0;
+    metrics.giftsPerMinuteValue = 0;
+    metrics.commentsPerMinute = 0;
+    metrics.followersGainsPerMinute = 0;
+    
+    // Clear recent activity arrays
+    metrics.recentComments = [];
+    metrics.recentLikes = [];
+    metrics.recentGifts = [];
+    metrics.recentGiftValues = [];
+    metrics.recentShares = [];
+    
+    // Reset viewer data
+    metrics.viewers = {};
+    metrics.viewerStats = {
+        totalUniqueViewers: 0,
+        averageWatchTime: 0,
+        longestWatchTime: 0,
+        viewersByWatchTime: {
+            '0-5min': 0,
+            '5-15min': 0,
+            '15-30min': 0,
+            '30min+': 0
+        }
+    };
+    
+    // Reset current viewer count
+    metrics.currentViewerCount = 0;
+    
+    // Reset entertainment metrics
+    metrics.entertainmentMetrics = {
+        entertainmentScore: 0,
+        engagementIntensity: 0,
+        contentReception: 0,
+        audienceEnergy: 0,
+        retentionQuality: 0,
+        lastEntertainmentUpdate: new Date()
+    };
+    
+    // Reset question detection
+    metrics.questionDetection = {
+        pendingQuestions: [],
+        answeredQuestions: [],
+        questionStats: {
+            totalQuestions: 0,
+            answeredQuestions: 0,
+            responseRate: 0,
+            averageResponseTime: 0
+        }
+    };
+    
+    // Reset predictive metrics
+    metrics.predictiveMetrics = {
+        churnRiskScore: 0,
+        viewerRetentionRate: 0,
+        monetizationOpportunity: 0,
+        sentimentVolatility: 0
+    };
+    
+    // Reset stream phase
+    metrics.streamPhase = 'unknown';
+    
+    // Reset last update
+    metrics.lastUpdate = new Date();
+    
+    console.log('✅ [METRICS] All metrics reset successfully');
+}
 
 // Start the server
 const PORT = process.env.PORT || 3000;
