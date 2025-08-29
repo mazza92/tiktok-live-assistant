@@ -5356,6 +5356,35 @@
             }
         }
         
+        // Start monitoring connection health to ensure we're receiving data
+        function startConnectionHealthCheck(username) {
+            if (window.connectionHealthCheck) {
+                clearTimeout(window.connectionHealthCheck);
+            }
+            
+            // Set a timeout to check if we're receiving data
+            window.connectionHealthCheck = setTimeout(() => {
+                // Check if we have any recent activity or metrics
+                const hasRecentActivity = document.querySelectorAll('.activity-item').length > 0;
+                const hasMetrics = document.getElementById('totalLikes').textContent !== '0' || 
+                                 document.getElementById('totalGifts').textContent !== '0' ||
+                                 document.getElementById('totalShares').textContent !== '0';
+                
+                if (!hasRecentActivity && !hasMetrics) {
+                    console.warn('⚠️ [HEALTH] No data received after reconnection, connection may not be working');
+                    // If we were restoring and still no data, clear the state
+                    if (window.isRestoringConnection) {
+                        console.log('❌ [HEALTH] Reconnection failed - no data received, clearing state');
+                        window.isRestoringConnection = false;
+                        clearConnectionState();
+                        updateConnectionUI('disconnected', '');
+                    }
+                } else {
+                    console.log('✅ [HEALTH] Connection confirmed working - data received');
+                }
+            }, 10000); // Check after 10 seconds
+        }
+        
         // Restore connection state on page load
         function restoreConnectionState() {
             // Check if user manually disconnected
@@ -5369,36 +5398,56 @@
             if (savedState && savedState.isConnected && savedState.username) {
                 console.log('🔄 [STATE] Restoring connection to:', savedState.username);
                 
-                // Update UI to show connected state
-                document.getElementById('usernameInput').value = savedState.username;
-                document.getElementById('connectBtn').style.display = 'none';
-                document.getElementById('disconnectBtn').style.display = 'inline-block';
-                document.getElementById('streamStatus').textContent = 'Reconnecting...';
-                document.getElementById('streamerName').textContent = `@${savedState.username}`;
+                // Update UI to show reconnecting state
+                updateConnectionUI('reconnecting', savedState.username);
                 
-                // Attempt to reconnect
+                // Ensure username input is populated
+                document.getElementById('usernameInput').value = savedState.username;
+                
+                // Set a flag to indicate we're restoring connection
+                window.isRestoringConnection = true;
+                
+                // Attempt to reconnect with better error handling
                 setTimeout(() => {
                     if (ws && ws.readyState === WebSocket.OPEN) {
+                        console.log('📤 [STATE] WebSocket ready, sending reconnection request for:', savedState.username);
                         ws.send(JSON.stringify({ 
                             type: 'changeUsername', 
                             username: savedState.username 
                         }));
-                        console.log('📤 [STATE] Sent reconnection request for:', savedState.username);
                     } else if (window.httpPollInterval) {
+                        console.log('📤 [STATE] Using HTTP mode for reconnection:', savedState.username);
                         connectViaHttp(savedState.username);
                     } else {
+                        console.log('📤 [STATE] WebSocket not ready, establishing connection first');
                         // Wait for WebSocket connection then reconnect
                         connectWebSocket();
                         setTimeout(() => {
                             if (ws && ws.readyState === WebSocket.OPEN) {
+                                console.log('📤 [STATE] WebSocket now ready, sending reconnection request');
                                 ws.send(JSON.stringify({ 
                                     type: 'changeUsername', 
                                     username: savedState.username 
                                 }));
+                            } else {
+                                console.warn('⚠️ [STATE] WebSocket still not ready after timeout, falling back to HTTP');
+                                connectViaHttp(savedState.username);
                             }
-                        }, 2000);
+                        }, 3000);
                     }
                 }, 1000);
+                
+                // Set a timeout for reconnection attempts
+                setTimeout(() => {
+                    if (window.isRestoringConnection) {
+                        console.warn('⚠️ [STATE] Reconnection timeout, resetting to disconnected state');
+                        window.isRestoringConnection = false;
+                        updateConnectionUI('disconnected', '');
+                        // Clear the saved state since reconnection failed
+                        clearConnectionState();
+                    }
+                }, 15000); // 15 second timeout for reconnection
+                
             } else {
                 console.log('📱 [STATE] No saved connection state, starting fresh');
                 updateConnectionUI('disconnected', '');
@@ -5418,6 +5467,14 @@
                     connectBtn.style.display = 'none';
                     disconnectBtn.style.display = 'inline-block';
                     streamStatus.textContent = 'Connecting...';
+                    streamerName.textContent = username ? `@${username}` : '';
+                    if (connectionDetails) connectionDetails.style.display = 'none';
+                    break;
+                    
+                case 'reconnecting':
+                    connectBtn.style.display = 'none';
+                    disconnectBtn.style.display = 'inline-block';
+                    streamStatus.textContent = 'Reconnecting...';
                     streamerName.textContent = username ? `@${username}` : '';
                     if (connectionDetails) connectionDetails.style.display = 'none';
                     break;
@@ -5578,6 +5635,15 @@
             
             // Set manual disconnect flag to prevent auto-reconnection
             window.manualDisconnect = true;
+            
+            // Clear any ongoing health checks
+            if (window.connectionHealthCheck) {
+                clearTimeout(window.connectionHealthCheck);
+                window.connectionHealthCheck = null;
+            }
+            
+            // Clear restoration flag
+            window.isRestoringConnection = false;
             
             // Update UI to disconnected state
             updateConnectionUI('disconnected', '');
@@ -5774,18 +5840,27 @@
                             case 'usernameChanged':
                                 console.log('🔄 Username changed:', message.data);
                                 if (message.data && message.data.username) {
-                                    // Update UI to connected state
-                                    updateConnectionUI('connected', message.data.username);
-                                    
-                                    // Save successful connection state
-                                    saveConnectionState({
-                                        isConnected: true,
-                                        username: message.data.username,
-                                        timestamp: Date.now(),
-                                        status: 'connected'
-                                    });
-                                    
-                                    addActivityItem('🔄', 'System', message.data.message || 'Username changed successfully', null, new Date());
+                                                                    // Clear restoration flag if we were restoring
+                                if (window.isRestoringConnection) {
+                                    console.log('✅ [STATE] Reconnection successful, clearing restoration flag');
+                                    window.isRestoringConnection = false;
+                                }
+                                
+                                // Update UI to connected state
+                                updateConnectionUI('connected', message.data.username);
+                                
+                                // Save successful connection state
+                                saveConnectionState({
+                                    isConnected: true,
+                                    username: message.data.username,
+                                    timestamp: Date.now(),
+                                    status: 'connected'
+                                });
+                                
+                                // Start monitoring for actual data to confirm connection is working
+                                startConnectionHealthCheck(message.data.username);
+                                
+                                addActivityItem('🔄', 'System', message.data.message || 'Username changed successfully', null, new Date());
                                 } else {
                                     console.warn('⚠️ Username changed message missing data:', message);
                                     updateConnectionUI('connected', '');
@@ -5806,6 +5881,14 @@
                                 console.error('❌ Username change error - Full message:', message);
                                 console.error('❌ Username change error - Message data:', message.data);
                                 console.error('❌ Username change error - Message type:', message.type);
+                                
+                                // Clear restoration flag if we were restoring
+                                if (window.isRestoringConnection) {
+                                    console.log('❌ [STATE] Reconnection failed, clearing restoration flag');
+                                    window.isRestoringConnection = false;
+                                    // Clear the saved state since reconnection failed
+                                    clearConnectionState();
+                                }
                                 
                                 // Try to extract error message from various possible structures
                                 let errorMessage = 'Unknown error occurred';
