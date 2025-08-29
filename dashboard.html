@@ -5734,15 +5734,20 @@
                 
                 // Handle different deployment environments
                 let wsUrl;
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    // Local development
-                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    const host = window.location.host;
-                    wsUrl = `${protocol}//${host}`;
+                
+                // Check if we're in local development (including file:// protocol)
+                if (window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.protocol === 'file:' ||
+                    window.location.hostname === '') {
+                    // Local development - connect to local server
+                    wsUrl = 'ws://localhost:3000';
+                    console.log('🏠 [LOCAL] Connecting to local development server');
                 } else {
                     // Deployed environment (Render, Heroku, etc.)
                     // Try WebSocket first, fallback to HTTP polling if needed
                     wsUrl = `wss://${window.location.hostname}`;
+                    console.log('🌐 [DEPLOYED] Connecting to deployed server');
                 }
                 
                 console.log('🔌 Connecting to WebSocket:', wsUrl);
@@ -6604,7 +6609,7 @@
             }
             
             // Reset viewers display
-            updateViewersDisplay({});
+            updateViewerStats({ totalUniqueViewers: 0, averageWatchTime: 0, longestWatchTime: 0 });
             
             // Clear new followers display
             const newFollowersElement = document.getElementById('newFollowers');

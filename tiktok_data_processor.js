@@ -2389,82 +2389,7 @@ function broadcastEvent(type, data) {
     });
 }
 
-// Handle WebSocket messages from dashboard
-wss.on('connection', (ws) => {
-    console.log('🖥️  Dashboard connected via WebSocket');
-    console.log(`📊 Total connected clients: ${wss.clients.size}`);
-    
-    // Send initial metrics
-    broadcastEvent('metrics', {
-        currentViewerCount: metrics.currentViewerCount,
-        totalLikes: metrics.totalLikes,
-        totalGifts: metrics.totalGifts,
-        totalComments: metrics.totalComments,
-        likesPerMinute: metrics.likesPerMinute,
-        giftsPerMinute: metrics.giftsPerMinute,
-        commentsPerMinute: metrics.commentsPerMinute,
-        sentimentScore: metrics.sentimentScore,
-        rollingSentimentScore: metrics.rollingSentimentScore,
-        keywordFrequency: metrics.keywordFrequency,
-        userLikeCounts: metrics.userLikeCounts,
-        viewerStats: {
-            totalUniqueViewers: metrics.viewerStats.totalUniqueViewers,
-            averageWatchTime: metrics.viewerStats.averageWatchTime,
-            longestWatchTime: metrics.viewerStats.longestWatchTime,
-            viewersByWatchTime: metrics.viewerStats.viewersByWatchTime,
-            activeViewers: Object.values(metrics.viewers).filter(v => v.isActive).length
-        },
-        newFollowers: metrics.newFollowers || [],
-        sessionFollowersGained: metrics.sessionFollowersGained || 0,
-        entertainmentMetrics: {
-            entertainmentScore: metrics.entertainmentMetrics.entertainmentScore,
-            engagementIntensity: metrics.entertainmentMetrics.engagementIntensity,
-            contentReception: metrics.entertainmentMetrics.contentReception,
-            audienceEnergy: metrics.entertainmentMetrics.audienceEnergy,
-            retentionQuality: metrics.entertainmentMetrics.retentionQuality
-        },
-        questionDetection: {
-            pendingQuestions: metrics.questionDetection.pendingQuestions.slice(-5),
-            questionStats: metrics.questionDetection.questionStats
-        },
-        predictiveMetrics: {
-            churnRiskScore: metrics.predictiveMetrics.churnRiskScore,
-            monetizationOpportunityScore: metrics.predictiveMetrics.monetizationOpportunityScore,
-            engagementTrend: metrics.predictiveMetrics.engagementTrend,
-            viewerRetentionRate: metrics.predictiveMetrics.viewerRetentionRate,
-            sentimentVolatility: metrics.predictiveMetrics.sentimentVolatility
-        },
-        timestamp: new Date()
-    });
-    
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message);
-            if (data.type === 'test') {
-                // Remove debug output - just log internally
-                console.log('📨 Received test message from dashboard');
-                // Don't send response back - this was causing confusion
-            } else if (data.type === 'changeUsername') {
-                console.log('🔄 [USERNAME] Username change request:', data.username);
-                changeTikTokUsername(data.username, ws);
-            } else if (data.type === 'disconnectStream') {
-                console.log('❌ [USERNAME] Disconnect stream request');
-                disconnectFromTikTok(ws);
-            }
-        } catch (error) {
-            console.error('❌ Error parsing dashboard message:', error);
-        }
-    });
-    
-    ws.on('close', () => {
-        console.log('🖥️  Dashboard disconnected');
-        console.log(`📊 Total connected clients: ${wss.clients.size}`);
-    });
-    
-    ws.on('error', (error) => {
-        console.error('❌ Dashboard WebSocket error:', error);
-    });
-});
+// WebSocket connection handling moved to comprehensive handler below
 
 // Memory management and optimization
 const MAX_SENTIMENT_HISTORY = 100;
@@ -3411,12 +3336,12 @@ async function connectToTikTok() {
 }
 
 // Start the TikTok Live connection
-const username = "camyslive"; // TODO: Make this configurable
+const username = "lanocallum1"; // TODO: Make this configurable
 console.log("🎯 TikTok Live Data Processor Starting...");
 console.log(`📡 Connecting to: @${username}`);
 console.log("🖥️  Dashboard will be available at: http://localhost:3000");
 console.log("🔌 WebSocket endpoint: ws://localhost:3000");
-console.log("=" .repeat(60));
+console.log("=".repeat(60));
 
 // Set up periodic metrics updates
 setInterval(updatePerMinuteMetrics, 1000); // Update every second
@@ -3677,6 +3602,50 @@ app.get('/api/viewers', (req, res) => {
 // WebSocket connection handling
 wss.on('connection', (ws) => {
     console.log('🖥️ [WEBSOCKET] Dashboard connected');
+    console.log(`📊 Total connected clients: ${wss.clients.size}`);
+    
+    // Send initial metrics
+    broadcastEvent('metrics', {
+        currentViewerCount: metrics.currentViewerCount,
+        totalLikes: metrics.totalLikes,
+        totalGifts: metrics.totalGifts,
+        totalComments: metrics.totalComments,
+        likesPerMinute: metrics.likesPerMinute,
+        giftsPerMinute: metrics.giftsPerMinute,
+        commentsPerMinute: metrics.commentsPerMinute,
+        sentimentScore: metrics.sentimentScore,
+        rollingSentimentScore: metrics.rollingSentimentScore,
+        keywordFrequency: metrics.keywordFrequency,
+        userLikeCounts: metrics.userLikeCounts,
+        viewerStats: {
+            totalUniqueViewers: metrics.viewerStats.totalUniqueViewers,
+            averageWatchTime: metrics.viewerStats.averageWatchTime,
+            longestWatchTime: metrics.viewerStats.longestWatchTime,
+            viewersByWatchTime: metrics.viewerStats.viewersByWatchTime,
+            activeViewers: Object.values(metrics.viewers).filter(v => v.isActive).length
+        },
+        newFollowers: metrics.newFollowers || [],
+        sessionFollowersGained: metrics.sessionFollowersGained || 0,
+        entertainmentMetrics: {
+            entertainmentScore: metrics.entertainmentMetrics.entertainmentScore,
+            engagementIntensity: metrics.entertainmentMetrics.engagementIntensity,
+            contentReception: metrics.entertainmentMetrics.contentReception,
+            audienceEnergy: metrics.entertainmentMetrics.audienceEnergy,
+            retentionQuality: metrics.entertainmentMetrics.retentionQuality
+        },
+        questionDetection: {
+            pendingQuestions: metrics.questionDetection.pendingQuestions.slice(-5),
+            questionStats: metrics.questionDetection.questionStats
+        },
+        predictiveMetrics: {
+            churnRiskScore: metrics.predictiveMetrics.churnRiskScore,
+            monetizationOpportunityScore: metrics.predictiveMetrics.monetizationOpportunityScore,
+            engagementTrend: metrics.predictiveMetrics.engagementTrend,
+            viewerRetentionRate: metrics.predictiveMetrics.viewerRetentionRate,
+            sentimentVolatility: metrics.predictiveMetrics.sentimentVolatility
+        },
+        timestamp: new Date()
+    });
     
     ws.on('message', async (message) => {
         try {
@@ -3881,10 +3850,10 @@ server.listen(PORT, () => {
     // Clean up any existing duplicates on server startup
     cleanupDuplicateFollowers();
     
-    console.log("=" .repeat(60));
+    console.log("=".repeat(60));
     console.log("🎯 TikTok Live Assistant Ready!");
     console.log("📱 Open the dashboard and enter a streamer username to connect");
-    console.log("=" .repeat(60));
+    console.log("=".repeat(60));
 });
 
 // Test function to manually test new followers tracking
