@@ -2391,8 +2391,8 @@
                 border-radius: 15px;
                 width: calc(100% - 10px);
                 max-width: none;
-                height: 200px; /* Fixed height for mobile */
-                overflow: hidden;
+                min-height: 180px; /* Minimum height instead of fixed */
+                max-height: 220px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
@@ -2401,8 +2401,6 @@
                 flex-direction: column;
                 gap: 12px;
                 width: 100%;
-                height: 100%;
-                justify-content: space-between;
             }
             
             .prompt-icon {
@@ -2424,11 +2422,6 @@
                 hyphens: auto;
                 padding: 0;
                 letter-spacing: 0.2px;
-                flex: 1;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 4;
-                -webkit-box-orient: vertical;
             }
             
             /* Mobile streamer optimization */
@@ -2459,7 +2452,8 @@
                 padding: 18px 12px;
                 margin: 8px 4px;
                 border-radius: 12px;
-                height: 180px; /* Slightly smaller height */
+                min-height: 160px; /* Minimum height instead of fixed */
+                max-height: 200px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
@@ -2488,7 +2482,8 @@
                 padding: 15px 10px;
                 margin: 6px 3px;
                 border-radius: 10px;
-                height: 160px; /* Even smaller height for tiny screens */
+                min-height: 140px; /* Minimum height instead of fixed */
+                max-height: 180px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
