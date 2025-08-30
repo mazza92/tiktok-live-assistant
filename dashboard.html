@@ -2322,6 +2322,8 @@
             flex-direction: column;
             gap: 20px;
             align-items: center;
+            width: 100%;
+            overflow: hidden;
         }
         
         .prompt-icon {
@@ -2341,6 +2343,9 @@
             margin-left: auto;
             margin-right: auto;
             letter-spacing: 0.3px;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         
         .prompt-trigger {
@@ -2391,6 +2396,8 @@
                 border-radius: 15px;
                 width: calc(100% - 10px);
                 max-width: none;
+                overflow: hidden;
+                position: relative;
             }
             
             .prompt-content {
@@ -2417,11 +2424,16 @@
                 max-width: 100%;
                 width: 100%;
                 word-wrap: break-word;
+                word-break: break-word;
                 hyphens: auto;
                 padding: 0;
                 letter-spacing: 0.2px;
                 max-height: 200px;
-                overflow: visible;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 8;
+                -webkit-box-orient: vertical;
+                text-overflow: ellipsis;
             }
             
             /* Mobile streamer optimization */
@@ -2452,6 +2464,8 @@
                 padding: 18px 12px;
                 margin: 8px 4px;
                 border-radius: 12px;
+                overflow: hidden;
+                position: relative;
             }
             
             .prompt-content {
@@ -2462,8 +2476,12 @@
                 font-size: 0.9rem;
                 line-height: 1.2;
                 letter-spacing: 0.2px;
-                max-height: 180px;
-                overflow: visible;
+                max-height: 160px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 6;
+                -webkit-box-orient: vertical;
+                text-overflow: ellipsis;
             }
             
             .prompt-icon {
@@ -2482,6 +2500,8 @@
                 padding: 15px 10px;
                 margin: 6px 3px;
                 border-radius: 10px;
+                overflow: hidden;
+                position: relative;
             }
             
             .prompt-content {
@@ -2492,8 +2512,12 @@
                 font-size: 0.8rem;
                 line-height: 1.2;
                 letter-spacing: 0.1px;
-                max-height: 160px;
-                overflow: visible;
+                max-height: 140px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 5;
+                -webkit-box-orient: vertical;
+                text-overflow: ellipsis;
             }
             
             .prompt-icon {
