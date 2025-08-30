@@ -5958,8 +5958,8 @@
                     showNoQuestionsCard();
                     updateQuestionStatsRealTime();
                     
-                                    // Send test message to verify connection
-                ws.send(JSON.stringify({ type: 'test', data: 'ping' }));
+                    // Send test message to verify connection
+                    ws.send(JSON.stringify({ type: 'test', data: 'ping' }));
                 
                 // Send current language to backend
                 const savedLanguage = localStorage.getItem('dashboard_language') || 'en';
@@ -5968,7 +5968,7 @@
                     language: savedLanguage
                 }));
                 console.log('🌍 [WEBSOCKET] Sent initial language to backend:', savedLanguage);
-            };
+                };
                 
                 ws.onmessage = function(event) {
                     try {

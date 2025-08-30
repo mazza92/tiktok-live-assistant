@@ -23,7 +23,7 @@ class GeminiService {
     /**
      * Build context string from stream metrics for the LLM
      */
-    buildContextString(metrics) {
+    buildContextString(metrics, language = 'en') {
         const now = new Date();
         const streamDuration = Math.floor((now - metrics.streamStartTime) / 60000); // minutes
         
@@ -40,9 +40,16 @@ class GeminiService {
         // Recent events summary
         const recentEvents = this.summarizeRecentEvents(metrics);
         
+        // Language-specific instructions
+        const languageInstructions = language === 'fr' ? 
+            'IMPORTANT: Generate your response in French. Use natural, conversational French that a French streamer would say.' :
+            'IMPORTANT: Generate your response in English. Use natural, conversational English that an English streamer would say.';
+        
         // Build the context string
         const context = `
 You are LiveBot, an enthusiastic and friendly stream co-host. Your task is to generate a short, actionable prompt for the streamer to say out loud.
+
+${languageInstructions}
 
 STREAM CONTEXT:
 - Stream Duration: ${streamDuration} minutes (${streamPhase} phase)
@@ -151,11 +158,11 @@ FORMAT: Just the prompt text, no explanations or formatting.
     /**
      * Generate a prompt using Gemini AI
      */
-    async generatePrompt(metrics) {
+    async generatePrompt(metrics, language = 'en') {
         // Check if API is available and rate limits
         if (!this.isAvailable) {
             console.log('🤖 [GEMINI] API not available, using fallback');
-            return this.getFallbackPrompt(metrics);
+            return this.getFallbackPrompt(metrics, language);
         }
         
         // Rate limiting check
@@ -163,7 +170,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
         if (now - this.lastCallTime < 60000) { // Within 1 minute
             if (this.callCount >= this.maxCallsPerMinute) {
                 console.log('🤖 [GEMINI] Rate limit reached, using fallback');
-                return this.getFallbackPrompt(metrics);
+                return this.getFallbackPrompt(metrics, language);
             }
         } else {
             this.callCount = 0;
@@ -171,7 +178,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
         
         try {
             // Build context and create timeout promise
-            const context = this.buildContextString(metrics);
+            const context = this.buildContextString(metrics, language);
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('API timeout')), GEMINI_CONFIG.timeout);
             });
@@ -252,10 +259,10 @@ FORMAT: Just the prompt text, no explanations or formatting.
     /**
      * Get a context-aware fallback prompt
      */
-    getFallbackPrompt(metrics = {}) {
+    getFallbackPrompt(metrics = {}, language = 'en') {
         // If we have metrics, generate a context-aware fallback
         if (metrics && Object.keys(metrics).length > 0) {
-            return this.generateContextAwareFallback(metrics);
+            return this.generateContextAwareFallback(metrics, language);
         }
         
         // Otherwise, use random selection
@@ -276,7 +283,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
     /**
      * Generate a context-aware fallback prompt based on current metrics
      */
-    generateContextAwareFallback(metrics) {
+    generateContextAwareFallback(metrics, language = 'en') {
         const viewerCount = metrics.currentViewerCount || 0;
         const commentRate = metrics.commentsPerMinute || 0;
         const likeRate = metrics.likesPerMinute || 0;
@@ -307,17 +314,11 @@ FORMAT: Just the prompt text, no explanations or formatting.
             selectedPrompt = GEMINI_CONFIG.fallbackPrompts[0];
         }
         
-        // Enhance the message with current context
-        let enhancedMessage = selectedPrompt.message;
-        
-        // Add viewer count context if available
-        if (viewerCount > 0) {
-            enhancedMessage = enhancedMessage.replace('[current topic]', `this stream with ${viewerCount} viewers`);
-        }
-        
+        // Return the prompt with the translation key as message
+        // The calling code will handle translation using getTranslatedPrompt
         return {
             ...selectedPrompt,
-            message: enhancedMessage,
+            message: selectedPrompt.message, // This is now a translation key like 'fallback_engagement'
             source: 'context_aware_fallback',
             context: {
                 engagementLevel: this.analyzeEngagementLevel(metrics),

@@ -33,7 +33,13 @@ const promptTranslations = {
         communityGrowth: "📈 **Community Growth**: Great energy with {viewerCount} viewers! Say: \"If you're new here, hit that follow button and let's build this community together!\" or \"I love seeing new faces! Drop a comment and let me know where you're from!\"",
         aiEngagementBoost: "💬 **AI Engagement Boost**: Engagement is low with {viewerCount} viewers. Say: \"I want to hear your thoughts! What's your take on this?\" or \"Let's get this chat moving! Share something that made you laugh today!\"",
         aiInteraction: "🎯 **AI Interaction**: Moderate engagement detected. Say: \"I love hearing from you! What's your experience with this?\" or \"Keep the conversation going! What do you think about this topic?\"",
-        aiMomentum: "🎯 **AI Momentum**: Good engagement! Say: \"The energy is amazing! Let's keep it going - what's your opinion on this?\" or \"I love this energy! Share something that excites you about this topic!\""
+        aiMomentum: "🎯 **AI Momentum**: Good engagement! Say: \"The energy is amazing! Let's keep it going - what's your opinion on this?\" or \"I love this energy! Share something that excites you about this topic!\"",
+        // Fallback prompts
+        fallback_engagement: "💬 **Chat Engagement**: The chat is quiet right now. Ask viewers directly: \"What's on your mind today?\" or \"Share something that made you laugh this week!\"",
+        fallback_growth: "📈 **Viewer Connection**: Great energy! Personalize your ask: \"If you're enjoying this, hit that follow button and let's build this community together!\"",
+        fallback_interaction: "🎯 **Interactive Challenge**: Start a quick game! \"Comment with your favorite emoji if you've ever been to [relevant place/topic]!\" or \"Type YES if you agree with this!\"",
+        fallback_retention: "👥 **Viewer Retention**: Connect with your audience! \"I want to hear from you - what brought you to this stream today?\" or \"Share your experience with [current topic]!\"",
+        fallback_momentum: "🚀 **Keep Momentum**: The energy is building! \"Let's keep this going - what's your take on [current topic]?\" or \"I love hearing your thoughts, keep them coming!\""
     },
     fr: {
         // Chat Activation prompts
@@ -42,7 +48,13 @@ const promptTranslations = {
         communityGrowth: "📈 **Croissance de la Communauté**: Excellente énergie avec {viewerCount} spectateurs ! Dites: \"Si vous êtes nouveau ici, appuyez sur le bouton follow et construisons cette communauté ensemble !\" ou \"J'adore voir de nouveaux visages ! Laissez un commentaire et dites-moi d'où vous venez !\"",
         aiEngagementBoost: "💬 **Boost d'Engagement IA**: L'engagement est faible avec {viewerCount} spectateurs. Dites: \"Je veux entendre vos pensées ! Qu'est-ce que vous en pensez ?\" ou \"Faisons bouger ce chat ! Partagez quelque chose qui vous a fait rire aujourd'hui !\"",
         aiInteraction: "🎯 **Interaction IA**: Engagement modéré détecté. Dites: \"J'adore vous entendre ! Quelle est votre expérience avec ça ?\" ou \"Continuez la conversation ! Que pensez-vous de ce sujet ?\"",
-        aiMomentum: "🎯 **Élan IA**: Bon engagement ! Dites: \"L'énergie est incroyable ! Continuons - quelle est votre opinion sur ça ?\" ou \"J'adore cette énergie ! Partagez quelque chose qui vous excite sur ce sujet !\""
+        aiMomentum: "🎯 **Élan IA**: Bon engagement ! Dites: \"L'énergie est incroyable ! Continuons - quelle est votre opinion sur ça ?\" ou \"J'adore cette énergie ! Partagez quelque chose qui vous excite sur ce sujet !\"",
+        // Fallback prompts
+        fallback_engagement: "💬 **Engagement du Chat**: Le chat est calme en ce moment. Demandez directement aux spectateurs: \"Qu'est-ce qui vous préoccupe aujourd'hui ?\" ou \"Partagez quelque chose qui vous a fait rire cette semaine !\"",
+        fallback_growth: "📈 **Connexion avec les Spectateurs**: Excellente énergie ! Personnalisez votre demande: \"Si vous aimez ça, appuyez sur le bouton follow et construisons cette communauté ensemble !\"",
+        fallback_interaction: "🎯 **Défi Interactif**: Commencez un jeu rapide ! \"Commentez avec votre emoji préféré si vous êtes déjà allé à [lieu/sujet pertinent] !\" ou \"Tapez OUI si vous êtes d'accord avec ça !\"",
+        fallback_retention: "👥 **Rétention des Spectateurs**: Connectez-vous avec votre audience ! \"Je veux vous entendre - qu'est-ce qui vous a amené à ce stream aujourd'hui ?\" ou \"Partagez votre expérience avec [sujet actuel] !\"",
+        fallback_momentum: "🚀 **Maintenir l'Élan**: L'énergie se construit ! \"Continuons - qu'est-ce que vous pensez de [sujet actuel] ?\" ou \"J'adore entendre vos pensées, continuez !\""
     }
 };
 
@@ -764,34 +776,65 @@ function getViewerEngagementRanking() {
 
 // Generate AI welcome messages and engagement tips for new viewers
 function generateAIWelcome(nickname, viewerCount) {
-    const welcomeMessages = [
-        `Hey ${nickname}! 👋 Welcome to the stream! I'm so glad you're here!`,
-        `Welcome ${nickname}! 🎉 You're joining us at the perfect time!`,
-        `Hi ${nickname}! ✨ Great to see you in the chat!`,
-        `Welcome aboard ${nickname}! 🚀 You're going to love this stream!`,
-        `Hey there ${nickname}! 🌟 So happy you joined us!`
-    ];
+    // Language-specific welcome messages
+    const welcomeMessages = {
+        en: [
+            `Hey ${nickname}! 👋 Welcome to the stream! I'm so glad you're here!`,
+            `Welcome ${nickname}! 🎉 You're joining us at the perfect time!`,
+            `Hi ${nickname}! ✨ Great to see you in the chat!`,
+            `Welcome aboard ${nickname}! 🚀 You're going to love this stream!`,
+            `Hey there ${nickname}! 🌟 So happy you joined us!`
+        ],
+        fr: [
+            `Salut ${nickname} ! 👋 Bienvenue sur le stream ! Je suis ravi que tu sois là !`,
+            `Bienvenue ${nickname} ! 🎉 Tu nous rejoins au moment parfait !`,
+            `Salut ${nickname} ! ✨ Ravi de te voir dans le chat !`,
+            `Bienvenue à bord ${nickname} ! 🚀 Tu vas adorer ce stream !`,
+            `Salut ${nickname} ! 🌟 Je suis content que tu nous aies rejoints !`
+        ]
+    };
 
-    const engagementTips = [
-        `💡 **Tip**: Ask ${nickname} about their day or interests to build connection`,
-        `💡 **Tip**: Encourage ${nickname} to drop a comment or like to stay engaged`,
-        `💡 **Tip**: Share something personal to make ${nickname} feel welcome`,
-        `💡 **Tip**: Ask ${nickname} if they've been to any interesting places lately`,
-        `💡 **Tip**: Invite ${nickname} to share their thoughts on the current topic`
-    ];
+    const engagementTips = {
+        en: [
+            `💡 **Tip**: Ask ${nickname} about their day or interests to build connection`,
+            `💡 **Tip**: Encourage ${nickname} to drop a comment or like to stay engaged`,
+            `💡 **Tip**: Share something personal to make ${nickname} feel welcome`,
+            `💡 **Tip**: Ask ${nickname} if they've been to any interesting places lately`,
+            `💡 **Tip**: Invite ${nickname} to share their thoughts on the current topic`
+        ],
+        fr: [
+            `💡 **Conseil**: Demande à ${nickname} comment s'est passée sa journée ou ses centres d'intérêt pour créer un lien`,
+            `💡 **Conseil**: Encourage ${nickname} à laisser un commentaire ou un like pour rester engagé`,
+            `💡 **Conseil**: Partage quelque chose de personnel pour faire sentir ${nickname} bienvenu`,
+            `💡 **Conseil**: Demande à ${nickname} s'il est allé dans des endroits intéressants récemment`,
+            `💡 **Conseil**: Invite ${nickname} à partager ses pensées sur le sujet actuel`
+        ]
+    };
 
-    const retentionStrategies = [
-        `🎯 **Retention**: With ${viewerCount} viewers, focus on personal connection`,
-        `🎯 **Retention**: Early viewers like ${nickname} are your core audience`,
-        `🎯 **Retention**: Build rapport with ${nickname} to increase watch time`,
-        `🎯 **Retention**: Ask ${nickname} questions to keep them engaged`,
-        `🎯 **Retention**: Share behind-the-scenes info to make ${nickname} feel special`
-    ];
+    const retentionStrategies = {
+        en: [
+            `🎯 **Retention**: With ${viewerCount} viewers, focus on personal connection`,
+            `🎯 **Retention**: Early viewers like ${nickname} are your core audience`,
+            `🎯 **Retention**: Build rapport with ${nickname} to increase watch time`,
+            `🎯 **Retention**: Ask ${nickname} questions to keep them engaged`,
+            `🎯 **Retention**: Share behind-the-scenes info to make ${nickname} feel special`
+        ],
+        fr: [
+            `🎯 **Rétention**: Avec ${viewerCount} spectateurs, concentre-toi sur la connexion personnelle`,
+            `🎯 **Rétention**: Les premiers spectateurs comme ${nickname} sont ton audience principale`,
+            `🎯 **Rétention**: Crée un rapport avec ${nickname} pour augmenter le temps de visionnage`,
+            `🎯 **Rétention**: Pose des questions à ${nickname} pour le garder engagé`,
+            `🎯 **Rétention**: Partage des infos en coulisses pour faire sentir ${nickname} spécial`
+        ]
+    };
 
-    // Select random messages
-    const welcomeMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-    const engagementTip = engagementTips[Math.floor(Math.random() * engagementTips.length)];
-    const retentionStrategy = retentionStrategies[Math.floor(Math.random() * retentionStrategies.length)];
+    // Get current language or default to English
+    const lang = currentLanguage || 'en';
+    
+    // Select random messages in the current language
+    const welcomeMessage = welcomeMessages[lang][Math.floor(Math.random() * welcomeMessages[lang].length)];
+    const engagementTip = engagementTips[lang][Math.floor(Math.random() * engagementTips[lang].length)];
+    const retentionStrategy = retentionStrategies[lang][Math.floor(Math.random() * retentionStrategies[lang].length)];
 
     return {
         welcomeMessage,
@@ -1589,14 +1632,23 @@ async function generateAutomatedPrompt() {
     try {
         // Try AI service first
         console.log('🤖 [AI] Calling Gemini service for prompt generation...');
-        const aiPrompt = await geminiService.generatePrompt(metrics);
+        const aiPrompt = await geminiService.generatePrompt(metrics, currentLanguage);
         
         if (aiPrompt && aiPrompt.message) {
             console.log('🤖 [AI] Successfully generated AI prompt:', aiPrompt.message);
             
+            // Check if this is a fallback prompt that needs translation
+            let finalMessage = aiPrompt.message;
+            if (aiPrompt.source === 'context_aware_fallback' && promptTranslations[currentLanguage] && promptTranslations[currentLanguage][aiPrompt.message]) {
+                // This is a fallback prompt with a translation key, translate it
+                finalMessage = promptTranslations[currentLanguage][aiPrompt.message];
+                console.log(`🌍 [TRANSLATION] Translated fallback prompt to ${currentLanguage}:`, finalMessage);
+            }
+            
             // Ensure the AI prompt has all required properties
             const enhancedPrompt = {
                 ...aiPrompt,
+                message: finalMessage, // Use translated message if available
                 source: 'gemini',
                 type: aiPrompt.type || 'ai_generated',
                 priority: aiPrompt.priority || 'medium',
@@ -1727,27 +1779,27 @@ function generateAIEnhancedContent() {
         const engagementLevel = analyzeActualEngagement();
         
         if (engagementLevel === 'low') {
-            prompts.push({
+        prompts.push({
                 type: 'engagement',
-                priority: 'high',
+            priority: 'high',
                 message: getTranslatedPrompt('aiEngagementBoost', { viewerCount }),
                 trigger: 'ai_enhanced_low_engagement_accurate',
                 action: 'boost_engagement',
                 source: 'ai_enhanced_legacy'
             });
         } else if (engagementLevel === 'medium') {
-            prompts.push({
+        prompts.push({
                 type: 'interaction',
-                priority: 'medium',
+            priority: 'medium',
                 message: getTranslatedPrompt('aiInteraction', {}),
                 trigger: 'ai_enhanced_medium_engagement',
                 action: 'encourage_sharing',
                 source: 'ai_enhanced_legacy'
             });
         } else {
-            prompts.push({
+        prompts.push({
                 type: 'interaction',
-                priority: 'medium',
+            priority: 'medium',
                 message: getTranslatedPrompt('aiMomentum', {}),
                 trigger: 'ai_enhanced_good_engagement',
                 action: 'start_challenge',
