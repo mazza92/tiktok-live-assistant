@@ -2391,25 +2391,28 @@
         /* Mobile-optimized actionable prompt layout */
         @media (max-width: 768px) {
             .actionable-prompt {
-                padding: 20px 15px;
-                margin: 10px 5px;
-                border-radius: 15px;
-                width: calc(100% - 10px);
+                padding: 25px 20px;
+                margin: 15px 10px;
+                border-radius: 20px;
+                width: calc(100% - 20px);
                 max-width: none;
-                overflow: hidden;
+                overflow: visible;
                 position: relative;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+                border: 2px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
             }
             
             .prompt-content {
                 text-align: left;
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 15px;
                 width: 100%;
             }
             
             .prompt-icon {
-                font-size: 2rem;
+                font-size: 2.5rem;
                 margin-bottom: 0;
                 text-align: center;
                 order: -1;
@@ -2417,8 +2420,8 @@
             }
             
             .prompt-text {
-                font-size: 1rem;
-                line-height: 1.3;
+                font-size: 1.1rem;
+                line-height: 1.4;
                 margin-bottom: 0;
                 text-align: left;
                 max-width: 100%;
@@ -2426,29 +2429,28 @@
                 word-wrap: break-word;
                 word-break: break-word;
                 hyphens: auto;
-                padding: 0;
-                letter-spacing: 0.2px;
-                max-height: 200px;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 8;
-                -webkit-box-orient: vertical;
-                text-overflow: ellipsis;
+                padding: 15px;
+                letter-spacing: 0.3px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                overflow: visible;
+                max-height: none;
             }
             
             /* Mobile streamer optimization */
             .actionable-prompt.streamer-optimized .prompt-text {
-                font-size: 1.1rem;
-                line-height: 1.3;
-                padding: 10px;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 10px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                font-size: 1.2rem;
+                line-height: 1.4;
+                padding: 18px;
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 18px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
             }
             
             .prompt-trigger {
-                font-size: 0.75rem;
-                padding: 6px 10px;
+                font-size: 0.8rem;
+                padding: 8px 12px;
                 text-align: center;
                 width: 100%;
                 margin-top: 0;
@@ -2461,11 +2463,53 @@
         /* Extra small mobile devices */
         @media (max-width: 480px) {
             .actionable-prompt {
+                padding: 20px 15px;
+                margin: 10px 5px;
+                border-radius: 18px;
+                overflow: visible;
+                position: relative;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+                border: 2px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+            }
+            
+            .prompt-content {
+                gap: 12px;
+            }
+            
+            .prompt-text {
+                font-size: 1rem;
+                line-height: 1.3;
+                letter-spacing: 0.2px;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                overflow: visible;
+                max-height: none;
+            }
+            
+            .prompt-icon {
+                font-size: 2rem;
+            }
+            
+            .prompt-trigger {
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }
+        }
+        
+        /* Very small mobile devices */
+        @media (max-width: 360px) {
+            .actionable-prompt {
                 padding: 18px 12px;
                 margin: 8px 4px;
-                border-radius: 12px;
-                overflow: hidden;
+                border-radius: 15px;
+                overflow: visible;
                 position: relative;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+                border: 2px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             }
             
             .prompt-content {
@@ -2474,14 +2518,14 @@
             
             .prompt-text {
                 font-size: 0.9rem;
-                line-height: 1.2;
+                line-height: 1.3;
                 letter-spacing: 0.2px;
-                max-height: 160px;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 6;
-                -webkit-box-orient: vertical;
-                text-overflow: ellipsis;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                overflow: visible;
+                max-height: none;
             }
             
             .prompt-icon {
@@ -2491,42 +2535,6 @@
             .prompt-trigger {
                 font-size: 0.7rem;
                 padding: 5px 8px;
-            }
-        }
-        
-        /* Very small mobile devices */
-        @media (max-width: 360px) {
-            .actionable-prompt {
-                padding: 15px 10px;
-                margin: 6px 3px;
-                border-radius: 10px;
-                overflow: hidden;
-                position: relative;
-            }
-            
-            .prompt-content {
-                gap: 8px;
-            }
-            
-            .prompt-text {
-                font-size: 0.8rem;
-                line-height: 1.2;
-                letter-spacing: 0.1px;
-                max-height: 140px;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 5;
-                -webkit-box-orient: vertical;
-                text-overflow: ellipsis;
-            }
-            
-            .prompt-icon {
-                font-size: 1.6rem;
-            }
-            
-            .prompt-trigger {
-                font-size: 0.65rem;
-                padding: 4px 6px;
             }
         }
         
