@@ -1552,41 +1552,31 @@ function updateQuestionStats() {
     metrics.questionDetection.lastQuestionUpdate = new Date();
 }
 
-// AI-Powered Prompt Generation with Gemini LLM Integration
+// Generate automated prompts using AI service with fallback to legacy system
 async function generateAutomatedPrompt() {
     const now = Date.now();
     
-    // Check cooldown (minimum 1 minute between prompts)
-    if (now - metrics.lastPromptTime < 60000) {
-        console.log(`🤖 [COOLDOWN] Still on cooldown. Last prompt: ${Math.round((now - metrics.lastPromptTime) / 1000)}s ago`);
+    // Check cooldown to prevent spam
+    if (metrics.lastPromptTime && (now - metrics.lastPromptTime) < 30000) { // 30 second cooldown
         return null;
     }
     
-    console.log(`🤖 [AI ANALYSIS] Starting AI-powered prompt generation...`);
-    
-    // Update stream phase for context
-    const streamDuration = (now - metrics.streamStartTime.getTime()) / 60000; // in minutes
-    if (streamDuration < 10) {
-        metrics.streamPhase = 'start';
-    } else if (streamDuration < 45) {
-        metrics.streamPhase = 'mid';
-    } else {
-        metrics.streamPhase = 'end';
-    }
-    
     try {
-        // Use Gemini AI to generate context-aware prompts
+        // Try AI service first
+        console.log('🤖 [AI] Calling Gemini service for prompt generation...');
         const aiPrompt = await geminiService.generatePrompt(metrics);
         
         if (aiPrompt && aiPrompt.message) {
-            console.log(`🤖 [GEMINI] AI-generated prompt: ${aiPrompt.message.substring(0, 100)}...`);
+            console.log('🤖 [AI] Successfully generated AI prompt:', aiPrompt.message);
             
-            // Ensure the prompt has all required properties
+            // Ensure the AI prompt has all required properties
             const enhancedPrompt = {
                 ...aiPrompt,
                 source: 'gemini',
                 type: aiPrompt.type || 'ai_generated',
-                priority: aiPrompt.priority || 'medium'
+                priority: aiPrompt.priority || 'medium',
+                trigger: aiPrompt.trigger || 'ai_service',
+                action: aiPrompt.action || 'general_guidance'
             };
             
             // Update cooldown tracking
@@ -1603,20 +1593,59 @@ async function generateAutomatedPrompt() {
             
             return enhancedPrompt;
         }
-        
     } catch (error) {
-        console.error('🤖 [GEMINI] Error in AI prompt generation:', error.message);
-        
-        // Fallback to legacy prompt system on error
-        console.log('🤖 [FALLBACK] Using legacy prompt system...');
-        const fallbackPrompt = generateLegacyPrompt();
-        if (fallbackPrompt) {
-            fallbackPrompt.source = 'fallback';
-        }
-        return fallbackPrompt;
+        console.error('🤖 [AI] Error calling Gemini service:', error);
+        console.log('🤖 [AI] Falling back to legacy prompt system...');
     }
     
-    return null;
+    // Fallback to legacy system
+    console.log('🤖 [LEGACY] Using legacy prompt generation system...');
+    
+    // Check if we have recent new viewers that need engagement tips
+    const recentNewViewers = Object.values(metrics.viewers)
+        .filter(v => v.hasBeenWelcomed && 
+                    v.welcomeTimestamp && 
+                    (now - v.welcomeTimestamp) < 300000) // Last 5 minutes
+        .sort((a, b) => b.welcomeTimestamp - a.welcomeTimestamp)
+        .slice(0, 2); // Get 2 most recent new viewers
+    
+    if (recentNewViewers.length > 0) {
+        // Generate viewer-specific engagement tips for the Live Assistant
+        const viewerTips = recentNewViewers.map(viewer => {
+            const tips = generateAIWelcome(viewer.nickname, metrics.currentViewerCount);
+            return {
+                type: 'viewer_engagement',
+                priority: 'high',
+                message: tips.engagementTips[0], // Use the engagement tip
+                trigger: 'new_viewer_engagement',
+                action: 'engage_new_viewer',
+                source: 'viewer_specific',
+                targetViewer: viewer.nickname,
+                timestamp: new Date()
+            };
+        });
+        
+        // Return the first viewer tip to show in Live Assistant
+        const selectedTip = viewerTips[0];
+        
+        // Update cooldown tracking
+        metrics.lastPromptTime = now;
+        if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
+        metrics.promptCooldowns[selectedTip.trigger] = now;
+        
+        // Update prompt history
+        if (!metrics.promptHistory) metrics.promptHistory = [];
+        metrics.promptHistory.push(selectedTip.trigger);
+        if (metrics.promptHistory.length > 10) {
+            metrics.promptHistory.shift();
+        }
+        
+        console.log(`🤖 [VIEWER TIP] Generated viewer-specific tip for ${selectedTip.targetViewer}: ${selectedTip.message}`);
+        return selectedTip;
+    }
+    
+    // If no recent new viewers, use the regular legacy prompt system
+    return generateLegacyPrompt();
 }
 
 // Legacy prompt generation (fallback system)

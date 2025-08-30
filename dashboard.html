@@ -3839,6 +3839,17 @@
             color: #ffffff;
             font-weight: 500;
         }
+        
+        /* Viewer-Specific Prompt Styling */
+        .actionable-prompt.viewer-specific {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            border-color: #ff9a9e;
+        }
+        
+        .actionable-prompt.viewer-specific .prompt-text {
+            color: #ffffff;
+            font-weight: 600;
+        }
 
         /* Non-blocking Gift Notification Styles */
         .gift-notifications-container {
@@ -9179,6 +9190,9 @@
             if (prompt.source === 'gemini') {
                 sourceIcon = '🧠';
                 triggerDescription = 'AI-Generated Suggestion';
+            } else if (prompt.source === 'viewer_specific') {
+                sourceIcon = '👤';
+                triggerDescription = `Viewer Engagement Tip for ${prompt.targetViewer || 'New Viewer'}`;
             } else if (prompt.source === 'fallback') {
                 sourceIcon = '🔄';
                 triggerDescription = 'Fallback System';
@@ -9209,6 +9223,8 @@
             // Add source-based styling
             if (prompt.source === 'gemini') {
                 promptElement.classList.add('ai-generated');
+            } else if (prompt.source === 'viewer_specific') {
+                promptElement.classList.add('viewer-specific');
             } else if (prompt.source === 'fallback') {
                 promptElement.classList.add('fallback-system');
             }
@@ -9230,7 +9246,9 @@
             
             // Create user-friendly trigger description
             let triggerDescription = 'AI Suggestion';
-            if (prompt.trigger === 'engagement_decline') {
+            if (prompt.source === 'viewer_specific') {
+                triggerDescription = `👤 Viewer Tip for ${prompt.targetViewer || 'New Viewer'}`;
+            } else if (prompt.trigger === 'engagement_decline') {
                 triggerDescription = '📉 Engagement Alert';
             } else if (prompt.trigger === 'extended_silence') {
                 triggerDescription = '🔇 Chat Activity';
