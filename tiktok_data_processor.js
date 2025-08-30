@@ -3,6 +3,7 @@ const express = require('express');
 const WebSocket = require('ws');
 const http = require('http');
 const Sentiment = require('sentiment');
+const GeminiService = require('./gemini_service');
 
 // Initialize Express app and HTTP server
 const app = express();
@@ -15,6 +16,10 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize sentiment analyzer
 const sentiment = new Sentiment();
+
+// Initialize Gemini AI service
+const geminiService = new GeminiService();
+console.log('🤖 [GEMINI] Service initialized:', geminiService.getHealthStatus());
 
 // Gift value mapping (TikTok diamonds to USD conversion)
 // Based on TikTok's coin pricing: 70 coins = $0.89, so 1 coin ≈ $0.0127
@@ -1535,18 +1540,17 @@ function updateQuestionStats() {
     metrics.questionDetection.lastQuestionUpdate = new Date();
 }
 
-// Enhanced AI prompt generation with intelligent analysis
-function generateAutomatedPrompt() {
+// AI-Powered Prompt Generation with Gemini LLM Integration
+async function generateAutomatedPrompt() {
     const now = Date.now();
-    const prompts = [];
     
-    // Reduce cooldown for testing - minimum 1 minute cooldown instead of 2
+    // Check cooldown (minimum 1 minute between prompts)
     if (now - metrics.lastPromptTime < 60000) {
         console.log(`🤖 [COOLDOWN] Still on cooldown. Last prompt: ${Math.round((now - metrics.lastPromptTime) / 1000)}s ago`);
         return null;
     }
     
-    console.log(`🤖 [AI ANALYSIS] Starting prompt generation analysis...`);
+    console.log(`🤖 [AI ANALYSIS] Starting AI-powered prompt generation...`);
     
     // Update stream phase for context
     const streamDuration = (now - metrics.streamStartTime.getTime()) / 60000; // in minutes
@@ -1558,221 +1562,148 @@ function generateAutomatedPrompt() {
         metrics.streamPhase = 'end';
     }
     
+    try {
+        // Use Gemini AI to generate context-aware prompts
+        const aiPrompt = await geminiService.generatePrompt(metrics);
+        
+        if (aiPrompt && aiPrompt.message) {
+            console.log(`🤖 [GEMINI] AI-generated prompt: ${aiPrompt.message.substring(0, 100)}...`);
+            
+            // Update cooldown tracking
+            metrics.lastPromptTime = now;
+            if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
+            metrics.promptCooldowns[aiPrompt.trigger] = now;
+            
+            // Update prompt history
+            if (!metrics.promptHistory) metrics.promptHistory = [];
+            metrics.promptHistory.push(aiPrompt.trigger);
+            if (metrics.promptHistory.length > 10) {
+                metrics.promptHistory.shift();
+            }
+            
+            return aiPrompt;
+        }
+        
+    } catch (error) {
+        console.error('🤖 [GEMINI] Error in AI prompt generation:', error.message);
+        
+        // Fallback to legacy prompt system on error
+        console.log('🤖 [FALLBACK] Using legacy prompt system...');
+        return generateLegacyPrompt();
+    }
+    
+    return null;
+}
+
+// Legacy prompt generation (fallback system)
+function generateLegacyPrompt() {
+    const now = Date.now();
+    const prompts = [];
+    
+    console.log(`🤖 [LEGACY] Generating fallback prompt...`);
+    
     // Helper to get top keyword
     const topKeyword = Object.entries(metrics.keywordFrequency).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
     
     // Helper to get top engager
     const topEngager = getViewerEngagementRanking()[0]?.nickname || 'viewers';
     
-    // 0. PREDICTIVE ANALYTICS (NEW - HIGHEST PRIORITY)
-    const predictiveInsights = runPredictiveAnalytics();
-    if (predictiveInsights.churnRisk) {
-        console.log(`🚨 [PREDICTIVE] High churn risk detected: ${predictiveInsights.churnRisk.score}`);
-        prompts.push(predictiveInsights.churnRisk);
-    }
-    if (predictiveInsights.monetizationOpportunity) {
-        console.log(`💰 [PREDICTIVE] Monetization opportunity detected: ${predictiveInsights.monetizationOpportunity.score}`);
-        prompts.push(predictiveInsights.monetizationOpportunity);
-    }
+    // Basic engagement analysis
+    const viewerCount = metrics.currentViewerCount || 0;
+    const likeRate = metrics.likesPerMinute || 0;
+    const commentRate = metrics.commentsPerMinute || 0;
     
-    // 0.5 ENHANCED: Check for pending questions and suggest addressing them if high priority or many pending
-    if (metrics.questionDetection.pendingQuestions.length > 3) {
-        const highPriorityQuestions = metrics.questionDetection.pendingQuestions.filter(q => q.priority >= 3);
-        if (highPriorityQuestions.length > 0) {
-            const topQuestion = highPriorityQuestions.sort((a, b) => b.priority - a.priority)[0];
-            prompts.push({
-                type: 'question',
-                priority: 'high',
-                message: `❓ Pending Qs: ${metrics.questionDetection.pendingQuestions.length}. Top from ${topQuestion.nickname}: "${topQuestion.question.substring(0, 30)}...". Answer to engage; retention: ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%.`,
-                trigger: 'pending_questions_high',
-                action: 'answer_question'
-            });
-        } else if (metrics.questionDetection.pendingQuestions.length > 5) {
-            prompts.push({
-                type: 'question',
-                priority: 'medium',
-                message: `❓ ${metrics.questionDetection.pendingQuestions.length} unanswered Qs. Address "${metrics.questionDetection.pendingQuestions[0].question.substring(0, 30)}..." from ${metrics.questionDetection.pendingQuestions[0].nickname} to boost interaction/growth.`,
-                trigger: 'pending_questions_many',
-                action: 'address_questions'
-            });
-        }
-    }
-    
-    // 1. ENGAGEMENT PATTERN ANALYSIS
-    const engagementTrend = analyzeEngagementTrend();
-    console.log(`🤖 [ENGAGEMENT] Trend analysis: ${engagementTrend}`);
-    if (engagementTrend === 'declining') {
-        const currentViewers = metrics.currentViewerCount || 0;
-        const likeRate = metrics.likesPerMinute || 0;
-        
-        if (currentViewers > 800 && likeRate < 30) {
-            prompts.push({
-                type: 'engagement',
-                priority: 'high',
-                message: `📉 ${currentViewers} viewers, low likes (${likeRate}/min). Ask: "What's interesting today?" or share story on "${topKeyword}". Churn risk: ${metrics.predictiveMetrics.churnRiskScore}%.`,
-                trigger: 'high_viewers_low_engagement',
-                action: 'activate_lurkers'
-            });
-        } else {
-            prompts.push({
-                type: 'engagement',
-                priority: 'high',
-                message: `📉 Quiet chat, declining trend. Ask: "What's on your mind?" re "${topKeyword}". Sentiment: ${metrics.rollingSentimentScore.toFixed(1)}; retention: ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%.`,
-                trigger: 'engagement_decline',
-                action: 'ask_open_question'
-            });
-        }
-    } else if (engagementTrend === 'increasing') {
-        const currentViewers = metrics.currentViewerCount || 0;
-        const likeRate = metrics.likesPerMinute || 0;
-        
-        if (likeRate > 80) {
-            prompts.push({
-                type: 'momentum',
-                priority: 'high',
-                message: `🚀 Like spike (${likeRate}/min)! Keep going; ask: "What's exciting you?" re "${topKeyword}". Viewers: ${currentViewers}; grow with follows.`,
-                trigger: 'like_explosion',
-                action: 'capitalize_momentum'
-            });
-        } else {
-            prompts.push({
-                type: 'momentum',
-                priority: 'medium',
-                message: `📈 Rising engagement (${currentViewers} viewers). Ask: "Share positives!" Entertainment: ${metrics.entertainmentMetrics.entertainmentScore}; retention: ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%.`,
-                trigger: 'engagement_increase',
-                action: 'maintain_momentum'
-            });
-        }
-    }
-    
-    // New Trigger: Low Retention
-    if (metrics.predictiveMetrics.viewerRetentionRate < 0.7) {
+    if (commentRate < 5 && viewerCount > 100) {
         prompts.push({
-            type: 'retention',
+            type: 'engagement',
             priority: 'high',
-            message: `📉 Low retention (${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%). Tease: "Stick for [surprise]!" or shoutout ${topEngager}. Avg watch: ${metrics.viewerStats.averageWatchTime}s.`,
-            trigger: 'low_retention',
-            action: 'boost_retention'
+            message: `💬 Chat seems quiet with ${viewerCount} viewers! Try asking what they think about the current topic!`,
+            trigger: 'fallback_low_engagement',
+            action: 'ask_question',
+            source: 'legacy'
         });
-    }
-    
-    // New Trigger: High Shares
-    if (metrics.sharesPerMinute > 5) {
+    } else if (likeRate < 10 && viewerCount > 200) {
+        prompts.push({
+            type: 'engagement',
+            priority: 'medium',
+            message: `❤️ Ask viewers to show some love with likes! Current rate: ${likeRate}/min`,
+            trigger: 'fallback_low_likes',
+            action: 'encourage_likes',
+            source: 'legacy'
+        });
+    } else if (viewerCount > 500) {
         prompts.push({
             type: 'growth',
             priority: 'medium',
-            message: `📤 High shares (${metrics.sharesPerMinute}/min). Set goal: "10 shares for reveal!" re "${topKeyword}". Followers gained: ${metrics.sessionFollowersGained}.`,
-            trigger: 'high_shares',
-            action: 'encourage_shares'
+            message: `📈 Great energy with ${viewerCount} viewers! Keep the momentum going and maybe ask for a follow!`,
+            trigger: 'fallback_growth',
+            action: 'encourage_follows',
+            source: 'legacy'
         });
-    }
-    
-    // New Trigger: New Followers
-    if (metrics.followersGainsPerMinute > 3) {
-        const recentFollower = metrics.newFollowers[0]?.nickname || 'new fans';
+    } else {
         prompts.push({
-            type: 'growth',
+            type: 'interaction',
             priority: 'medium',
-            message: `🆕 Follower spike (${metrics.followersGainsPerMinute}/min). Shoutout ${recentFollower}: "Thanks for following! What's your fave?" Session gains: ${metrics.sessionFollowersGained}.`,
-            trigger: 'new_followers',
-            action: 'shoutout_followers'
+            message: `🎯 Awesome engagement! Try starting a fun challenge or game!`,
+            trigger: 'fallback_interaction',
+            action: 'start_challenge',
+            source: 'legacy'
         });
     }
     
-    // New Trigger: Viral Moments (e.g., like spikes or gift surges)
-    if (metrics.likesPerMinute > 50 || metrics.giftsPerMinute > 5) {
-        prompts.push({
-            type: 'viral',
-            priority: 'high',
-            message: `🔥 Viral moment (likes: ${metrics.likesPerMinute}/min, gifts: ${metrics.giftsPerMinute}/min)! Start challenge on "${topKeyword}" or CTA: "Follow for more!" Viewers: ${metrics.currentViewerCount}.`,
-            trigger: 'viral_moment',
-            action: 'leverage_viral'
-        });
-    }
-    
-    // 2. SENTIMENT INTELLIGENCE
-    const sentimentInsight = analyzeSentimentIntelligence();
-    if (sentimentInsight) {
-        console.log(`🤖 [SENTIMENT] Sentiment insight generated`);
-        prompts.push(sentimentInsight);
-    }
-    
-    // 3. CONTENT OPPORTUNITY DETECTION
-    const contentOpportunity = detectContentOpportunities();
-    if (contentOpportunity) {
-        console.log(`🤖 [CONTENT] Content opportunity detected`);
-        prompts.push(contentOpportunity);
-    }
-    
-    // 4. VIEWER INTERACTION PATTERNS
-    const interactionPattern = analyzeViewerInteractions();
-    if (interactionPattern) {
-        console.log(`🤖 [INTERACTION] Interaction pattern detected`);
-        prompts.push(interactionPattern);
-    }
-    
-    // 5. STREAM HEALTH MONITORING
-    const streamHealth = monitorStreamHealth();
-    if (streamHealth) {
-        console.log(`🤖 [HEALTH] Stream health issue detected`);
-        prompts.push(streamHealth);
-    }
-    
-    // 6. SMART CONTENT SUGGESTIONS (if no other prompts generated)
-    if (prompts.length === 0 && metrics.totalComments > 10) {
-        console.log(`🤖 [SMART] No prompts generated, creating intelligent content suggestion`);
+    // Return first available prompt
+    if (prompts.length > 0) {
+        const selectedPrompt = prompts[0];
         
-        // Analyze current stream context for better suggestions
-        const viewerCount = metrics.currentViewerCount || 0;
-        const likeRate = metrics.likesPerMinute || 0;
-        const commentRate = metrics.commentsPerMinute || 0;
+        // Update cooldown tracking
+        metrics.lastPromptTime = now;
+        if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
+        metrics.promptCooldowns[selectedPrompt.trigger] = now;
         
-        if (viewerCount > 1000 && likeRate > 50) {
-            prompts.push({
-                type: 'content',
-                priority: 'high',
-                message: `🔥 Fire stream (${viewerCount} viewers, ${likeRate} likes/min)! Ask: "Exciting week moment?" or game on "${topKeyword}". Retention: ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%.`,
-                trigger: 'high_engagement',
-                action: 'leverage_momentum'
-            });
-        } else if (commentRate > 20) {
-            // Get top keyword and engager for context
-            const topKeywordEntry = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0];
-            const topKeyword = topKeywordEntry ? topKeywordEntry[0] : 'general';
-            
-            const topEngagerEntry = getViewerEngagementRanking()[0];
-            const topEngager = topEngagerEntry ? topEngagerEntry.nickname : 'viewers';
-            
-            prompts.push({
-                type: 'interaction',
-                priority: 'medium',
-                message: `💬 Buzzing chat (${commentRate}/min)! Ask: "Best chat story?" re "${topKeyword}". Shoutout ${topEngager} for growth.`,
-                trigger: 'active_chat',
-                action: 'facilitate_discussion'
-            });
-        } else if (viewerCount > 500) {
-            prompts.push({
-                type: 'engagement',
-                priority: 'medium',
-                message: `👥 Solid viewers (${viewerCount}), liven chat. Ask: "Laugh today?" or win share. Retention: ${(metrics.predictiveMetrics.viewerRetentionRate * 100).toFixed(0)}%; follows: ${metrics.sessionFollowersGained}.`,
-                trigger: 'moderate_engagement',
-                action: 'boost_interaction'
-            });
-        } else {
-            prompts.push({
-                type: 'growth',
-                priority: 'medium',
-                message: `📈 Building community (${viewerCount} viewers). Ask: "Why here today?" or content prefs. Volatility: ${metrics.predictiveMetrics.sentimentVolatility.toFixed(2)}; phase: ${metrics.streamPhase}.`,
-                trigger: 'community_building',
-                action: 'understand_audience'
-            });
+        // Update prompt history
+        if (!metrics.promptHistory) metrics.promptHistory = [];
+        metrics.promptHistory.push(selectedPrompt.trigger);
+        if (metrics.promptHistory.length > 10) {
+            metrics.promptHistory.shift();
         }
+        
+        return selectedPrompt;
     }
     
-    console.log(`🤖 [PROMPTS] Generated ${prompts.length} potential prompts`);
+    return null;
+}
     
-    // Return highest priority prompt with smart selection
-    return selectBestPrompt(prompts);
+    try {
+        // Use Gemini AI to generate context-aware prompts
+        const aiPrompt = await geminiService.generatePrompt(metrics);
+        
+        if (aiPrompt && aiPrompt.message) {
+            console.log(`🤖 [GEMINI] AI-generated prompt: ${aiPrompt.message.substring(0, 100)}...`);
+            
+            // Update cooldown tracking
+            metrics.lastPromptTime = now;
+            if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
+            metrics.promptCooldowns[aiPrompt.trigger] = now;
+            
+            // Update prompt history
+            if (!metrics.promptHistory) metrics.promptHistory = [];
+            metrics.promptHistory.push(aiPrompt.trigger);
+            if (metrics.promptHistory.length > 10) {
+                metrics.promptHistory.shift();
+            }
+            
+            return aiPrompt;
+        }
+        
+    } catch (error) {
+        console.error('🤖 [GEMINI] Error in AI prompt generation:', error.message);
+        
+        // Fallback to legacy prompt system on error
+        console.log('🤖 [FALLBACK] Using legacy prompt system...');
+        return generateLegacyPrompt();
+    }
+    
+    // All old logic has been replaced with AI-powered generation above
 }
 
 // Analyze engagement trends over time

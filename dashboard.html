@@ -3818,6 +3818,27 @@
             border-color: #28a745;
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
         }
+        
+        /* AI-Generated Prompt Styling */
+        .actionable-prompt.ai-generated {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        
+        .actionable-prompt.ai-generated .prompt-text {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .actionable-prompt.fallback-system {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: #f093fb;
+        }
+        
+        .actionable-prompt.fallback-system .prompt-text {
+            color: #ffffff;
+            font-weight: 500;
+        }
 
         /* Non-blocking Gift Notification Styles */
         .gift-notifications-container {
@@ -9151,29 +9172,53 @@
             promptText.textContent = prompt.message;
             promptText.className = 'prompt-text';
             
-            // Show a user-friendly trigger description instead of technical names
+            // Show a user-friendly trigger description with AI source info
             let triggerDescription = 'AI Assistant';
-            if (prompt.trigger === 'engagement_decline') {
-                triggerDescription = '📉 Engagement Alert';
-            } else if (prompt.trigger === 'extended_silence') {
-                triggerDescription = '🔇 Chat Activity';
-            } else if (prompt.trigger === 'test_prompt') {
-                triggerDescription = '💡 Suggestion';
-            } else if (prompt.trigger === 'engagement_decline') {
-                triggerDescription = '📊 Stream Health';
+            let sourceIcon = '🤖';
+            
+            if (prompt.source === 'gemini') {
+                sourceIcon = '🧠';
+                triggerDescription = 'AI-Generated Suggestion';
+            } else if (prompt.source === 'fallback') {
+                sourceIcon = '🔄';
+                triggerDescription = 'Fallback System';
+            } else if (prompt.source === 'legacy') {
+                sourceIcon = '⚡';
+                triggerDescription = 'Legacy System';
             }
             
-            promptTrigger.textContent = triggerDescription;
+            // Add context information if available
+            if (prompt.context) {
+                const contextInfo = [];
+                if (prompt.context.engagementLevel) {
+                    contextInfo.push(prompt.context.engagementLevel.split(' - ')[0]);
+                }
+                if (prompt.context.sentiment) {
+                    contextInfo.push(prompt.context.sentiment.split(' - ')[0]);
+                }
+                if (contextInfo.length > 0) {
+                    triggerDescription += ` | ${contextInfo.join(', ')}`;
+                }
+            }
+            
+            promptTrigger.innerHTML = `${sourceIcon} ${triggerDescription}`;
             
             // Add priority-based styling
             promptElement.className = `actionable-prompt ${prompt.priority || 'medium'}-priority`;
+            
+            // Add source-based styling
+            if (prompt.source === 'gemini') {
+                promptElement.classList.add('ai-generated');
+            } else if (prompt.source === 'fallback') {
+                promptElement.classList.add('fallback-system');
+            }
             
             // Speak the prompt using TTS if enabled
             if (ttsEnabled && prompt.message) {
                 speakText(prompt.message, prompt.priority || 'medium');
             }
             
-            console.log('🎯 Updated actionable prompt:', prompt.message);
+            console.log('🎯 Updated actionable prompt:', prompt.message, 'Source:', prompt.source);
         }
         
         // Add prompt to history with user-friendly display
