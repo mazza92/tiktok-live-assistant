@@ -97,6 +97,10 @@
 
         /* Mobile responsive layout */
         @media (max-width: 768px) {
+            .container {
+                padding: 15px 20px 20px 20px;
+            }
+            
             .header-top-row {
                 flex-direction: column;
                 gap: 15px;
@@ -2382,99 +2386,77 @@
         /* Mobile-optimized actionable prompt layout */
         @media (max-width: 768px) {
             .actionable-prompt {
-                padding: 30px 25px;
-                margin: 20px 15px;
+                padding: 25px 20px;
+                margin: 15px 10px;
                 border-radius: 20px;
+                width: calc(100% - 20px);
+                max-width: none;
             }
             
             .prompt-content {
                 text-align: left;
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 15px;
+                width: 100%;
             }
             
             .prompt-icon {
-                font-size: 3rem;
+                font-size: 2.5rem;
                 margin-bottom: 0;
                 text-align: center;
                 order: -1;
             }
             
             .prompt-text {
-                font-size: 1.6rem;
-                line-height: 1.8;
+                font-size: 1.5rem;
+                line-height: 1.6;
                 margin-bottom: 0;
                 text-align: left;
                 max-width: 100%;
+                width: 100%;
                 word-wrap: break-word;
                 hyphens: auto;
                 padding: 0;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.3px;
             }
             
             /* Mobile streamer optimization */
             .actionable-prompt.streamer-optimized .prompt-text {
-                font-size: 1.8rem; /* Slightly larger on mobile for streamers */
-                line-height: 1.5; /* Better mobile line height */
-                padding: 15px;
+                font-size: 1.6rem;
+                line-height: 1.5;
+                padding: 12px;
                 background: rgba(255, 255, 255, 0.1);
-                border-radius: 15px;
+                border-radius: 12px;
                 border: 1px solid rgba(255, 255, 255, 0.2);
-            }
             }
             
             .prompt-trigger {
-                font-size: 0.9rem;
-                padding: 10px 16px;
+                font-size: 0.85rem;
+                padding: 8px 12px;
                 text-align: center;
                 width: 100%;
                 margin-top: 0;
                 background: rgba(0, 0, 0, 0.3);
                 border: 1px solid rgba(255, 255, 255, 0.2);
+            }
         }
         
         /* Extra small mobile devices */
         @media (max-width: 480px) {
             .actionable-prompt {
-                padding: 25px 20px;
-                margin: 15px 10px;
-            }
-            
-            .prompt-content {
-                gap: 18px;
-            }
-            
-            .prompt-text {
-                font-size: 1.4rem;
-                line-height: 1.9;
-                letter-spacing: 0.3px;
-            }
-            
-            .prompt-icon {
-                font-size: 2.5rem;
-            }
-            
-            .prompt-trigger {
-                font-size: 0.85rem;
-                padding: 8px 14px;
-            }
-        }
-        
-        /* Very small mobile devices */
-        @media (max-width: 360px) {
-            .actionable-prompt {
                 padding: 20px 15px;
                 margin: 10px 5px;
+                border-radius: 15px;
             }
             
             .prompt-content {
-                gap: 15px;
+                gap: 12px;
             }
             
             .prompt-text {
                 font-size: 1.3rem;
-                line-height: 2.0;
+                line-height: 1.5;
                 letter-spacing: 0.2px;
             }
             
@@ -2484,7 +2466,54 @@
             
             .prompt-trigger {
                 font-size: 0.8rem;
-                padding: 6px 12px;
+                padding: 6px 10px;
+            }
+        }
+        
+                /* Very small mobile devices */
+        @media (max-width: 360px) {
+            .actionable-prompt {
+                padding: 15px 12px;
+                margin: 8px 5px;
+                border-radius: 12px;
+            }
+            
+            .prompt-content {
+                gap: 10px;
+            }
+            
+            .prompt-text {
+                font-size: 1.2rem;
+                line-height: 1.4;
+                letter-spacing: 0.2px;
+            }
+            
+            .prompt-icon {
+                font-size: 2rem;
+            }
+            
+            .prompt-trigger {
+                font-size: 0.75rem;
+                padding: 5px 8px;
+            }
+        }
+        
+        /* Additional mobile improvements for Live Assistant */
+        @media (max-width: 768px) {
+            .actionable-prompt .feed-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .tts-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .tts-settings {
+                width: 100%;
+                max-width: 300px;
             }
         }
         
