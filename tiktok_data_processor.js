@@ -393,34 +393,43 @@ function findNumericValues(obj, path = '') {
 function addViewer(userId, nickname, profilePic = null) {
     const now = new Date();
     
-                        if (!metrics.viewers[userId]) {
-                metrics.viewers[userId] = {
-                    userId: userId,
-                    nickname: nickname,
-                    profilePic: profilePic,
-                    joinTime: now,
-                    lastSeen: now,
-                    watchTime: 0, // in seconds
-                    isActive: true,
-                    totalLikes: 0,
-                    totalGifts: 0,
-                    totalComments: 0,
-                    totalShares: 0, // Track total shares
-                    totalDiamonds: 0, // Track total diamonds spent
-                    totalGiftValue: 0, // Track total USD value of gifts
-                    isFollower: false, // Track follower status
-                    followTime: null, // When they started following
-                    hasBeenWelcomed: false // Track if AI has welcomed them
-                };
-                metrics.viewerStats.totalUniqueViewers++;
-                console.log(`👤 [VIEWER] New viewer joined: ${nickname} (${userId})`);
-            } else {
-                // Viewer rejoined, update last seen
-                metrics.viewers[userId].lastSeen = now;
-                metrics.viewers[userId].isActive = true;
-                console.log(`👤 [VIEWER] Viewer rejoined: ${nickname} (${userId})`);
-            }
+    // Check if we're processing this user too quickly (within 1 second)
+    if (metrics.viewers[userId] && metrics.viewers[userId].lastSeen) {
+        const timeSinceLastSeen = now - metrics.viewers[userId].lastSeen;
+        if (timeSinceLastSeen < 1000) { // Less than 1 second
+            console.log(`⏱️ [VIEWER] Skipping rapid re-add for ${nickname} (${userId}) - last seen ${timeSinceLastSeen}ms ago`);
+            return;
+        }
+    }
     
+    if (!metrics.viewers[userId]) {
+        metrics.viewers[userId] = {
+            userId: userId,
+            nickname: nickname,
+            profilePic: profilePic,
+            joinTime: now,
+            lastSeen: now,
+            watchTime: 0, // in seconds
+            isActive: true,
+            totalLikes: 0,
+            totalGifts: 0,
+            totalComments: 0,
+            totalShares: 0, // Track total shares
+            totalDiamonds: 0, // Track total diamonds spent
+            totalGiftValue: 0, // Track total USD value of gifts
+            isFollower: false, // Track follower status
+            followTime: null, // When they started following
+            hasBeenWelcomed: false // Track if AI has welcomed them
+        };
+        metrics.viewerStats.totalUniqueViewers++;
+        console.log(`👤 [VIEWER] New viewer joined: ${nickname} (${userId})`);
+    } else {
+        // Viewer rejoined, update last seen
+        metrics.viewers[userId].lastSeen = now;
+        metrics.viewers[userId].isActive = true;
+        console.log(`👤 [VIEWER] Viewer rejoined: ${nickname} (${userId})`);
+    }
+
     // Broadcast viewer update
     broadcastEvent('viewerUpdate', {
         type: 'join',
@@ -3042,8 +3051,10 @@ async function connectToTikTok() {
             }
         }
 
-        // AI Welcome System for New Viewers
+        // AI Welcome System for New Viewers - Consolidated Member Handler
         connection.on('member', (data) => {
+            console.log('🎯 [MEMBER] Member event received:', data);
+            
             const { userId, nickname } = getUserInfo(data);
             
             // Extract profile picture like TikTok-Chat-Reader does
@@ -3057,7 +3068,9 @@ async function connectToTikTok() {
             }
             
             if (userId && nickname) {
-                // Add viewer to tracking
+                console.log(`🎯 [MEMBER] Processing viewer: ${nickname} (${userId})`);
+                
+                // Add viewer to tracking (only once)
                 addViewer(userId, nickname, profilePic);
                 
                 // Check and update follower status
@@ -3068,24 +3081,38 @@ async function connectToTikTok() {
                     // Check if this is a new viewer (not rejoining)
                     const viewer = metrics.viewers[userId];
                     if (viewer && !viewer.hasBeenWelcomed) {
-                        viewer.hasBeenWelcomed = true;
-                        
-                        // Generate AI welcome message and tips
-                        const welcomeData = generateAIWelcome(nickname, metrics.currentViewerCount);
-                        
-                        console.log(`🤖 [AI WELCOME] New viewer: ${nickname} | Welcome: ${welcomeData.welcomeMessage}`);
-                        console.log(`💡 [AI TIPS] Engagement tips: ${welcomeData.engagementTips}`);
-                        
-                        // Broadcast AI welcome event
-                        broadcastEvent('aiWelcome', {
-                            viewer: { userId, nickname, profilePic },
-                            welcomeMessage: welcomeData.welcomeMessage,
-                            engagementTips: welcomeData.engagementTips,
-                            viewerCount: metrics.currentViewerCount,
-                            timestamp: new Date()
-                        });
+                        // Double-check to prevent race conditions
+                        if (!viewer.hasBeenWelcomed) {
+                            viewer.hasBeenWelcomed = true;
+                            
+                            // Generate AI welcome message and tips
+                            const welcomeData = generateAIWelcome(nickname, metrics.currentViewerCount);
+                            
+                            console.log(`🤖 [AI WELCOME] New viewer: ${nickname} | Welcome: ${welcomeData.welcomeMessage}`);
+                            console.log(`💡 [AI TIPS] Engagement tips: ${welcomeData.engagementTips}`);
+                            
+                            // Broadcast AI welcome event
+                            broadcastEvent('aiWelcome', {
+                                viewer: { userId, nickname, profilePic },
+                                welcomeMessage: welcomeData.welcomeMessage,
+                                engagementTips: welcomeData.engagementTips,
+                                viewerCount: metrics.currentViewerCount,
+                                timestamp: new Date()
+                            });
+                        } else {
+                            console.log(`🤖 [AI WELCOME] Skipping duplicate welcome for ${nickname} (already welcomed)`);
+                        }
+                    } else if (viewer && viewer.hasBeenWelcomed) {
+                        console.log(`🤖 [AI WELCOME] Skipping welcome for ${nickname} (already welcomed)`);
                     }
                 }
+                
+                // Check if this contains room totals
+                if (data.roomStats || data.totalLikes || data.totalGifts) {
+                    extractInitialRoomState(data);
+                }
+            } else {
+                console.log('⚠️ [MEMBER] Missing userId or nickname:', { userId: data.userId, nickname: data.nickname });
             }
         });
 
@@ -3183,43 +3210,9 @@ async function connectToTikTok() {
             }
         });
 
-        connection.on('member', (data) => {
-            console.log('🎯 [MEMBER] Member event received:', data);
-            console.log('🎯 [MEMBER] Data structure:', JSON.stringify(data, null, 2));
-            
-            // Track viewer watch time - extract user info from member event
-            if (data.userId && data.nickname) {
-                const profilePic = data.user?.avatarThumb?.urlList?.[0] || null;
-                addViewer(data.userId, data.nickname, profilePic);
-                console.log(`👤 [MEMBER] Added viewer: ${data.nickname} (${data.userId})`);
-            } else {
-                console.log('⚠️ [MEMBER] Missing userId or nickname:', { userId: data.userId, nickname: data.nickname });
-            }
-            
-            // Check if this contains room totals
-            if (data.roomStats || data.totalLikes || data.totalGifts) {
-                extractInitialRoomState(data);
-            }
-        });
 
-        connection.on('join', (data) => {
-            console.log('🎯 [JOIN] Join event received:', data);
-            console.log('🎯 [JOIN] Data structure:', JSON.stringify(data, null, 2));
-            
-            // Track viewer watch time - extract user info from join event
-            if (data.userId && data.nickname) {
-                const profilePic = data.user?.avatarThumb?.urlList?.[0] || null;
-                addViewer(data.userId, data.nickname, profilePic);
-                console.log(`👤 [JOIN] Added viewer: ${data.nickname} (${data.userId})`);
-            } else {
-                console.log('⚠️ [JOIN] Missing userId or nickname:', { userId: data.userId, nickname: data.nickName });
-            }
-            
-            // Check if this contains room totals
-            if (data.roomStats || data.totalLikes || data.totalGifts) {
-                extractInitialRoomState(data);
-            }
-        });
+
+
 
         // Add event handler for any event that might contain room totals
         connection.on('*', (eventName, data) => {
