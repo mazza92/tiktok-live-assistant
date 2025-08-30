@@ -3187,7 +3187,7 @@ async function connectToTikTok() {
                             console.log(`🤖 [AI WELCOME] New viewer: ${nickname} | Welcome: ${welcomeData.welcomeMessage}`);
                             console.log(`💡 [AI TIPS] Engagement tips: ${welcomeData.engagementTips}`);
                             
-                            // Broadcast AI welcome event
+                            // Broadcast AI welcome event for Chat activity
                             broadcastEvent('aiWelcome', {
                                 viewer: { userId, nickname, profilePic },
                                 welcomeMessage: welcomeData.welcomeMessage,
@@ -3195,6 +3195,32 @@ async function connectToTikTok() {
                                 viewerCount: metrics.currentViewerCount,
                                 timestamp: new Date()
                             });
+                            
+                            // ALSO send comprehensive prompt to Live Assistant section
+                            const comprehensivePrompt = {
+                                type: 'viewer_engagement_comprehensive',
+                                priority: 'high',
+                                message: `${welcomeData.welcomeMessage}\n\n${welcomeData.engagementTips.join('\n\n')}`,
+                                trigger: 'new_viewer_comprehensive_engagement',
+                                action: 'engage_new_viewer_comprehensive',
+                                source: 'viewer_specific_comprehensive',
+                                targetViewer: nickname,
+                                timestamp: new Date(),
+                                // Include all the individual components for reference
+                                welcomeMessage: welcomeData.welcomeMessage,
+                                engagementTips: welcomeData.engagementTips,
+                                retentionStrategies: welcomeData.retentionStrategies,
+                                viewerCount: welcomeData.viewerCount
+                            };
+                            
+                            // Send to Live Assistant section
+                            console.log(`🤖 [LIVE ASSISTANT] Sending comprehensive viewer engagement to Live Assistant for ${nickname}`);
+                            broadcastEvent('automatedPrompt', comprehensivePrompt);
+                            
+                            // Update cooldown tracking to prevent spam
+                            metrics.lastPromptTime = Date.now();
+                            if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
+                            metrics.promptCooldowns[comprehensivePrompt.trigger] = Date.now();
                         } else {
                             console.log(`🤖 [AI WELCOME] Skipping duplicate welcome for ${nickname} - too soon (${now - viewer.welcomeTimestamp}ms)`);
                         }
