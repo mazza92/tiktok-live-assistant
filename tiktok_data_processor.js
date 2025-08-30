@@ -1609,53 +1609,20 @@ async function generateAutomatedPrompt() {
         .sort((a, b) => b.welcomeTimestamp - a.welcomeTimestamp)
         .slice(0, 2); // Get 2 most recent new viewers
     
+    // Skip comprehensive viewer prompts if they were recently sent via aiWelcome events
     if (recentNewViewers.length > 0) {
-        // Generate comprehensive viewer engagement content for the Live Assistant
-        const viewer = recentNewViewers[0]; // Focus on the most recent viewer
-        const aiWelcomeData = generateAIWelcome(viewer.nickname, metrics.currentViewerCount);
+        console.log(`🤖 [LIVE ASSISTANT] Skipping comprehensive prompts for recent viewers (already sent via aiWelcome): ${recentNewViewers.map(v => v.nickname).join(', ')}`);
         
-        // Create a comprehensive prompt that includes ALL the AI-generated content
-        const comprehensivePrompt = {
-            type: 'viewer_engagement_comprehensive',
-            priority: 'high',
-            message: `${aiWelcomeData.welcomeMessage}\n\n${aiWelcomeData.engagementTips.join('\n\n')}`,
-            trigger: 'new_viewer_comprehensive_engagement',
-            action: 'engage_new_viewer_comprehensive',
-            source: 'viewer_specific_comprehensive',
-            targetViewer: viewer.nickname,
-            timestamp: new Date(),
-            // Include all the individual components for reference
-            welcomeMessage: aiWelcomeData.welcomeMessage,
-            engagementTips: aiWelcomeData.engagementTips,
-            retentionStrategies: aiWelcomeData.retentionStrategies,
-            viewerCount: aiWelcomeData.viewerCount
-        };
-        
-        // Update cooldown tracking
-        metrics.lastPromptTime = now;
-        if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
-        metrics.promptCooldowns[comprehensivePrompt.trigger] = now;
-        
-        // Update prompt history
-        if (!metrics.promptHistory) metrics.promptHistory = [];
-        metrics.promptHistory.push(comprehensivePrompt.trigger);
-        if (metrics.promptHistory.length > 10) {
-            metrics.promptHistory.shift();
-        }
-        
-        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Generated comprehensive engagement content for ${comprehensivePrompt.targetViewer}`);
-        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Welcome: ${comprehensivePrompt.welcomeMessage}`);
-        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Tips: ${comprehensivePrompt.engagementTips.join(' | ')}`);
-        
-        return comprehensivePrompt;
+        // Instead, generate AI-enhanced engagement content for other scenarios
+        return generateAIEnhancedContent();
     }
     
-    // If no recent new viewers, use the regular legacy prompt system
-    return generateLegacyPrompt();
+    // If no recent new viewers, generate AI-enhanced content
+    return generateAIEnhancedContent();
 }
 
-// Enhanced legacy prompt generation with AI-powered content
-function generateLegacyPrompt() {
+// Enhanced AI content generation for Live Assistant
+function generateAIEnhancedContent() {
     const now = Date.now();
     const prompts = [];
     
