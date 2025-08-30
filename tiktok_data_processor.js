@@ -419,7 +419,8 @@ function addViewer(userId, nickname, profilePic = null) {
             totalGiftValue: 0, // Track total USD value of gifts
             isFollower: false, // Track follower status
             followTime: null, // When they started following
-            hasBeenWelcomed: false // Track if AI has welcomed them
+            hasBeenWelcomed: false, // Track if AI has welcomed them
+            welcomeTimestamp: null // Track when welcome was sent to prevent duplicates
         };
         metrics.viewerStats.totalUniqueViewers++;
         console.log(`👤 [VIEWER] New viewer joined: ${nickname} (${userId})`);
@@ -430,11 +431,13 @@ function addViewer(userId, nickname, profilePic = null) {
         console.log(`👤 [VIEWER] Viewer rejoined: ${nickname} (${userId})`);
     }
 
-    // Broadcast viewer update
-    broadcastEvent('viewerUpdate', {
-        type: 'join',
-        viewer: metrics.viewers[userId]
-    });
+    // Only broadcast viewer update for new viewers, not rejoins
+    if (!metrics.viewers[userId] || !metrics.viewers[userId].hasBeenWelcomed) {
+        broadcastEvent('viewerUpdate', {
+            type: 'join',
+            viewer: metrics.viewers[userId]
+        });
+    }
 }
 
 function updateViewerActivity(userId, activityType = 'activity') {
@@ -1662,14 +1665,37 @@ function generateLegacyPrompt() {
             source: 'legacy'
         });
     } else {
-        prompts.push({
-            type: 'interaction',
-            priority: 'medium',
-            message: `🎯 Awesome engagement! Try starting a fun challenge or game!`,
-            trigger: 'fallback_interaction',
-            action: 'start_challenge',
-            source: 'legacy'
-        });
+        // Analyze actual engagement levels for more accurate fallback
+        const engagementLevel = analyzeActualEngagement();
+        
+        if (engagementLevel === 'low') {
+            prompts.push({
+                type: 'engagement',
+                priority: 'high',
+                message: `💬 Chat engagement is low with ${viewerCount} viewers. Try asking a direct question or starting a simple poll!`,
+                trigger: 'fallback_low_engagement_accurate',
+                action: 'boost_engagement',
+                source: 'legacy'
+            });
+        } else if (engagementLevel === 'medium') {
+            prompts.push({
+                type: 'interaction',
+                priority: 'medium',
+                message: `🎯 Moderate engagement detected. Try asking viewers to share their thoughts or experiences!`,
+                trigger: 'fallback_medium_engagement',
+                action: 'encourage_sharing',
+                source: 'legacy'
+            });
+        } else {
+            prompts.push({
+                type: 'interaction',
+                priority: 'medium',
+                message: `🎯 Good engagement! Try starting a fun challenge or game to keep the momentum!`,
+                trigger: 'fallback_good_engagement',
+                action: 'start_challenge',
+                source: 'legacy'
+            });
+        }
     }
     
     // Return first available prompt
@@ -1692,6 +1718,32 @@ function generateLegacyPrompt() {
     }
     
     return null;
+}
+
+// Analyze actual engagement levels for accurate fallback prompts
+function analyzeActualEngagement() {
+    const viewerCount = metrics.currentViewerCount || 0;
+    const likeRate = metrics.likesPerMinute || 0;
+    const commentRate = metrics.commentsPerMinute || 0;
+    const giftRate = metrics.giftsPerMinute || 0;
+    
+    // Calculate engagement score (weighted average)
+    const engagementScore = (likeRate * 0.4) + (commentRate * 0.4) + (giftRate * 0.2);
+    
+    // Normalize by viewer count to get per-viewer engagement
+    const perViewerEngagement = viewerCount > 0 ? engagementScore / viewerCount : 0;
+    
+    console.log(`🤖 [ENGAGEMENT] Analysis - Viewers: ${viewerCount}, Like Rate: ${likeRate}/min, Comment Rate: ${commentRate}/min, Gift Rate: ${giftRate}/min`);
+    console.log(`🤖 [ENGAGEMENT] Calculated engagement score: ${engagementScore.toFixed(2)}, Per-viewer: ${perViewerEngagement.toFixed(4)}`);
+    
+    // Define engagement thresholds
+    if (perViewerEngagement < 0.1 || engagementScore < 5) {
+        return 'low';
+    } else if (perViewerEngagement < 0.3 || engagementScore < 15) {
+        return 'medium';
+    } else {
+        return 'high';
+    }
 }
 
 // Analyze engagement trends over time
@@ -3081,9 +3133,11 @@ async function connectToTikTok() {
                     // Check if this is a new viewer (not rejoining)
                     const viewer = metrics.viewers[userId];
                     if (viewer && !viewer.hasBeenWelcomed) {
-                        // Double-check to prevent race conditions
-                        if (!viewer.hasBeenWelcomed) {
+                        // Add timestamp-based protection against race conditions
+                        const now = Date.now();
+                        if (!viewer.welcomeTimestamp || (now - viewer.welcomeTimestamp) > 5000) { // 5 second protection
                             viewer.hasBeenWelcomed = true;
+                            viewer.welcomeTimestamp = now;
                             
                             // Generate AI welcome message and tips
                             const welcomeData = generateAIWelcome(nickname, metrics.currentViewerCount);
@@ -3100,7 +3154,7 @@ async function connectToTikTok() {
                                 timestamp: new Date()
                             });
                         } else {
-                            console.log(`🤖 [AI WELCOME] Skipping duplicate welcome for ${nickname} (already welcomed)`);
+                            console.log(`🤖 [AI WELCOME] Skipping duplicate welcome for ${nickname} - too soon (${now - viewer.welcomeTimestamp}ms)`);
                         }
                     } else if (viewer && viewer.hasBeenWelcomed) {
                         console.log(`🤖 [AI WELCOME] Skipping welcome for ${nickname} (already welcomed)`);
