@@ -1569,19 +1569,27 @@ async function generateAutomatedPrompt() {
         if (aiPrompt && aiPrompt.message) {
             console.log(`🤖 [GEMINI] AI-generated prompt: ${aiPrompt.message.substring(0, 100)}...`);
             
+            // Ensure the prompt has all required properties
+            const enhancedPrompt = {
+                ...aiPrompt,
+                source: 'gemini',
+                type: aiPrompt.type || 'ai_generated',
+                priority: aiPrompt.priority || 'medium'
+            };
+            
             // Update cooldown tracking
             metrics.lastPromptTime = now;
             if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
-            metrics.promptCooldowns[aiPrompt.trigger] = now;
+            metrics.promptCooldowns[enhancedPrompt.trigger] = now;
             
             // Update prompt history
             if (!metrics.promptHistory) metrics.promptHistory = [];
-            metrics.promptHistory.push(aiPrompt.trigger);
+            metrics.promptHistory.push(enhancedPrompt.trigger);
             if (metrics.promptHistory.length > 10) {
                 metrics.promptHistory.shift();
             }
             
-            return aiPrompt;
+            return enhancedPrompt;
         }
         
     } catch (error) {
@@ -1589,7 +1597,11 @@ async function generateAutomatedPrompt() {
         
         // Fallback to legacy prompt system on error
         console.log('🤖 [FALLBACK] Using legacy prompt system...');
-        return generateLegacyPrompt();
+        const fallbackPrompt = generateLegacyPrompt();
+        if (fallbackPrompt) {
+            fallbackPrompt.source = 'fallback';
+        }
+        return fallbackPrompt;
     }
     
     return null;
@@ -2719,13 +2731,16 @@ async function connectToTikTok() {
                 // Check for automated prompts more frequently - every 5 comments instead of 10
                 if (metrics.totalComments % 5 === 0) {
                     console.log(`🤖 [AI CHECK] Checking for automated prompts... (Comments: ${metrics.totalComments})`);
-                    const automatedPrompt = generateAutomatedPrompt();
-                    if (automatedPrompt) {
-                        console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-                        broadcastEvent('automatedPrompt', automatedPrompt);
-                    } else {
-                        console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
-                    }
+                    generateAutomatedPrompt().then(automatedPrompt => {
+                        if (automatedPrompt) {
+                            console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                            broadcastEvent('automatedPrompt', automatedPrompt);
+                        } else {
+                            console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+                        }
+                    }).catch(error => {
+                        console.error('🤖 [AI CHECK] Error generating prompt:', error);
+                    });
                 }
             }
         });
@@ -2979,11 +2994,14 @@ async function connectToTikTok() {
             // Check for automated prompts every 5 shares
             if (metrics.totalShares % 5 === 0) {
                 console.log(`🤖 [AI CHECK] Checking for automated prompts... (Shares: ${metrics.totalShares})`);
-                const automatedPrompt = generateAutomatedPrompt();
-                if (automatedPrompt) {
-                    console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-                    broadcastEvent('automatedPrompt', automatedPrompt);
-                }
+                generateAutomatedPrompt().then(automatedPrompt => {
+                    if (automatedPrompt) {
+                        console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                        broadcastEvent('automatedPrompt', automatedPrompt);
+                    }
+                }).catch(error => {
+                    console.error('🤖 [AI CHECK] Error generating prompt:', error);
+                });
             }
         });
 
@@ -3274,11 +3292,14 @@ setInterval(updatePerMinuteMetrics, 1000); // Update every second
 // Set up periodic AI prompt checks
 setInterval(() => {
     console.log(`🤖 [PERIODIC AI CHECK] Checking for automated prompts...`);
-    const automatedPrompt = generateAutomatedPrompt();
-    if (automatedPrompt) {
-        console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-        broadcastEvent('automatedPrompt', automatedPrompt);
-    }
+    generateAutomatedPrompt().then(automatedPrompt => {
+        if (automatedPrompt) {
+            console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+            broadcastEvent('automatedPrompt', automatedPrompt);
+        }
+    }).catch(error => {
+        console.error('🤖 [PERIODIC AI CHECK] Error generating prompt:', error);
+    });
 }, 30000); // Check every 30 seconds
 
 // Set up periodic viewer watch time updates
