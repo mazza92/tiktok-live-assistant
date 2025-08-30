@@ -21,6 +21,31 @@ const sentiment = new Sentiment();
 const geminiService = new GeminiService();
 console.log('🤖 [GEMINI] Service initialized:', geminiService.getHealthStatus());
 
+// Global language setting for AI prompts (default: English)
+let currentLanguage = 'en';
+
+// AI Prompt Translations
+const promptTranslations = {
+    en: {
+        // Chat Activation prompts
+        chatActivation: "💬 **Chat Activation**: With {viewerCount} viewers, chat is quiet ({commentRate} comments/min). Say: \"I want to hear from you! What's on your mind today?\" or \"Comment with your favorite emoji if you're enjoying this stream!\"",
+        likeBoost: "❤️ **Like Boost**: Current like rate is {likeRate}/min with {viewerCount} viewers. Say: \"If you're enjoying this, hit that like button! It really helps the stream!\" or \"Show some love with a like if you agree with this!\"",
+        communityGrowth: "📈 **Community Growth**: Great energy with {viewerCount} viewers! Say: \"If you're new here, hit that follow button and let's build this community together!\" or \"I love seeing new faces! Drop a comment and let me know where you're from!\"",
+        aiEngagementBoost: "💬 **AI Engagement Boost**: Engagement is low with {viewerCount} viewers. Say: \"I want to hear your thoughts! What's your take on this?\" or \"Let's get this chat moving! Share something that made you laugh today!\"",
+        aiInteraction: "🎯 **AI Interaction**: Moderate engagement detected. Say: \"I love hearing from you! What's your experience with this?\" or \"Keep the conversation going! What do you think about this topic?\"",
+        aiMomentum: "🎯 **AI Momentum**: Good engagement! Say: \"The energy is amazing! Let's keep it going - what's your opinion on this?\" or \"I love this energy! Share something that excites you about this topic!\""
+    },
+    fr: {
+        // Chat Activation prompts
+        chatActivation: "💬 **Activation du Chat**: Avec {viewerCount} spectateurs, le chat est calme ({commentRate} commentaires/min). Dites: \"Je veux entendre votre avis ! Qu'est-ce qui vous préoccupe aujourd'hui ?\" ou \"Commentez avec votre emoji préféré si vous aimez ce stream !\"",
+        likeBoost: "❤️ **Boost des Likes**: Le taux de likes actuel est de {likeRate}/min avec {viewerCount} spectateurs. Dites: \"Si vous aimez ça, appuyez sur le bouton like ! Ça aide vraiment le stream !\" ou \"Montrez votre amour avec un like si vous êtes d'accord !\"",
+        communityGrowth: "📈 **Croissance de la Communauté**: Excellente énergie avec {viewerCount} spectateurs ! Dites: \"Si vous êtes nouveau ici, appuyez sur le bouton follow et construisons cette communauté ensemble !\" ou \"J'adore voir de nouveaux visages ! Laissez un commentaire et dites-moi d'où vous venez !\"",
+        aiEngagementBoost: "💬 **Boost d'Engagement IA**: L'engagement est faible avec {viewerCount} spectateurs. Dites: \"Je veux entendre vos pensées ! Qu'est-ce que vous en pensez ?\" ou \"Faisons bouger ce chat ! Partagez quelque chose qui vous a fait rire aujourd'hui !\"",
+        aiInteraction: "🎯 **Interaction IA**: Engagement modéré détecté. Dites: \"J'adore vous entendre ! Quelle est votre expérience avec ça ?\" ou \"Continuez la conversation ! Que pensez-vous de ce sujet ?\"",
+        aiMomentum: "🎯 **Élan IA**: Bon engagement ! Dites: \"L'énergie est incroyable ! Continuons - quelle est votre opinion sur ça ?\" ou \"J'adore cette énergie ! Partagez quelque chose qui vous excite sur ce sujet !\""
+    }
+};
+
 // Gift value mapping (TikTok diamonds to USD conversion)
 // Based on TikTok's coin pricing: 70 coins = $0.89, so 1 coin ≈ $0.0127
 // TikTok diamonds are the same as TikTok coins
@@ -1674,56 +1699,56 @@ function generateAIEnhancedContent() {
             prompts.push({
                 type: 'engagement',
                 priority: 'high',
-            message: `💬 **Chat Activation**: With ${viewerCount} viewers, chat is quiet (${commentRate} comments/min). Say: "I want to hear from you! What's on your mind today?" or "Comment with your favorite emoji if you're enjoying this stream!"`,
-            trigger: 'ai_enhanced_low_engagement',
-            action: 'boost_engagement',
-            source: 'ai_enhanced_legacy'
-        });
+                message: getTranslatedPrompt('chatActivation', { viewerCount, commentRate }),
+                trigger: 'ai_enhanced_low_engagement',
+                action: 'boost_engagement',
+                source: 'ai_enhanced_legacy'
+            });
     } else if (likeRate < 10 && viewerCount > 0) {
             prompts.push({
                 type: 'engagement',
-            priority: 'medium',
-            message: `❤️ **Like Boost**: Current like rate is ${likeRate}/min with ${viewerCount} viewers. Say: "If you're enjoying this, hit that like button! It really helps the stream!" or "Show some love with a like if you agree with this!"`,
-            trigger: 'ai_enhanced_low_likes',
-            action: 'encourage_likes',
-            source: 'ai_enhanced_legacy'
-        });
+                priority: 'medium',
+                message: getTranslatedPrompt('likeBoost', { likeRate, viewerCount }),
+                trigger: 'ai_enhanced_low_likes',
+                action: 'encourage_likes',
+                source: 'ai_enhanced_legacy'
+            });
     } else if (viewerCount > 100) {
             prompts.push({
-            type: 'growth',
+                type: 'growth',
                 priority: 'medium',
-            message: `📈 **Community Growth**: Great energy with ${viewerCount} viewers! Say: "If you're new here, hit that follow button and let's build this community together!" or "I love seeing new faces! Drop a comment and let me know where you're from!"`,
-            trigger: 'ai_enhanced_growth',
-            action: 'encourage_growth',
-            source: 'ai_enhanced_legacy'
-        });
+                message: getTranslatedPrompt('communityGrowth', { viewerCount }),
+                trigger: 'ai_enhanced_growth',
+                action: 'encourage_growth',
+                source: 'ai_enhanced_legacy'
+            });
     } else {
         // Analyze actual engagement levels for more accurate AI-enhanced prompts
         const engagementLevel = analyzeActualEngagement();
         
         if (engagementLevel === 'low') {
-        prompts.push({
+            prompts.push({
                 type: 'engagement',
-            priority: 'high',
-                message: `💬 **AI Engagement Boost**: Engagement is low with ${viewerCount} viewers. Say: "I want to hear your thoughts! What's your take on this?" or "Let's get this chat moving! Share something that made you laugh today!"`,
+                priority: 'high',
+                message: getTranslatedPrompt('aiEngagementBoost', { viewerCount }),
                 trigger: 'ai_enhanced_low_engagement_accurate',
                 action: 'boost_engagement',
                 source: 'ai_enhanced_legacy'
             });
         } else if (engagementLevel === 'medium') {
-        prompts.push({
+            prompts.push({
                 type: 'interaction',
-            priority: 'medium',
-                message: `🎯 **AI Interaction**: Moderate engagement detected. Say: "I love hearing from you! What's your experience with this?" or "Keep the conversation going! What do you think about this topic?"`,
+                priority: 'medium',
+                message: getTranslatedPrompt('aiInteraction', {}),
                 trigger: 'ai_enhanced_medium_engagement',
                 action: 'encourage_sharing',
                 source: 'ai_enhanced_legacy'
             });
         } else {
-        prompts.push({
+            prompts.push({
                 type: 'interaction',
-            priority: 'medium',
-                message: `🎯 **AI Momentum**: Good engagement! Say: "The energy is amazing! Let's keep it going - what's your opinion on this?" or "I love this energy! Share something that excites you about this topic!"`,
+                priority: 'medium',
+                message: getTranslatedPrompt('aiMomentum', {}),
                 trigger: 'ai_enhanced_good_engagement',
                 action: 'start_challenge',
                 source: 'ai_enhanced_legacy'
@@ -2072,6 +2097,19 @@ function selectBestPrompt(prompts) {
     }
     
     return selectedPrompt;
+}
+
+// Helper function to get translated prompt
+function getTranslatedPrompt(key, variables = {}) {
+    const translations = promptTranslations[currentLanguage] || promptTranslations.en;
+    let prompt = translations[key] || promptTranslations.en[key];
+    
+    // Replace variables in the prompt
+    Object.entries(variables).forEach(([key, value]) => {
+        prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), value);
+    });
+    
+    return prompt;
 }
 
 // Helper functions
@@ -3807,6 +3845,16 @@ wss.on('connection', (ws) => {
                 case 'test':
                     console.log('🧪 [WEBSOCKET] Test message received');
                     ws.send(JSON.stringify({ type: 'test', data: 'pong' }));
+                    break;
+                    
+                case 'setLanguage':
+                    console.log('🌍 [WEBSOCKET] Language change request:', data.language);
+                    currentLanguage = data.language;
+                    console.log('✅ [WEBSOCKET] Language set to:', currentLanguage);
+                    ws.send(JSON.stringify({ 
+                        type: 'languageSet', 
+                        data: { language: currentLanguage } 
+                    }));
                     break;
                     
                 default:

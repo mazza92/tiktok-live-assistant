@@ -5057,6 +5057,15 @@
             // Update page content
             updateLanguageContent();
             
+            // Send language change to backend via WebSocket
+            if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+                window.ws.send(JSON.stringify({
+                    type: 'setLanguage',
+                    language: lang
+                }));
+                console.log('🌍 [WEBSOCKET] Sent language change to backend:', lang);
+            }
+            
             // Save language preference
             localStorage.setItem('dashboard_language', lang);
             console.log('✅ Language switched to:', lang);
@@ -5938,6 +5947,7 @@
                 
                 console.log('🔌 Connecting to WebSocket:', wsUrl);
                 ws = new WebSocket(wsUrl);
+                window.ws = ws; // Make WebSocket globally available
                 
                 ws.onopen = function() {
                     console.log('🖥️  Dashboard connected via WebSocket');
@@ -5948,9 +5958,17 @@
                     showNoQuestionsCard();
                     updateQuestionStatsRealTime();
                     
-                    // Send test message to verify connection
-                    ws.send(JSON.stringify({ type: 'test', data: 'ping' }));
-                };
+                                    // Send test message to verify connection
+                ws.send(JSON.stringify({ type: 'test', data: 'ping' }));
+                
+                // Send current language to backend
+                const savedLanguage = localStorage.getItem('dashboard_language') || 'en';
+                ws.send(JSON.stringify({
+                    type: 'setLanguage',
+                    language: savedLanguage
+                }));
+                console.log('🌍 [WEBSOCKET] Sent initial language to backend:', savedLanguage);
+            };
                 
                 ws.onmessage = function(event) {
                     try {
@@ -6010,6 +6028,9 @@
                                 console.log('🤖 AI Prompt received:', message.data);
                                 updateActionablePrompt(message.data);
                                 addToPromptHistory(message.data);
+                                break;
+                            case 'languageSet':
+                                console.log('🌍 [WEBSOCKET] Backend language confirmed:', message.data.language);
                                 break;
                             case 'viewerStats':
                                 console.log('👥 Viewer stats received:', message.data);
