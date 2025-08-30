@@ -3863,6 +3863,18 @@
             line-height: 1.6;
             white-space: pre-line;
         }
+        
+        /* AI-Enhanced Legacy Prompt Styling */
+        .actionable-prompt.ai-enhanced-legacy {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-color: #4facfe;
+        }
+        
+        .actionable-prompt.ai-enhanced-legacy .prompt-text {
+            color: #ffffff;
+            font-weight: 600;
+            line-height: 1.6;
+        }
 
         /* Non-blocking Gift Notification Styles */
         .gift-notifications-container {
@@ -9209,6 +9221,9 @@
             } else if (prompt.source === 'viewer_specific') {
                 sourceIcon = '👤';
                 triggerDescription = `Viewer Engagement Tip for ${prompt.targetViewer || 'New Viewer'}`;
+            } else if (prompt.source === 'ai_enhanced_legacy') {
+                sourceIcon = '🤖';
+                triggerDescription = 'AI-Enhanced Engagement';
             } else if (prompt.source === 'fallback') {
                 sourceIcon = '🔄';
                 triggerDescription = 'Fallback System';
@@ -9243,6 +9258,8 @@
                 promptElement.classList.add('viewer-comprehensive');
             } else if (prompt.source === 'viewer_specific') {
                 promptElement.classList.add('viewer-specific');
+            } else if (prompt.source === 'ai_enhanced_legacy') {
+                promptElement.classList.add('ai-enhanced-legacy');
             } else if (prompt.source === 'fallback') {
                 promptElement.classList.add('fallback-system');
             }
@@ -9268,6 +9285,8 @@
                 triggerDescription = `👤 Comprehensive Viewer Engagement for ${prompt.targetViewer || 'New Viewer'}`;
             } else if (prompt.source === 'viewer_specific') {
                 triggerDescription = `👤 Viewer Tip for ${prompt.targetViewer || 'New Viewer'}`;
+            } else if (prompt.source === 'ai_enhanced_legacy') {
+                triggerDescription = '🤖 AI-Enhanced Engagement';
             } else if (prompt.trigger === 'engagement_decline') {
                 triggerDescription = '📉 Engagement Alert';
             } else if (prompt.trigger === 'extended_silence') {

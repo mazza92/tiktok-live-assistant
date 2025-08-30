@@ -1654,86 +1654,117 @@ async function generateAutomatedPrompt() {
     return generateLegacyPrompt();
 }
 
-// Legacy prompt generation (fallback system)
+// Enhanced legacy prompt generation with AI-powered content
 function generateLegacyPrompt() {
     const now = Date.now();
     const prompts = [];
     
-    console.log(`🤖 [LEGACY] Generating fallback prompt...`);
+    console.log(`🤖 [LEGACY] Generating AI-enhanced fallback prompt...`);
     
     // Helper to get top keyword
-    const topKeyword = Object.entries(metrics.keywordFrequency).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
+    const topKeyword = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
     
     // Helper to get top engager
     const topEngager = getViewerEngagementRanking()[0]?.nickname || 'viewers';
     
-    // Basic engagement analysis
+    // Get current stream metrics
     const viewerCount = metrics.currentViewerCount || 0;
     const likeRate = metrics.likesPerMinute || 0;
     const commentRate = metrics.commentsPerMinute || 0;
+    const giftRate = metrics.giftsPerMinute || 0;
     
-    if (commentRate < 5 && viewerCount > 100) {
+    // Check if we have any active viewers to engage with
+    const activeViewers = Object.values(metrics.viewers).filter(v => v.isActive && v.lastSeen > (now - 300000)); // Active in last 5 minutes
+    const recentViewers = activeViewers.slice(0, 3); // Get up to 3 recent active viewers
+    
+    if (recentViewers.length > 0) {
+        // Generate AI-powered engagement content for active viewers
+        const targetViewer = recentViewers[0];
+        const aiWelcomeData = generateAIWelcome(targetViewer.nickname, viewerCount);
+        
+        // Create comprehensive engagement prompt for active viewers
+        const comprehensivePrompt = {
+            type: 'active_viewer_engagement',
+            priority: 'high',
+            message: `${aiWelcomeData.welcomeMessage}\n\n${aiWelcomeData.engagementTips.join('\n\n')}`,
+            trigger: 'active_viewer_engagement',
+            action: 'engage_active_viewer',
+            source: 'ai_enhanced_legacy',
+            targetViewer: targetViewer.nickname,
+            timestamp: new Date(),
+            welcomeMessage: aiWelcomeData.welcomeMessage,
+            engagementTips: aiWelcomeData.engagementTips,
+            retentionStrategies: aiWelcomeData.retentionStrategies,
+            viewerCount: aiWelcomeData.viewerCount
+        };
+        
+        console.log(`🤖 [AI ENHANCED] Generated engagement content for active viewer ${comprehensivePrompt.targetViewer}`);
+        return comprehensivePrompt;
+    }
+    
+    // If no active viewers, generate context-aware AI prompts
+    if (commentRate < 5 && viewerCount > 0) {
         prompts.push({
             type: 'engagement',
             priority: 'high',
-            message: `💬 Chat seems quiet with ${viewerCount} viewers! Try asking what they think about the current topic!`,
-            trigger: 'fallback_low_engagement',
-            action: 'ask_question',
-            source: 'legacy'
+            message: `💬 **Engagement**: With ${viewerCount} viewers, chat is quiet (${commentRate} comments/min). Try asking a direct question or starting a simple poll to boost interaction!`,
+            trigger: 'ai_enhanced_low_engagement',
+            action: 'boost_engagement',
+            source: 'ai_enhanced_legacy'
         });
-    } else if (likeRate < 10 && viewerCount > 200) {
+    } else if (likeRate < 10 && viewerCount > 0) {
         prompts.push({
             type: 'engagement',
             priority: 'medium',
-            message: `❤️ Ask viewers to show some love with likes! Current rate: ${likeRate}/min`,
-            trigger: 'fallback_low_likes',
+            message: `❤️ **Like Engagement**: Current like rate is ${likeRate}/min with ${viewerCount} viewers. Encourage likes by tying them to the current topic: "${topKeyword}"!`,
+            trigger: 'ai_enhanced_low_likes',
             action: 'encourage_likes',
-            source: 'legacy'
+            source: 'ai_enhanced_legacy'
         });
-    } else if (viewerCount > 500) {
+    } else if (viewerCount > 100) {
         prompts.push({
             type: 'growth',
             priority: 'medium',
-            message: `📈 Great energy with ${viewerCount} viewers! Keep the momentum going and maybe ask for a follow!`,
-            trigger: 'fallback_growth',
-            action: 'encourage_follows',
-            source: 'legacy'
+            message: `📈 **Growth Opportunity**: Great energy with ${viewerCount} viewers! Ask for follows and maybe start a fun challenge or game to keep momentum!`,
+            trigger: 'ai_enhanced_growth',
+            action: 'encourage_growth',
+            source: 'ai_enhanced_legacy'
         });
     } else {
-        // Analyze actual engagement levels for more accurate fallback
+        // Analyze actual engagement levels for more accurate AI-enhanced prompts
         const engagementLevel = analyzeActualEngagement();
         
         if (engagementLevel === 'low') {
             prompts.push({
                 type: 'engagement',
                 priority: 'high',
-                message: `💬 Chat engagement is low with ${viewerCount} viewers. Try asking a direct question or starting a simple poll!`,
-                trigger: 'fallback_low_engagement_accurate',
+                message: `💬 **AI Analysis**: Engagement is low with ${viewerCount} viewers. Try asking a direct question, starting a simple poll, or sharing something personal to boost interaction!`,
+                trigger: 'ai_enhanced_low_engagement_accurate',
                 action: 'boost_engagement',
-                source: 'legacy'
+                source: 'ai_enhanced_legacy'
             });
         } else if (engagementLevel === 'medium') {
             prompts.push({
                 type: 'interaction',
                 priority: 'medium',
-                message: `🎯 Moderate engagement detected. Try asking viewers to share their thoughts or experiences!`,
-                trigger: 'fallback_medium_engagement',
+                message: `🎯 **AI Analysis**: Moderate engagement detected. Try asking viewers to share their thoughts, experiences, or start a light discussion to increase participation!`,
+                trigger: 'ai_enhanced_medium_engagement',
                 action: 'encourage_sharing',
-                source: 'legacy'
+                source: 'ai_enhanced_legacy'
             });
         } else {
             prompts.push({
                 type: 'interaction',
                 priority: 'medium',
-                message: `🎯 Good engagement! Try starting a fun challenge or game to keep the momentum!`,
-                trigger: 'fallback_good_engagement',
+                message: `🎯 **AI Analysis**: Good engagement! Try starting a fun challenge, game, or ask viewers to share their opinions to keep the momentum going!`,
+                trigger: 'ai_enhanced_good_engagement',
                 action: 'start_challenge',
-                source: 'legacy'
+                source: 'ai_enhanced_legacy'
             });
         }
     }
     
-    // Return first available prompt
+    // Return first available AI-enhanced prompt
     if (prompts.length > 0) {
         const selectedPrompt = prompts[0];
         
@@ -1752,7 +1783,16 @@ function generateLegacyPrompt() {
         return selectedPrompt;
     }
     
-    return null;
+    // Final fallback - generate a generic but AI-styled prompt
+    return {
+        type: 'general_engagement',
+        priority: 'medium',
+        message: `💡 **AI Suggestion**: With ${viewerCount} viewers, focus on building personal connections. Ask questions, share experiences, and encourage interaction to boost engagement!`,
+        trigger: 'ai_enhanced_generic',
+        action: 'general_engagement',
+        source: 'ai_enhanced_legacy',
+        timestamp: new Date()
+    };
 }
 
 // Analyze actual engagement levels for accurate fallback prompts
