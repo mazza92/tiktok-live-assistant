@@ -2420,11 +2420,8 @@
                 hyphens: auto;
                 padding: 0;
                 letter-spacing: 0.2px;
-                max-height: 120px;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 5;
-                -webkit-box-orient: vertical;
+                max-height: 200px;
+                overflow: visible;
             }
             
             /* Mobile streamer optimization */
@@ -2465,8 +2462,8 @@
                 font-size: 0.9rem;
                 line-height: 1.2;
                 letter-spacing: 0.2px;
-                max-height: 100px;
-                -webkit-line-clamp: 4;
+                max-height: 180px;
+                overflow: visible;
             }
             
             .prompt-icon {
@@ -2479,7 +2476,7 @@
             }
         }
         
-                /* Very small mobile devices */
+        /* Very small mobile devices */
         @media (max-width: 360px) {
             .actionable-prompt {
                 padding: 15px 10px;
@@ -2495,8 +2492,8 @@
                 font-size: 0.8rem;
                 line-height: 1.2;
                 letter-spacing: 0.1px;
-                max-height: 80px;
-                -webkit-line-clamp: 3;
+                max-height: 160px;
+                overflow: visible;
             }
             
             .prompt-icon {
