@@ -2391,8 +2391,6 @@
                 border-radius: 15px;
                 width: calc(100% - 10px);
                 max-width: none;
-                min-height: 180px; /* Minimum height instead of fixed */
-                max-height: 220px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
@@ -2412,8 +2410,8 @@
             }
             
             .prompt-text {
-                font-size: 1.1rem;
-                line-height: 1.4;
+                font-size: 1rem;
+                line-height: 1.3;
                 margin-bottom: 0;
                 text-align: left;
                 max-width: 100%;
@@ -2422,11 +2420,16 @@
                 hyphens: auto;
                 padding: 0;
                 letter-spacing: 0.2px;
+                max-height: 120px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 5;
+                -webkit-box-orient: vertical;
             }
             
             /* Mobile streamer optimization */
             .actionable-prompt.streamer-optimized .prompt-text {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
                 line-height: 1.3;
                 padding: 10px;
                 background: rgba(255, 255, 255, 0.1);
@@ -2452,8 +2455,6 @@
                 padding: 18px 12px;
                 margin: 8px 4px;
                 border-radius: 12px;
-                min-height: 160px; /* Minimum height instead of fixed */
-                max-height: 200px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
@@ -2461,9 +2462,11 @@
             }
             
             .prompt-text {
-                font-size: 1rem;
-                line-height: 1.3;
+                font-size: 0.9rem;
+                line-height: 1.2;
                 letter-spacing: 0.2px;
+                max-height: 100px;
+                -webkit-line-clamp: 4;
             }
             
             .prompt-icon {
@@ -2482,8 +2485,6 @@
                 padding: 15px 10px;
                 margin: 6px 3px;
                 border-radius: 10px;
-                min-height: 140px; /* Minimum height instead of fixed */
-                max-height: 180px; /* Maximum height to prevent excessive growth */
             }
             
             .prompt-content {
@@ -2491,9 +2492,11 @@
             }
             
             .prompt-text {
-                font-size: 0.9rem;
+                font-size: 0.8rem;
                 line-height: 1.2;
                 letter-spacing: 0.1px;
+                max-height: 80px;
+                -webkit-line-clamp: 3;
             }
             
             .prompt-icon {
