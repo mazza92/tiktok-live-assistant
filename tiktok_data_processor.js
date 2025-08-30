@@ -1672,39 +1672,6 @@ function generateLegacyPrompt() {
     
     return null;
 }
-    
-    try {
-        // Use Gemini AI to generate context-aware prompts
-        const aiPrompt = await geminiService.generatePrompt(metrics);
-        
-        if (aiPrompt && aiPrompt.message) {
-            console.log(`🤖 [GEMINI] AI-generated prompt: ${aiPrompt.message.substring(0, 100)}...`);
-            
-            // Update cooldown tracking
-            metrics.lastPromptTime = now;
-            if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
-            metrics.promptCooldowns[aiPrompt.trigger] = now;
-            
-            // Update prompt history
-            if (!metrics.promptHistory) metrics.promptHistory = [];
-            metrics.promptHistory.push(aiPrompt.trigger);
-            if (metrics.promptHistory.length > 10) {
-                metrics.promptHistory.shift();
-            }
-            
-            return aiPrompt;
-        }
-        
-    } catch (error) {
-        console.error('🤖 [GEMINI] Error in AI prompt generation:', error.message);
-        
-        // Fallback to legacy prompt system on error
-        console.log('🤖 [FALLBACK] Using legacy prompt system...');
-        return generateLegacyPrompt();
-    }
-    
-    // All old logic has been replaced with AI-powered generation above
-}
 
 // Analyze engagement trends over time
 function analyzeEngagementTrend() {
