@@ -47,24 +47,38 @@ const GEMINI_CONFIG = {
     fallbackPrompts: [
         {
             type: 'engagement',
-            priority: 'medium',
-            message: '💬 Chat seems quiet! Try asking viewers what they think about the current topic!',
+            priority: 'high',
+            message: '💬 **Chat Engagement**: The chat is quiet right now. Ask viewers directly: "What\'s on your mind today?" or "Share something that made you laugh this week!"',
             trigger: 'fallback_engagement',
-            action: 'ask_question'
+            action: 'ask_direct_question'
         },
         {
             type: 'growth',
             priority: 'medium',
-            message: '📈 Great energy! Keep the momentum going and maybe ask for a follow!',
+            message: '📈 **Viewer Connection**: Great energy! Personalize your ask: "If you\'re enjoying this, hit that follow button and let\'s build this community together!"',
             trigger: 'fallback_growth',
-            action: 'encourage_follows'
+            action: 'encourage_follows_personal'
         },
         {
             type: 'interaction',
             priority: 'medium',
-            message: '🎯 Awesome engagement! Try starting a fun challenge or game!',
+            message: '🎯 **Interactive Challenge**: Start a quick game! "Comment with your favorite emoji if you\'ve ever been to [relevant place/topic]!" or "Type YES if you agree with this!"',
             trigger: 'fallback_interaction',
-            action: 'start_challenge'
+            action: 'start_interactive_game'
+        },
+        {
+            type: 'retention',
+            priority: 'high',
+            message: '👥 **Viewer Retention**: Connect with your audience! "I want to hear from you - what brought you to this stream today?" or "Share your experience with [current topic]!"',
+            trigger: 'fallback_retention',
+            action: 'build_connection'
+        },
+        {
+            type: 'momentum',
+            priority: 'medium',
+            message: '🚀 **Keep Momentum**: The energy is building! "Let\'s keep this going - what\'s your take on [current topic]?" or "I love hearing your thoughts, keep them coming!"',
+            trigger: 'fallback_momentum',
+            action: 'maintain_energy'
         }
     ]
 };

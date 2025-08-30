@@ -155,7 +155,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
         // Check if API is available and rate limits
         if (!this.isAvailable) {
             console.log('🤖 [GEMINI] API not available, using fallback');
-            return this.getFallbackPrompt();
+            return this.getFallbackPrompt(metrics);
         }
         
         // Rate limiting check
@@ -163,7 +163,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
         if (now - this.lastCallTime < 60000) { // Within 1 minute
             if (this.callCount >= this.maxCallsPerMinute) {
                 console.log('🤖 [GEMINI] Rate limit reached, using fallback');
-                return this.getFallbackPrompt();
+                return this.getFallbackPrompt(metrics);
             }
         } else {
             this.callCount = 0;
@@ -212,7 +212,7 @@ FORMAT: Just the prompt text, no explanations or formatting.
             
         } catch (error) {
             console.error('🤖 [GEMINI] Error generating prompt:', error.message);
-            return this.getFallbackPrompt();
+            return this.getFallbackPrompt(metrics);
         }
     }
 
@@ -250,9 +250,15 @@ FORMAT: Just the prompt text, no explanations or formatting.
     }
 
     /**
-     * Get a random fallback prompt
+     * Get a context-aware fallback prompt
      */
-    getFallbackPrompt() {
+    getFallbackPrompt(metrics = {}) {
+        // If we have metrics, generate a context-aware fallback
+        if (metrics && Object.keys(metrics).length > 0) {
+            return this.generateContextAwareFallback(metrics);
+        }
+        
+        // Otherwise, use random selection
         const randomIndex = Math.floor(Math.random() * GEMINI_CONFIG.fallbackPrompts.length);
         const fallback = GEMINI_CONFIG.fallbackPrompts[randomIndex];
         
@@ -263,6 +269,62 @@ FORMAT: Just the prompt text, no explanations or formatting.
                 engagementLevel: 'unknown',
                 sentiment: 'neutral',
                 streamPhase: 'mid'
+            }
+        };
+    }
+
+    /**
+     * Generate a context-aware fallback prompt based on current metrics
+     */
+    generateContextAwareFallback(metrics) {
+        const viewerCount = metrics.currentViewerCount || 0;
+        const commentRate = metrics.commentsPerMinute || 0;
+        const likeRate = metrics.likesPerMinute || 0;
+        const sentiment = metrics.rollingSentimentScore || 0;
+        
+        // Determine the best fallback based on current situation
+        let selectedPrompt;
+        
+        if (commentRate < 3 && viewerCount > 0) {
+            // Low engagement - need to activate chat
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'ask_direct_question');
+        } else if (viewerCount > 50 && commentRate > 5) {
+            // Good engagement - encourage growth
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'encourage_follows_personal');
+        } else if (commentRate > 10 && likeRate > 20) {
+            // High engagement - maintain momentum
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'maintain_energy');
+        } else if (viewerCount < 20) {
+            // Small audience - focus on retention
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'build_connection');
+        } else {
+            // Default to interactive challenge
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'start_interactive_game');
+        }
+        
+        // If no specific prompt found, use the first one
+        if (!selectedPrompt) {
+            selectedPrompt = GEMINI_CONFIG.fallbackPrompts[0];
+        }
+        
+        // Enhance the message with current context
+        let enhancedMessage = selectedPrompt.message;
+        
+        // Add viewer count context if available
+        if (viewerCount > 0) {
+            enhancedMessage = enhancedMessage.replace('[current topic]', `this stream with ${viewerCount} viewers`);
+        }
+        
+        return {
+            ...selectedPrompt,
+            message: enhancedMessage,
+            source: 'context_aware_fallback',
+            context: {
+                engagementLevel: this.analyzeEngagementLevel(metrics),
+                sentiment: this.analyzeSentimentStatus(metrics),
+                streamPhase: this.getStreamPhase(metrics),
+                viewerCount: viewerCount,
+                commentRate: commentRate
             }
         };
     }

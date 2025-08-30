@@ -402,41 +402,41 @@ function addViewer(userId, nickname, profilePic = null) {
         }
     }
     
-    if (!metrics.viewers[userId]) {
-        metrics.viewers[userId] = {
-            userId: userId,
-            nickname: nickname,
-            profilePic: profilePic,
-            joinTime: now,
-            lastSeen: now,
-            watchTime: 0, // in seconds
-            isActive: true,
-            totalLikes: 0,
-            totalGifts: 0,
-            totalComments: 0,
-            totalShares: 0, // Track total shares
-            totalDiamonds: 0, // Track total diamonds spent
-            totalGiftValue: 0, // Track total USD value of gifts
-            isFollower: false, // Track follower status
-            followTime: null, // When they started following
+                        if (!metrics.viewers[userId]) {
+                metrics.viewers[userId] = {
+                    userId: userId,
+                    nickname: nickname,
+                    profilePic: profilePic,
+                    joinTime: now,
+                    lastSeen: now,
+                    watchTime: 0, // in seconds
+                    isActive: true,
+                    totalLikes: 0,
+                    totalGifts: 0,
+                    totalComments: 0,
+                    totalShares: 0, // Track total shares
+                    totalDiamonds: 0, // Track total diamonds spent
+                    totalGiftValue: 0, // Track total USD value of gifts
+                    isFollower: false, // Track follower status
+                    followTime: null, // When they started following
             hasBeenWelcomed: false, // Track if AI has welcomed them
             welcomeTimestamp: null // Track when welcome was sent to prevent duplicates
-        };
-        metrics.viewerStats.totalUniqueViewers++;
-        console.log(`👤 [VIEWER] New viewer joined: ${nickname} (${userId})`);
-    } else {
-        // Viewer rejoined, update last seen
-        metrics.viewers[userId].lastSeen = now;
-        metrics.viewers[userId].isActive = true;
-        console.log(`👤 [VIEWER] Viewer rejoined: ${nickname} (${userId})`);
-    }
-
+                };
+                metrics.viewerStats.totalUniqueViewers++;
+                console.log(`👤 [VIEWER] New viewer joined: ${nickname} (${userId})`);
+            } else {
+                // Viewer rejoined, update last seen
+                metrics.viewers[userId].lastSeen = now;
+                metrics.viewers[userId].isActive = true;
+                console.log(`👤 [VIEWER] Viewer rejoined: ${nickname} (${userId})`);
+            }
+    
     // Only broadcast viewer update for new viewers, not rejoins
     if (!metrics.viewers[userId] || !metrics.viewers[userId].hasBeenWelcomed) {
-        broadcastEvent('viewerUpdate', {
-            type: 'join',
-            viewer: metrics.viewers[userId]
-        });
+    broadcastEvent('viewerUpdate', {
+        type: 'join',
+        viewer: metrics.viewers[userId]
+    });
     }
 }
 
@@ -1556,8 +1556,8 @@ function updateQuestionStats() {
 async function generateAutomatedPrompt() {
     const now = Date.now();
     
-    // Check cooldown to prevent spam
-    if (metrics.lastPromptTime && (now - metrics.lastPromptTime) < 30000) { // 30 second cooldown
+    // Check cooldown to prevent spam - reduced from 30s to 15s for more proactive assistance
+    if (metrics.lastPromptTime && (now - metrics.lastPromptTime) < 15000) { // 15 second cooldown
         return null;
     }
     
@@ -1636,7 +1636,7 @@ function generateAIEnhancedContent() {
     
     // Get current stream metrics
     const viewerCount = metrics.currentViewerCount || 0;
-    const likeRate = metrics.likesPerMinute || 0;
+        const likeRate = metrics.likesPerMinute || 0;
     const commentRate = metrics.commentsPerMinute || 0;
     const giftRate = metrics.giftsPerMinute || 0;
     
@@ -1669,30 +1669,30 @@ function generateAIEnhancedContent() {
         return comprehensivePrompt;
     }
     
-    // If no active viewers, generate context-aware AI prompts
+    // If no active viewers, generate context-aware AI prompts with specific actions
     if (commentRate < 5 && viewerCount > 0) {
-        prompts.push({
-            type: 'engagement',
-            priority: 'high',
-            message: `💬 **Engagement**: With ${viewerCount} viewers, chat is quiet (${commentRate} comments/min). Try asking a direct question or starting a simple poll to boost interaction!`,
+            prompts.push({
+                type: 'engagement',
+                priority: 'high',
+            message: `💬 **Chat Activation**: With ${viewerCount} viewers, chat is quiet (${commentRate} comments/min). Say: "I want to hear from you! What's on your mind today?" or "Comment with your favorite emoji if you're enjoying this stream!"`,
             trigger: 'ai_enhanced_low_engagement',
             action: 'boost_engagement',
             source: 'ai_enhanced_legacy'
         });
     } else if (likeRate < 10 && viewerCount > 0) {
-        prompts.push({
-            type: 'engagement',
+            prompts.push({
+                type: 'engagement',
             priority: 'medium',
-            message: `❤️ **Like Engagement**: Current like rate is ${likeRate}/min with ${viewerCount} viewers. Encourage likes by tying them to the current topic: "${topKeyword}"!`,
+            message: `❤️ **Like Boost**: Current like rate is ${likeRate}/min with ${viewerCount} viewers. Say: "If you're enjoying this, hit that like button! It really helps the stream!" or "Show some love with a like if you agree with this!"`,
             trigger: 'ai_enhanced_low_likes',
             action: 'encourage_likes',
             source: 'ai_enhanced_legacy'
         });
     } else if (viewerCount > 100) {
-        prompts.push({
+            prompts.push({
             type: 'growth',
-            priority: 'medium',
-            message: `📈 **Growth Opportunity**: Great energy with ${viewerCount} viewers! Ask for follows and maybe start a fun challenge or game to keep momentum!`,
+                priority: 'medium',
+            message: `📈 **Community Growth**: Great energy with ${viewerCount} viewers! Say: "If you're new here, hit that follow button and let's build this community together!" or "I love seeing new faces! Drop a comment and let me know where you're from!"`,
             trigger: 'ai_enhanced_growth',
             action: 'encourage_growth',
             source: 'ai_enhanced_legacy'
@@ -1702,28 +1702,28 @@ function generateAIEnhancedContent() {
         const engagementLevel = analyzeActualEngagement();
         
         if (engagementLevel === 'low') {
-            prompts.push({
+        prompts.push({
                 type: 'engagement',
-                priority: 'high',
-                message: `💬 **AI Analysis**: Engagement is low with ${viewerCount} viewers. Try asking a direct question, starting a simple poll, or sharing something personal to boost interaction!`,
+            priority: 'high',
+                message: `💬 **AI Engagement Boost**: Engagement is low with ${viewerCount} viewers. Say: "I want to hear your thoughts! What's your take on this?" or "Let's get this chat moving! Share something that made you laugh today!"`,
                 trigger: 'ai_enhanced_low_engagement_accurate',
                 action: 'boost_engagement',
                 source: 'ai_enhanced_legacy'
             });
         } else if (engagementLevel === 'medium') {
-            prompts.push({
+        prompts.push({
                 type: 'interaction',
-                priority: 'medium',
-                message: `🎯 **AI Analysis**: Moderate engagement detected. Try asking viewers to share their thoughts, experiences, or start a light discussion to increase participation!`,
+            priority: 'medium',
+                message: `🎯 **AI Interaction**: Moderate engagement detected. Say: "I love hearing from you! What's your experience with this?" or "Keep the conversation going! What do you think about this topic?"`,
                 trigger: 'ai_enhanced_medium_engagement',
                 action: 'encourage_sharing',
                 source: 'ai_enhanced_legacy'
             });
         } else {
-            prompts.push({
+        prompts.push({
                 type: 'interaction',
-                priority: 'medium',
-                message: `🎯 **AI Analysis**: Good engagement! Try starting a fun challenge, game, or ask viewers to share their opinions to keep the momentum going!`,
+            priority: 'medium',
+                message: `🎯 **AI Momentum**: Good engagement! Say: "The energy is amazing! Let's keep it going - what's your opinion on this?" or "I love this energy! Share something that excites you about this topic!"`,
                 trigger: 'ai_enhanced_good_engagement',
                 action: 'start_challenge',
                 source: 'ai_enhanced_legacy'
@@ -1764,9 +1764,9 @@ function generateAIEnhancedContent() {
 
 // Analyze actual engagement levels for accurate fallback prompts
 function analyzeActualEngagement() {
-    const viewerCount = metrics.currentViewerCount || 0;
-    const likeRate = metrics.likesPerMinute || 0;
-    const commentRate = metrics.commentsPerMinute || 0;
+        const viewerCount = metrics.currentViewerCount || 0;
+        const likeRate = metrics.likesPerMinute || 0;
+        const commentRate = metrics.commentsPerMinute || 0;
     const giftRate = metrics.giftsPerMinute || 0;
     
     // Calculate engagement score (weighted average)
@@ -1783,7 +1783,7 @@ function analyzeActualEngagement() {
         return 'low';
     } else if (perViewerEngagement < 0.3 || engagementScore < 15) {
         return 'medium';
-    } else {
+        } else {
         return 'high';
     }
 }
@@ -2835,12 +2835,12 @@ async function connectToTikTok() {
                 if (metrics.totalComments % 5 === 0) {
                     console.log(`🤖 [AI CHECK] Checking for automated prompts... (Comments: ${metrics.totalComments})`);
                     generateAutomatedPrompt().then(automatedPrompt => {
-                        if (automatedPrompt) {
-                            console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-                            broadcastEvent('automatedPrompt', automatedPrompt);
-                        } else {
-                            console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
-                        }
+                    if (automatedPrompt) {
+                        console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                        broadcastEvent('automatedPrompt', automatedPrompt);
+                    } else {
+                        console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+                    }
                     }).catch(error => {
                         console.error('🤖 [AI CHECK] Error generating prompt:', error);
                     });
@@ -3098,10 +3098,10 @@ async function connectToTikTok() {
             if (metrics.totalShares % 5 === 0) {
                 console.log(`🤖 [AI CHECK] Checking for automated prompts... (Shares: ${metrics.totalShares})`);
                 generateAutomatedPrompt().then(automatedPrompt => {
-                    if (automatedPrompt) {
-                        console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-                        broadcastEvent('automatedPrompt', automatedPrompt);
-                    }
+                if (automatedPrompt) {
+                    console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                    broadcastEvent('automatedPrompt', automatedPrompt);
+                }
                 }).catch(error => {
                     console.error('🤖 [AI CHECK] Error generating prompt:', error);
                 });
@@ -3178,23 +3178,23 @@ async function connectToTikTok() {
                         // Add timestamp-based protection against race conditions
                         const now = Date.now();
                         if (!viewer.welcomeTimestamp || (now - viewer.welcomeTimestamp) > 5000) { // 5 second protection
-                            viewer.hasBeenWelcomed = true;
+                        viewer.hasBeenWelcomed = true;
                             viewer.welcomeTimestamp = now;
-                            
-                            // Generate AI welcome message and tips
-                            const welcomeData = generateAIWelcome(nickname, metrics.currentViewerCount);
-                            
-                            console.log(`🤖 [AI WELCOME] New viewer: ${nickname} | Welcome: ${welcomeData.welcomeMessage}`);
-                            console.log(`💡 [AI TIPS] Engagement tips: ${welcomeData.engagementTips}`);
-                            
+                        
+                        // Generate AI welcome message and tips
+                        const welcomeData = generateAIWelcome(nickname, metrics.currentViewerCount);
+                        
+                        console.log(`🤖 [AI WELCOME] New viewer: ${nickname} | Welcome: ${welcomeData.welcomeMessage}`);
+                        console.log(`💡 [AI TIPS] Engagement tips: ${welcomeData.engagementTips}`);
+                        
                             // Broadcast AI welcome event for Chat activity
-                            broadcastEvent('aiWelcome', {
-                                viewer: { userId, nickname, profilePic },
-                                welcomeMessage: welcomeData.welcomeMessage,
-                                engagementTips: welcomeData.engagementTips,
-                                viewerCount: metrics.currentViewerCount,
-                                timestamp: new Date()
-                            });
+                        broadcastEvent('aiWelcome', {
+                            viewer: { userId, nickname, profilePic },
+                            welcomeMessage: welcomeData.welcomeMessage,
+                            engagementTips: welcomeData.engagementTips,
+                            viewerCount: metrics.currentViewerCount,
+                            timestamp: new Date()
+                        });
                             
                             // ALSO send comprehensive prompt to Live Assistant section
                             const comprehensivePrompt = {
@@ -3404,18 +3404,18 @@ console.log("=".repeat(60));
 // Set up periodic metrics updates
 setInterval(updatePerMinuteMetrics, 1000); // Update every second
 
-// Set up periodic AI prompt checks
+// Set up periodic AI prompt checks - more frequent for proactive assistance
 setInterval(() => {
     console.log(`🤖 [PERIODIC AI CHECK] Checking for automated prompts...`);
     generateAutomatedPrompt().then(automatedPrompt => {
-        if (automatedPrompt) {
-            console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
-            broadcastEvent('automatedPrompt', automatedPrompt);
-        }
+    if (automatedPrompt) {
+        console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+        broadcastEvent('automatedPrompt', automatedPrompt);
+    }
     }).catch(error => {
         console.error('🤖 [PERIODIC AI CHECK] Error generating prompt:', error);
     });
-}, 30000); // Check every 30 seconds
+}, 15000); // Check every 15 seconds for more proactive assistance
 
 // Set up periodic viewer watch time updates
 setInterval(() => {
@@ -3437,6 +3437,22 @@ setInterval(() => {
 setInterval(() => {
     cleanupDuplicateFollowers();
 }, 60000); // Clean up every minute
+
+// Set up proactive AI assistance for small streams (< 15 viewers)
+setInterval(() => {
+    const viewerCount = metrics.currentViewerCount || 0;
+    if (viewerCount > 0 && viewerCount < 15) {
+        console.log(`🤖 [SMALL STREAM AI] Proactive assistance for ${viewerCount} viewers...`);
+        generateAutomatedPrompt().then(automatedPrompt => {
+            if (automatedPrompt) {
+                console.log(`🤖 [SMALL STREAM AI] Generated proactive prompt: ${automatedPrompt.message}`);
+                broadcastEvent('automatedPrompt', automatedPrompt);
+            }
+        }).catch(error => {
+            console.error('🤖 [SMALL STREAM AI] Error generating prompt:', error);
+        });
+    }
+}, 20000); // Check every 20 seconds for small streams
 
 // Note: Removed periodic room info fetching to restore original behavior
 // Historical data is now fetched once before connection and broadcasted immediately

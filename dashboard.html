@@ -2422,16 +2422,16 @@
                 border-radius: 15px;
                 border: 1px solid rgba(255, 255, 255, 0.2);
             }
-        }
-        
-        .prompt-trigger {
-            font-size: 0.9rem;
-            padding: 10px 16px;
-            text-align: center;
-            width: 100%;
-            margin-top: 0;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .prompt-trigger {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+                text-align: center;
+                width: 100%;
+                margin-top: 0;
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         /* Extra small mobile devices */
@@ -9269,6 +9269,15 @@
                 // Clean up any markdown formatting for better readability
                 displayText = prompt.message.replace(/\*\*(.*?)\*\*/g, '$1');
                 ttsText = displayText;
+                
+                // For AI-enhanced prompts, highlight the actionable part
+                if (prompt.source === 'ai_enhanced_legacy') {
+                    // Extract the "Say:" part for TTS to focus on actionable content
+                    const sayMatch = displayText.match(/Say:\s*"([^"]+)"/);
+                    if (sayMatch) {
+                        ttsText = sayMatch[1];
+                    }
+                }
             }
             
             // Display the optimized text
