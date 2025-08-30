@@ -1610,38 +1610,44 @@ async function generateAutomatedPrompt() {
         .slice(0, 2); // Get 2 most recent new viewers
     
     if (recentNewViewers.length > 0) {
-        // Generate viewer-specific engagement tips for the Live Assistant
-        const viewerTips = recentNewViewers.map(viewer => {
-            const tips = generateAIWelcome(viewer.nickname, metrics.currentViewerCount);
-            return {
-                type: 'viewer_engagement',
-                priority: 'high',
-                message: tips.engagementTips[0], // Use the engagement tip
-                trigger: 'new_viewer_engagement',
-                action: 'engage_new_viewer',
-                source: 'viewer_specific',
-                targetViewer: viewer.nickname,
-                timestamp: new Date()
-            };
-        });
+        // Generate comprehensive viewer engagement content for the Live Assistant
+        const viewer = recentNewViewers[0]; // Focus on the most recent viewer
+        const aiWelcomeData = generateAIWelcome(viewer.nickname, metrics.currentViewerCount);
         
-        // Return the first viewer tip to show in Live Assistant
-        const selectedTip = viewerTips[0];
+        // Create a comprehensive prompt that includes ALL the AI-generated content
+        const comprehensivePrompt = {
+            type: 'viewer_engagement_comprehensive',
+            priority: 'high',
+            message: `${aiWelcomeData.welcomeMessage}\n\n${aiWelcomeData.engagementTips.join('\n\n')}`,
+            trigger: 'new_viewer_comprehensive_engagement',
+            action: 'engage_new_viewer_comprehensive',
+            source: 'viewer_specific_comprehensive',
+            targetViewer: viewer.nickname,
+            timestamp: new Date(),
+            // Include all the individual components for reference
+            welcomeMessage: aiWelcomeData.welcomeMessage,
+            engagementTips: aiWelcomeData.engagementTips,
+            retentionStrategies: aiWelcomeData.retentionStrategies,
+            viewerCount: aiWelcomeData.viewerCount
+        };
         
         // Update cooldown tracking
         metrics.lastPromptTime = now;
         if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
-        metrics.promptCooldowns[selectedTip.trigger] = now;
+        metrics.promptCooldowns[comprehensivePrompt.trigger] = now;
         
         // Update prompt history
         if (!metrics.promptHistory) metrics.promptHistory = [];
-        metrics.promptHistory.push(selectedTip.trigger);
+        metrics.promptHistory.push(comprehensivePrompt.trigger);
         if (metrics.promptHistory.length > 10) {
             metrics.promptHistory.shift();
         }
         
-        console.log(`🤖 [VIEWER TIP] Generated viewer-specific tip for ${selectedTip.targetViewer}: ${selectedTip.message}`);
-        return selectedTip;
+        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Generated comprehensive engagement content for ${comprehensivePrompt.targetViewer}`);
+        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Welcome: ${comprehensivePrompt.welcomeMessage}`);
+        console.log(`🤖 [COMPREHENSIVE VIEWER TIP] Tips: ${comprehensivePrompt.engagementTips.join(' | ')}`);
+        
+        return comprehensivePrompt;
     }
     
     // If no recent new viewers, use the regular legacy prompt system

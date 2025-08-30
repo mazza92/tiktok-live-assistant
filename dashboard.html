@@ -3850,6 +3850,19 @@
             color: #ffffff;
             font-weight: 600;
         }
+        
+        /* Comprehensive Viewer-Specific Prompt Styling */
+        .actionable-prompt.viewer-comprehensive {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+            border-color: #ff6b6b;
+        }
+        
+        .actionable-prompt.viewer-comprehensive .prompt-text {
+            color: #ffffff;
+            font-weight: 600;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
 
         /* Non-blocking Gift Notification Styles */
         .gift-notifications-container {
@@ -9190,6 +9203,9 @@
             if (prompt.source === 'gemini') {
                 sourceIcon = '🧠';
                 triggerDescription = 'AI-Generated Suggestion';
+            } else if (prompt.source === 'viewer_specific_comprehensive') {
+                sourceIcon = '👤';
+                triggerDescription = `Comprehensive Viewer Engagement for ${prompt.targetViewer || 'New Viewer'}`;
             } else if (prompt.source === 'viewer_specific') {
                 sourceIcon = '👤';
                 triggerDescription = `Viewer Engagement Tip for ${prompt.targetViewer || 'New Viewer'}`;
@@ -9223,6 +9239,8 @@
             // Add source-based styling
             if (prompt.source === 'gemini') {
                 promptElement.classList.add('ai-generated');
+            } else if (prompt.source === 'viewer_specific_comprehensive') {
+                promptElement.classList.add('viewer-comprehensive');
             } else if (prompt.source === 'viewer_specific') {
                 promptElement.classList.add('viewer-specific');
             } else if (prompt.source === 'fallback') {
@@ -9246,7 +9264,9 @@
             
             // Create user-friendly trigger description
             let triggerDescription = 'AI Suggestion';
-            if (prompt.source === 'viewer_specific') {
+            if (prompt.source === 'viewer_specific_comprehensive') {
+                triggerDescription = `👤 Comprehensive Viewer Engagement for ${prompt.targetViewer || 'New Viewer'}`;
+            } else if (prompt.source === 'viewer_specific') {
                 triggerDescription = `👤 Viewer Tip for ${prompt.targetViewer || 'New Viewer'}`;
             } else if (prompt.trigger === 'engagement_decline') {
                 triggerDescription = '📉 Engagement Alert';
