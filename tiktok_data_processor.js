@@ -779,11 +779,11 @@ function generateAIWelcome(nickname, viewerCount) {
     // Language-specific welcome messages
     const welcomeMessages = {
         en: [
-            `Hey ${nickname}! 👋 Welcome to the stream! I'm so glad you're here!`,
-            `Welcome ${nickname}! 🎉 You're joining us at the perfect time!`,
-            `Hi ${nickname}! ✨ Great to see you in the chat!`,
-            `Welcome aboard ${nickname}! 🚀 You're going to love this stream!`,
-            `Hey there ${nickname}! 🌟 So happy you joined us!`
+        `Hey ${nickname}! 👋 Welcome to the stream! I'm so glad you're here!`,
+        `Welcome ${nickname}! 🎉 You're joining us at the perfect time!`,
+        `Hi ${nickname}! ✨ Great to see you in the chat!`,
+        `Welcome aboard ${nickname}! 🚀 You're going to love this stream!`,
+        `Hey there ${nickname}! 🌟 So happy you joined us!`
         ],
         fr: [
             `Salut ${nickname} ! 👋 Bienvenue sur le stream ! Je suis ravi que tu sois là !`,
@@ -796,11 +796,11 @@ function generateAIWelcome(nickname, viewerCount) {
 
     const engagementTips = {
         en: [
-            `💡 **Tip**: Ask ${nickname} about their day or interests to build connection`,
-            `💡 **Tip**: Encourage ${nickname} to drop a comment or like to stay engaged`,
-            `💡 **Tip**: Share something personal to make ${nickname} feel welcome`,
-            `💡 **Tip**: Ask ${nickname} if they've been to any interesting places lately`,
-            `💡 **Tip**: Invite ${nickname} to share their thoughts on the current topic`
+        `💡 **Tip**: Ask ${nickname} about their day or interests to build connection`,
+        `💡 **Tip**: Encourage ${nickname} to drop a comment or like to stay engaged`,
+        `💡 **Tip**: Share something personal to make ${nickname} feel welcome`,
+        `💡 **Tip**: Ask ${nickname} if they've been to any interesting places lately`,
+        `💡 **Tip**: Invite ${nickname} to share their thoughts on the current topic`
         ],
         fr: [
             `💡 **Conseil**: Demande à ${nickname} comment s'est passée sa journée ou ses centres d'intérêt pour créer un lien`,
@@ -813,11 +813,11 @@ function generateAIWelcome(nickname, viewerCount) {
 
     const retentionStrategies = {
         en: [
-            `🎯 **Retention**: With ${viewerCount} viewers, focus on personal connection`,
-            `🎯 **Retention**: Early viewers like ${nickname} are your core audience`,
-            `🎯 **Retention**: Build rapport with ${nickname} to increase watch time`,
-            `🎯 **Retention**: Ask ${nickname} questions to keep them engaged`,
-            `🎯 **Retention**: Share behind-the-scenes info to make ${nickname} feel special`
+        `🎯 **Retention**: With ${viewerCount} viewers, focus on personal connection`,
+        `🎯 **Retention**: Early viewers like ${nickname} are your core audience`,
+        `🎯 **Retention**: Build rapport with ${nickname} to increase watch time`,
+        `🎯 **Retention**: Ask ${nickname} questions to keep them engaged`,
+        `🎯 **Retention**: Share behind-the-scenes info to make ${nickname} feel special`
         ],
         fr: [
             `🎯 **Rétention**: Avec ${viewerCount} spectateurs, concentre-toi sur la connexion personnelle`,
