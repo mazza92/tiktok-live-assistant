@@ -4445,23 +4445,23 @@
         <!-- Actionable Prompt Section -->
         <div class="actionable-prompt">
             <div class="feed-header">
-                🎯 LIVE ASSISTANT
+                <span data-translate="liveAssistant">🎯 LIVE ASSISTANT</span>
                 <div class="tts-controls">
-                    <button id="ttsToggle" class="tts-toggle-btn" title="Toggle Text-to-Speech (Ctrl+Shift+T)">
+                    <button id="ttsToggle" class="tts-toggle-btn" data-translate-title="ttsToggleTitle" title="Toggle Text-to-Speech (Ctrl+Shift+T)">
                         🔊 <span id="ttsStatus">OFF</span>
                     </button>
                     <div class="tts-settings" id="ttsSettings">
                         <select id="ttsVoice" class="tts-select" title="Select Voice">
-                            <option value="">Loading voices...</option>
+                            <option value="" data-translate="loadingVoices">Loading voices...</option>
                         </select>
                         <div class="tts-control-group">
-                            <label for="ttsSpeed" class="tts-label">Speed</label>
-                            <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" title="Speech Speed">
+                            <label for="ttsSpeed" class="tts-label" data-translate="speed">Speed</label>
+                            <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" class="tts-slider" data-translate-title="speechSpeed" title="Speech Speed">
                             <span class="tts-value" id="ttsSpeedValue">1.0x</span>
                         </div>
                         <div class="tts-control-group">
-                            <label for="ttsVolume" class="tts-label">Volume</label>
-                            <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" title="Volume">
+                            <label for="ttsVolume" class="tts-label" data-translate="volume">Volume</label>
+                            <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="0.8" class="tts-slider" data-translate-title="volume" title="Volume">
                             <span class="tts-value" id="ttsVolumeValue">80%</span>
                         </div>
                     </div>
@@ -4470,10 +4470,10 @@
             <div id="actionablePrompt">
                 <div class="prompt-content">
                     <div class="prompt-icon">🤖</div>
-                    <div class="prompt-text">Waiting for AI insights...</div>
-                    <div class="prompt-trigger">No triggers detected yet</div>
+                    <div class="prompt-text" data-translate="waitingForAIInsights">Waiting for AI insights...</div>
+                    <div class="prompt-trigger" data-translate="noTriggersDetected">No triggers detected yet</div>
                     <div id="ttsSpeakingIndicator" class="tts-speaking-indicator hidden">
-                        🔊 Speaking...
+                        🔊 <span data-translate="speaking">Speaking...</span>
                     </div>
                 </div>
             </div>
@@ -4852,6 +4852,15 @@
                 waitingForAIInsights: "Waiting for AI insights...",
                 noTriggersDetected: "No triggers detected yet",
                 
+                // Live Assistant Section
+                liveAssistant: "🎯 LIVE ASSISTANT",
+                speaking: "Speaking...",
+                speed: "Speed",
+                volume: "Volume",
+                loadingVoices: "Loading voices...",
+                speechSpeed: "Speech Speed",
+                ttsToggleTitle: "Toggle Text-to-Speech (Ctrl+Shift+T)",
+                
                 // Questions Section
                 viewersQuestions: "Viewers Questions ❓",
                 total: "Total",
@@ -4969,6 +4978,15 @@
                 // AI Insights
                 waitingForAIInsights: "En attente des insights IA...",
                 noTriggersDetected: "Aucun déclencheur détecté encore",
+                
+                // Live Assistant Section
+                liveAssistant: "🎯 ASSISTANT EN DIRECT",
+                speaking: "Parle...",
+                speed: "Vitesse",
+                volume: "Volume",
+                loadingVoices: "Chargement des voix...",
+                speechSpeed: "Vitesse de Parole",
+                ttsToggleTitle: "Activer/Désactiver la Synthèse Vocale (Ctrl+Shift+T)",
                 
                 // Questions Section
                 viewersQuestions: "Questions des Spectateurs ❓",
@@ -5157,7 +5175,78 @@
                     button.title.includes('Effacer tous les cadeaux')) {
                     button.title = t.clearGiftsTitle;
                 }
+                if (button.title.includes('Toggle Text-to-Speech') || 
+                    button.title.includes('Activer/Désactiver la Synthèse Vocale')) {
+                    button.title = t.ttsToggleTitle;
+                }
             });
+            
+            // Update Live Assistant specific elements
+            updateLiveAssistantElements();
+        }
+        
+        // Update Live Assistant specific elements
+        function updateLiveAssistantElements() {
+            const t = translations[currentLanguage];
+            const tEn = translations.en;
+            const tFr = translations.fr;
+            
+            console.log('🔄 Updating Live Assistant elements for language:', currentLanguage);
+            
+            // Update Live Assistant header
+            const liveAssistantHeader = document.querySelector('[data-translate="liveAssistant"]');
+            if (liveAssistantHeader) {
+                liveAssistantHeader.textContent = t.liveAssistant;
+            }
+            
+            // Update TTS controls
+            const ttsLabels = document.querySelectorAll('[data-translate="speed"]');
+            ttsLabels.forEach(label => {
+                label.textContent = t.speed;
+            });
+            
+            const volumeLabels = document.querySelectorAll('[data-translate="volume"]');
+            volumeLabels.forEach(label => {
+                label.textContent = t.volume;
+            });
+            
+            const loadingVoicesOptions = document.querySelectorAll('[data-translate="loadingVoices"]');
+            loadingVoicesOptions.forEach(option => {
+                option.textContent = t.loadingVoices;
+            });
+            
+            // Update prompt text elements
+            const promptTextElements = document.querySelectorAll('[data-translate="waitingForAIInsights"]');
+            promptTextElements.forEach(element => {
+                element.textContent = t.waitingForAIInsights;
+            });
+            
+            const promptTriggerElements = document.querySelectorAll('[data-translate="noTriggersDetected"]');
+            promptTriggerElements.forEach(element => {
+                element.textContent = t.noTriggersDetected;
+            });
+            
+            const speakingElements = document.querySelectorAll('[data-translate="speaking"]');
+            speakingElements.forEach(element => {
+                element.textContent = t.speaking;
+            });
+            
+            // Update TTS button title
+            const ttsButton = document.querySelector('[data-translate-title="ttsToggleTitle"]');
+            if (ttsButton) {
+                ttsButton.title = t.ttsToggleTitle;
+            }
+            
+            // Update input title attributes
+            const speedSlider = document.querySelector('[data-translate-title="speechSpeed"]');
+            if (speedSlider) {
+                speedSlider.title = t.speechSpeed;
+            }
+            
+            const volumeSlider = document.querySelector('[data-translate-title="volume"]');
+            if (volumeSlider) {
+                volumeSlider.title = t.volume;
+            }
         }
 
         // Update metrics labels and subtitles
