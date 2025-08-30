@@ -2349,6 +2349,36 @@
             display: inline-block;
         }
         
+        /* STREAMER-OPTIMIZED STYLES for Live Assistant */
+        .actionable-prompt.streamer-optimized .prompt-text {
+            font-size: 2.2rem; /* Larger, easier to read at a glance */
+            font-weight: 700; /* Bolder for quick reading */
+            line-height: 1.4; /* Tighter line height for better readability */
+            letter-spacing: 0.5px; /* Better letter spacing */
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7); /* Stronger shadow for contrast */
+            max-width: 95%; /* Use more width */
+            margin: 0 auto 20px auto;
+        }
+        
+        /* Special styling for viewer engagement prompts */
+        .actionable-prompt.viewer-comprehensive.streamer-optimized .prompt-text {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Highlight the actionable part (tips) */
+        .actionable-prompt .prompt-text .actionable-tip {
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            text-shadow: none;
+        }
+        
         /* Mobile-optimized actionable prompt layout */
         @media (max-width: 768px) {
             .actionable-prompt {
@@ -2383,15 +2413,25 @@
                 letter-spacing: 0.5px;
             }
             
-            .prompt-trigger {
-                font-size: 0.9rem;
-                padding: 10px 16px;
-                text-align: center;
-                width: 100%;
-                margin-top: 0;
-                background: rgba(0, 0, 0, 0.3);
+            /* Mobile streamer optimization */
+            .actionable-prompt.streamer-optimized .prompt-text {
+                font-size: 1.8rem; /* Slightly larger on mobile for streamers */
+                line-height: 1.5; /* Better mobile line height */
+                padding: 15px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
                 border: 1px solid rgba(255, 255, 255, 0.2);
             }
+        }
+        
+        .prompt-trigger {
+            font-size: 0.9rem;
+            padding: 10px 16px;
+            text-align: center;
+            width: 100%;
+            margin-top: 0;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         /* Extra small mobile devices */
@@ -9195,7 +9235,7 @@
             }
         }
 
-        // Update actionable prompt display
+        // Update actionable prompt display - OPTIMIZED FOR STREAMER READABILITY
         function updateActionablePrompt(prompt) {
             const promptElement = document.getElementById('actionablePrompt');
             if (!prompt || !promptElement) return;
@@ -9204,8 +9244,35 @@
             const promptText = promptContent.querySelector('.prompt-text');
             const promptTrigger = promptElement.querySelector('.prompt-trigger');
             
-            // Display the main prompt message
-            promptText.textContent = prompt.message;
+            // Create streamer-friendly display content
+            let displayText = prompt.message;
+            let ttsText = prompt.message; // Text for TTS (streamer action only)
+            
+            // For comprehensive viewer prompts, extract the actionable part for TTS
+            if (prompt.source === 'viewer_specific_comprehensive' && prompt.engagementTips && prompt.engagementTips.length > 0) {
+                // Display: Welcome message + First engagement tip (concise for streamer)
+                const welcomeMsg = prompt.welcomeMessage || '';
+                const firstTip = prompt.engagementTips[0] || '';
+                
+                // Clean up the tip to remove markdown formatting for cleaner display
+                const cleanTip = firstTip.replace(/\*\*(.*?)\*\*/g, '$1').replace(/💡\s*\*\*Tip\*\*:\s*/, '💡 ');
+                
+                // Create a clean, streamer-friendly display format
+                displayText = `${welcomeMsg}\n\n${cleanTip}`;
+                
+                // TTS: Only read the actionable part (the tip, not the welcome)
+                ttsText = cleanTip.replace(/💡\s*/, '');
+            }
+            
+            // For other prompt types, ensure they're also streamer-friendly
+            if (prompt.source === 'ai_enhanced_legacy' || prompt.source === 'gemini') {
+                // Clean up any markdown formatting for better readability
+                displayText = prompt.message.replace(/\*\*(.*?)\*\*/g, '$1');
+                ttsText = displayText;
+            }
+            
+            // Display the optimized text
+            promptText.textContent = displayText;
             promptText.className = 'prompt-text';
             
             // Show a user-friendly trigger description with AI source info
@@ -9217,7 +9284,7 @@
                 triggerDescription = 'AI-Generated Suggestion';
             } else if (prompt.source === 'viewer_specific_comprehensive') {
                 sourceIcon = '👤';
-                triggerDescription = `Comprehensive Viewer Engagement for ${prompt.targetViewer || 'New Viewer'}`;
+                triggerDescription = `Viewer Engagement for ${prompt.targetViewer || 'New Viewer'}`;
             } else if (prompt.source === 'viewer_specific') {
                 sourceIcon = '👤';
                 triggerDescription = `Viewer Engagement Tip for ${prompt.targetViewer || 'New Viewer'}`;
@@ -9264,12 +9331,15 @@
                 promptElement.classList.add('fallback-system');
             }
             
-            // Speak the prompt using TTS if enabled
-            if (ttsEnabled && prompt.message) {
-                speakText(prompt.message, prompt.priority || 'medium');
+            // Add streamer-optimized styling for better readability
+            promptElement.classList.add('streamer-optimized');
+            
+            // Speak the TTS-optimized text (streamer action only)
+            if (ttsEnabled && ttsText) {
+                speakText(ttsText, prompt.priority || 'medium');
             }
             
-            console.log('🎯 Updated actionable prompt:', prompt.message, 'Source:', prompt.source);
+            console.log('🎯 Updated actionable prompt:', displayText, 'TTS:', ttsText, 'Source:', prompt.source);
         }
         
         // Add prompt to history with user-friendly display
