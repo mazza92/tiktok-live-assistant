@@ -513,53 +513,63 @@ function updateViewerActivity(userId, activityType = 'activity') {
     }
 }
 
-function updateViewerWatchTime() {
+// User-specific viewer watch time updates
+function updateViewerWatchTimeForUser(userId) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession || !userSession.metrics || !userSession.metrics.viewers) return;
+    
     const now = Date.now();
     
-    Object.values(metrics.viewers).forEach(viewer => {
-        if (viewer.isActive) {
+    Object.values(userSession.metrics.viewers).forEach(viewer => {
+        if (viewer.isActive && viewer.joinTime) {
             // Calculate watch time in seconds
             const watchTimeSeconds = Math.floor((now - viewer.joinTime) / 1000);
             viewer.watchTime = watchTimeSeconds;
         }
     });
     
-    // Update viewer statistics
-    updateViewerStats();
+    // Update viewer statistics for this user
+    updateViewerStatsForUser(userId);
 }
 
-function updateViewerStats() {
-    const activeViewers = Object.values(metrics.viewers).filter(v => v.isActive);
+function updateViewerStatsForUser(userId) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession || !userSession.metrics || !userSession.metrics.viewers) return;
+    
+    const activeViewers = Object.values(userSession.metrics.viewers).filter(v => v && v.isActive);
     
     if (activeViewers.length > 0) {
         // Calculate average watch time
-        const totalWatchTime = activeViewers.reduce((sum, v) => sum + v.watchTime, 0);
-        metrics.viewerStats.averageWatchTime = Math.floor(totalWatchTime / activeViewers.length);
+        const totalWatchTime = activeViewers.reduce((sum, v) => sum + (v.watchTime || 0), 0);
+        userSession.metrics.viewerStats.averageWatchTime = Math.floor(totalWatchTime / activeViewers.length);
         
         // Find longest watch time
-        metrics.viewerStats.longestWatchTime = Math.max(...activeViewers.map(v => v.watchTime));
+        userSession.metrics.viewerStats.longestWatchTime = Math.max(...activeViewers.map(v => v.watchTime || 0));
         
         // Categorize viewers by watch time
-        metrics.viewerStats.viewersByWatchTime = {
-            '0-5min': activeViewers.filter(v => v.watchTime < 300).length,
-            '5-15min': activeViewers.filter(v => v.watchTime >= 300 && v.watchTime < 900).length,
-            '15-30min': activeViewers.filter(v => v.watchTime >= 900 && v.watchTime < 1800).length,
-            '30min+': activeViewers.filter(v => v.watchTime >= 1800).length
+        userSession.metrics.viewerStats.viewersByWatchTime = {
+            '0-5min': activeViewers.filter(v => (v.watchTime || 0) < 300).length,
+            '5-15min': activeViewers.filter(v => (v.watchTime || 0) >= 300 && (v.watchTime || 0) < 900).length,
+            '15-30min': activeViewers.filter(v => (v.watchTime || 0) >= 900 && (v.watchTime || 0) < 1800).length,
+            '30min+': activeViewers.filter(v => (v.watchTime || 0) >= 1800).length
         };
     }
 }
 
-function removeInactiveViewers() {
-    const now = new Date();
+function removeInactiveViewersForUser(userId) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession || !userSession.metrics || !userSession.metrics.viewers) return;
+    
+    const now = Date.now();
     const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
     
-    Object.entries(metrics.viewers).forEach(([userId, viewer]) => {
-        if (viewer.isActive && (now - viewer.lastSeen) > inactiveThreshold) {
+    Object.entries(userSession.metrics.viewers).forEach(([viewerId, viewer]) => {
+        if (viewer && viewer.isActive && viewer.lastActivity && (now - viewer.lastActivity) > inactiveThreshold) {
             viewer.isActive = false;
-            console.log(`👤 [VIEWER] Viewer marked inactive: ${viewer.nickname} (Watch time: ${Math.floor(viewer.watchTime / 60)}m ${viewer.watchTime % 60}s)`);
+            console.log(`👤 [VIEWER] User ${userId} - Viewer marked inactive: ${viewer.username || viewerId} (Watch time: ${Math.floor((viewer.watchTime || 0) / 60)}m ${(viewer.watchTime || 0) % 60}s)`);
             
-            // Broadcast viewer left
-            broadcastEvent('viewerUpdate', {
+            // Broadcast viewer left to this specific user
+            broadcastEventToUser(userId, 'viewerUpdate', {
                 type: 'leave',
                 viewer: viewer
             });
@@ -3537,13 +3547,14 @@ setInterval(() => {
 
 // Set up periodic viewer watch time updates
 setInterval(() => {
-    updateViewerWatchTime();
-    removeInactiveViewers();
-    
-    // Broadcast updated viewer stats to each user with their specific metrics
+    // Update viewer watch time and remove inactive viewers for each user session
     const activeSessions = connectionManager.getActiveSessions();
     activeSessions.forEach(session => {
         if (session.metrics && session.userId) {
+            updateViewerWatchTimeForUser(session.userId);
+            removeInactiveViewersForUser(session.userId);
+            
+            // Broadcast updated viewer stats to each user with their specific metrics
             broadcastEventToUser(session.userId, 'viewerStats', {
                 totalUniqueViewers: session.metrics.viewerStats.totalUniqueViewers || 0,
                 averageWatchTime: session.metrics.viewerStats.averageWatchTime || 0,
@@ -4727,6 +4738,28 @@ function extractInitialRoomStateForUser(userId, state) {
         if (state.commentCount) {
             userSession.metrics.totalComments = state.commentCount;
         }
+        
+        // Initialize viewerStats if not already done
+        if (!userSession.metrics.viewerStats) {
+            userSession.metrics.viewerStats = {
+                totalUniqueViewers: 0,
+                averageWatchTime: 0,
+                longestWatchTime: 0,
+                viewersByWatchTime: {
+                    '0-5min': 0,
+                    '5-15min': 0,
+                    '15-30min': 0,
+                    '30min+': 0
+                }
+            };
+        }
+        
+        // Initialize viewers object if not already done
+        if (!userSession.metrics.viewers) {
+            userSession.metrics.viewers = {};
+        }
+        
+        console.log(`🔍 [ROOM INFO] User ${userId} - Initialized viewer tracking structures`);
     }
 }
 
@@ -4751,7 +4784,8 @@ function handleLikeEventForUser(userId, data) {
                 shares: 0,
                 watchTime: 0,
                 isActive: true,
-                lastActivity: Date.now()
+                lastActivity: Date.now(),
+                joinTime: Date.now()
             };
         }
         userSession.metrics.viewers[viewerId].likes++;
@@ -4790,7 +4824,8 @@ function handleGiftEventForUser(userId, data) {
                 shares: 0,
                 watchTime: 0,
                 isActive: true,
-                lastActivity: Date.now()
+                lastActivity: Date.now(),
+                joinTime: Date.now()
             };
         }
         userSession.metrics.viewers[viewerId].gifts++;
@@ -4829,7 +4864,8 @@ function handleCommentEventForUser(userId, data) {
                 shares: 0,
                 watchTime: 0,
                 isActive: true,
-                lastActivity: Date.now()
+                lastActivity: Date.now(),
+                joinTime: Date.now()
             };
         }
         userSession.metrics.viewers[viewerId].comments++;
@@ -4856,16 +4892,9 @@ function handleFollowEventForUser(userId, data) {
     userSession.metrics.sessionFollowersGained++;
     
     // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    sessionFollowersGained: userSession.metrics.sessionFollowersGained,
-                    timestamp: new Date()
-                }
-            }));
-        }
+    broadcastEventToUser(userId, 'metrics', {
+        sessionFollowersGained: userSession.metrics.sessionFollowersGained,
+        timestamp: new Date()
     });
 }
 
@@ -4876,17 +4905,34 @@ function handleShareEventForUser(userId, data) {
     // Update metrics for this user
     userSession.metrics.totalShares++;
     
-    // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    totalShares: userSession.metrics.totalShares,
-                    timestamp: new Date()
-                }
-            }));
+    // Update viewer-specific metrics
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (!userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId] = {
+                username: data.sender.uniqueId,
+                likes: 0,
+                gifts: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0,
+                isActive: true,
+                lastActivity: Date.now(),
+                joinTime: Date.now()
+            };
         }
+        userSession.metrics.viewers[viewerId].shares++;
+        userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+    }
+    
+    // Update viewerStats
+    userSession.metrics.viewerStats.totalUniqueViewers = Object.keys(userSession.metrics.viewers).length;
+    
+    // Send updated metrics to this user's dashboard
+    broadcastEventToUser(userId, 'metrics', {
+        totalShares: userSession.metrics.totalShares,
+        viewerStats: userSession.metrics.viewerStats,
+        timestamp: new Date()
     });
 }
 
@@ -4898,16 +4944,9 @@ function handleViewerCountUpdateForUser(userId, data) {
     userSession.metrics.currentViewerCount = data.viewerCount || 0;
     
     // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    currentViewerCount: userSession.metrics.currentViewerCount,
-                    timestamp: new Date()
-                }
-            }));
-        }
+    broadcastEventToUser(userId, 'viewerCount', { 
+        count: userSession.metrics.currentViewerCount,
+        timestamp: new Date()
     });
 }
 
