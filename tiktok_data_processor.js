@@ -3540,14 +3540,19 @@ setInterval(() => {
     updateViewerWatchTime();
     removeInactiveViewers();
     
-    // Broadcast updated viewer stats
-    broadcastEvent('viewerStats', {
-        totalUniqueViewers: metrics.viewerStats.totalUniqueViewers,
-        averageWatchTime: metrics.viewerStats.averageWatchTime,
-        longestWatchTime: metrics.viewerStats.longestWatchTime,
-        viewersByWatchTime: metrics.viewerStats.viewersByWatchTime,
-        activeViewers: Object.values(metrics.viewers).filter(v => v.isActive).length,
-        engagementRanking: getViewerEngagementRanking()
+    // Broadcast updated viewer stats to each user with their specific metrics
+    const activeSessions = connectionManager.getActiveSessions();
+    activeSessions.forEach(session => {
+        if (session.metrics && session.userId) {
+            broadcastEventToUser(session.userId, 'viewerStats', {
+                totalUniqueViewers: session.metrics.viewerStats.totalUniqueViewers || 0,
+                averageWatchTime: session.metrics.viewerStats.averageWatchTime || 0,
+                longestWatchTime: session.metrics.viewerStats.longestWatchTime || 0,
+                viewersByWatchTime: session.metrics.viewerStats.viewersByWatchTime || {},
+                activeViewers: Object.values(session.metrics.viewers || {}).filter(v => v && v.isActive).length,
+                engagementRanking: getViewerEngagementRankingForUser(session.userId)
+            });
+        }
     });
 }, 10000); // Update every 10 seconds
 
@@ -4643,6 +4648,16 @@ function setupTikTokEventHandlersForUser(userId) {
     connection.on('viewerCount', (data) => {
         handleViewerCountUpdateForUser(userId, data);
     });
+
+    // Member join event
+    connection.on('member', (data) => {
+        handleMemberJoinForUser(userId, data);
+    });
+
+    // Member leave event
+    connection.on('memberLeave', (data) => {
+        handleMemberLeaveForUser(userId, data);
+    });
 }
 
 // Reset metrics for a specific user session
@@ -4724,18 +4739,34 @@ function handleLikeEventForUser(userId, data) {
     userSession.metrics.totalLikes++;
     userSession.metrics.likesPerMinute++;
     
-    // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    totalLikes: userSession.metrics.totalLikes,
-                    likesPerMinute: userSession.metrics.likesPerMinute,
-                    timestamp: new Date()
-                }
-            }));
+    // Update viewer-specific metrics
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (!userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId] = {
+                username: data.sender.uniqueId,
+                likes: 0,
+                gifts: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0,
+                isActive: true,
+                lastActivity: Date.now()
+            };
         }
+        userSession.metrics.viewers[viewerId].likes++;
+        userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+    }
+    
+    // Update viewerStats
+    userSession.metrics.viewerStats.totalUniqueViewers = Object.keys(userSession.metrics.viewers).length;
+    
+    // Send updated metrics to this user's dashboard
+    broadcastEventToUser(userId, 'metrics', {
+        totalLikes: userSession.metrics.totalLikes,
+        likesPerMinute: userSession.metrics.likesPerMinute,
+        viewerStats: userSession.metrics.viewerStats,
+        timestamp: new Date()
     });
 }
 
@@ -4747,18 +4778,34 @@ function handleGiftEventForUser(userId, data) {
     userSession.metrics.totalGifts++;
     userSession.metrics.giftsPerMinute++;
     
-    // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    totalGifts: userSession.metrics.totalGifts,
-                    giftsPerMinute: userSession.metrics.giftsPerMinute,
-                    timestamp: new Date()
-                }
-            }));
+    // Update viewer-specific metrics
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (!userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId] = {
+                username: data.sender.uniqueId,
+                likes: 0,
+                gifts: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0,
+                isActive: true,
+                lastActivity: Date.now()
+            };
         }
+        userSession.metrics.viewers[viewerId].gifts++;
+        userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+    }
+    
+    // Update viewerStats
+    userSession.metrics.viewerStats.totalUniqueViewers = Object.keys(userSession.metrics.viewers).length;
+    
+    // Send updated metrics to this user's dashboard
+    broadcastEventToUser(userId, 'metrics', {
+        totalGifts: userSession.metrics.totalGifts,
+        giftsPerMinute: userSession.metrics.giftsPerMinute,
+        viewerStats: userSession.metrics.viewerStats,
+        timestamp: new Date()
     });
 }
 
@@ -4770,18 +4817,34 @@ function handleCommentEventForUser(userId, data) {
     userSession.metrics.totalComments++;
     userSession.metrics.commentsPerMinute++;
     
-    // Send updated metrics to this user's dashboard
-    wss.clients.forEach(client => {
-        if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'metrics',
-                data: {
-                    totalComments: userSession.metrics.totalComments,
-                    commentsPerMinute: userSession.metrics.commentsPerMinute,
-                    timestamp: new Date()
-                }
-            }));
+    // Update viewer-specific metrics
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (!userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId] = {
+                username: data.sender.uniqueId,
+                likes: 0,
+                gifts: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0,
+                isActive: true,
+                lastActivity: Date.now()
+            };
         }
+        userSession.metrics.viewers[viewerId].comments++;
+        userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+    }
+    
+    // Update viewerStats
+    userSession.metrics.viewerStats.totalUniqueViewers = Object.keys(userSession.metrics.viewers).length;
+    
+    // Send updated metrics to this user's dashboard
+    broadcastEventToUser(userId, 'metrics', {
+        totalComments: userSession.metrics.totalComments,
+        commentsPerMinute: userSession.metrics.commentsPerMinute,
+        viewerStats: userSession.metrics.viewerStats,
+        timestamp: new Date()
     });
 }
 
@@ -4846,4 +4909,114 @@ function handleViewerCountUpdateForUser(userId, data) {
             }));
         }
     });
+}
+
+// Handle member join for a specific user
+function handleMemberJoinForUser(userId, data) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession) return;
+    
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (!userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId] = {
+                username: data.sender.uniqueId,
+                likes: 0,
+                gifts: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0,
+                isActive: true,
+                lastActivity: Date.now(),
+                joinTime: Date.now()
+            };
+        } else {
+            userSession.metrics.viewers[viewerId].isActive = true;
+            userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+        }
+        
+        // Update viewerStats
+        userSession.metrics.viewerStats.totalUniqueViewers = Object.keys(userSession.metrics.viewers).length;
+        
+        // Send updated metrics
+        broadcastEventToUser(userId, 'viewerUpdate', {
+            username: data.sender.uniqueId,
+            action: 'joined',
+            totalViewers: userSession.metrics.viewerStats.totalUniqueViewers,
+            timestamp: new Date()
+        });
+    }
+}
+
+// Handle member leave for a specific user
+function handleMemberLeaveForUser(userId, data) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession) return;
+    
+    if (data.sender && data.sender.uniqueId) {
+        const viewerId = data.sender.uniqueId;
+        if (userSession.metrics.viewers[viewerId]) {
+            userSession.metrics.viewers[viewerId].isActive = false;
+            userSession.metrics.viewers[viewerId].lastActivity = Date.now();
+            
+            // Send updated metrics
+            broadcastEventToUser(userId, 'viewerUpdate', {
+                username: data.sender.uniqueId,
+                action: 'left',
+                totalViewers: userSession.metrics.viewerStats.totalUniqueViewers,
+                timestamp: new Date()
+            });
+        }
+    }
+}
+
+// Handle viewer count update for a specific user
+function handleViewerCountUpdateForUser(userId, data) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession) return;
+    
+    userSession.metrics.currentViewerCount = data.viewerCount || 0;
+    
+    // Send updated viewer count
+    broadcastEventToUser(userId, 'viewerCount', { 
+        count: userSession.metrics.currentViewerCount,
+        timestamp: new Date()
+    });
+}
+
+// Get viewer engagement ranking for a specific user
+function getViewerEngagementRankingForUser(userId) {
+    const userSession = connectionManager.getUserSession(userId);
+    if (!userSession || !userSession.metrics || !userSession.metrics.viewers) {
+        return [];
+    }
+    
+    const viewers = Object.values(userSession.metrics.viewers || {});
+    if (viewers.length === 0) return [];
+    
+    // Calculate engagement scores for each viewer
+    const viewerScores = viewers.map(viewer => {
+        const engagementScore = (
+            (viewer.likes * 1) +
+            (viewer.gifts * 5) +
+            (viewer.comments * 2) +
+            (viewer.shares * 3) +
+            (viewer.watchTime / 60) // Convert seconds to minutes for scoring
+        );
+        
+        return {
+            username: viewer.username,
+            engagementScore: Math.round(engagementScore),
+            likes: viewer.likes || 0,
+            gifts: viewer.gifts || 0,
+            comments: viewer.comments || 0,
+            shares: viewer.shares || 0,
+            watchTime: viewer.watchTime || 0
+        };
+    });
+    
+    // Sort by engagement score (highest first)
+    return viewerScores
+        .sort((a, b) => b.engagementScore - a.engagementScore)
+        .slice(0, 10); // Return top 10
 }
