@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quota Dashboard - TikTok Live Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .quota-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .quota-card .quota-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 20px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .quota-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .quota-bar .fill.warning {
+            background: linear-gradient(90deg, #FF9800, #FFC107);
+        }
+        
+        .quota-bar .fill.danger {
+            background: linear-gradient(90deg, #F44336, #E91E63);
+        }
+        
+        .quota-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .status-card {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+        
+        .status-card.quota-exceeded {
+            background: linear-gradient(135deg, #F44336 0%, #d32f2f 100%);
+        }
+        
+        .status-card.quota-warning {
+            background: linear-gradient(135deg, #FF9800 0%, #f57c00 100%);
+        }
+        
+        .info-card {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .card p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+        
+        .tips {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .tips h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .tips ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .tips li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+        
+        .tips li:last-child {
+            border-bottom: none;
+        }
+        
+        .tips li:before {
+            content: "💡 ";
+            margin-right: 10px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #f44336;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #4caf50;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .quota-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Quota Dashboard</h1>
+            <p>Monitor and manage your Google Generative AI API usage</p>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="card quota-card">
+                <h3>📊 Daily Quota Usage</h3>
+                <div class="quota-bar">
+                    <div class="fill" id="quotaFill" style="width: 0%"></div>
+                </div>
+                <div class="quota-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="dailyCount">0</div>
+                        <div class="stat-label">Used Today</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="remaining">0</div>
+                        <div class="stat-label">Remaining</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <div style="font-size: 1.2rem; margin-bottom: 5px;" id="percentageUsed">0%</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">of daily limit used</div>
+                </div>
+            </div>
+            
+            <div class="card status-card" id="statusCard">
+                <h3>✅ Status</h3>
+                <p id="statusMessage">Checking quota status...</p>
+                <p id="lastReset">Last reset: Unknown</p>
+                <button class="refresh-btn" onclick="refreshQuota()">🔄 Refresh Status</button>
+            </div>
+            
+            <div class="card info-card">
+                <h3>ℹ️ Quota Information</h3>
+                <p><strong>Free Tier Limit:</strong> 50 requests per day</p>
+                <p><strong>Current Limit:</strong> <span id="currentLimit">45</span> (conservative)</p>
+                <p><strong>Reset Time:</strong> Daily at midnight UTC</p>
+                <p><strong>Model:</strong> gemini-2.0-flash-exp</p>
+            </div>
+        </div>
+        
+        <div class="tips">
+            <h3>💡 Tips to Manage Your Quota</h3>
+            <ul>
+                <li><strong>Reduce Frequency:</strong> AI checks now run every 5-10 minutes instead of every 15-20 seconds</li>
+                <li><strong>Use Fallbacks:</strong> When quota is exceeded, the system automatically uses fallback prompts</li>
+                <li><strong>Monitor Usage:</strong> Check this dashboard regularly to track your daily consumption</li>
+                <li><strong>Upgrade Plan:</strong> Consider upgrading to a paid plan for higher limits if needed</li>
+                <li><strong>Optimize Triggers:</strong> AI prompts are only generated when truly needed</li>
+            </ul>
+        </div>
+        
+        <div id="messageContainer"></div>
+    </div>
+
+    <script>
+        let quotaData = null;
+        
+        // Function to refresh quota data
+        async function refreshQuota() {
+            try {
+                const response = await fetch('/api/ai-quota');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                quotaData = await response.json();
+                updateDashboard(quotaData);
+                showMessage('Quota status refreshed successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error fetching quota data:', error);
+                showMessage('Failed to fetch quota data. Make sure the server is running.', 'error');
+            }
+        }
+        
+        // Function to update the dashboard
+        function updateDashboard(data) {
+            if (data.status === 'not_initialized') {
+                document.getElementById('statusMessage').textContent = 'AI quota tracking not yet initialized';
+                document.getElementById('dailyCount').textContent = 'N/A';
+                document.getElementById('remaining').textContent = 'N/A';
+                document.getElementById('percentageUsed').textContent = 'N/A';
+                document.getElementById('quotaFill').style.width = '0%';
+                return;
+            }
+            
+            // Update quota stats
+            document.getElementById('dailyCount').textContent = data.dailyCount;
+            document.getElementById('remaining').textContent = data.remaining;
+            document.getElementById('percentageUsed').textContent = data.percentageUsed + '%';
+            document.getElementById('lastReset').textContent = 'Last reset: ' + data.lastReset;
+            document.getElementById('currentLimit').textContent = data.quotaLimit;
+            
+            // Update progress bar
+            const quotaFill = document.getElementById('quotaFill');
+            quotaFill.style.width = data.percentageUsed + '%';
+            
+            // Update status card
+            const statusCard = document.getElementById('statusCard');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            if (data.status === 'quota_exceeded') {
+                statusCard.className = 'card status-card quota-exceeded';
+                statusMessage.textContent = 'Daily quota exceeded! Using fallback system.';
+            } else if (data.percentageUsed >= 80) {
+                statusCard.className = 'card status-card quota-warning';
+                statusMessage.textContent = 'Quota usage is high. Consider reducing AI calls.';
+            } else {
+                statusCard.className = 'card status-card';
+                statusMessage.textContent = 'Quota available. AI service is active.';
+            }
+            
+            // Update progress bar color
+            quotaFill.className = 'fill';
+            if (data.percentageUsed >= 90) {
+                quotaFill.classList.add('danger');
+            } else if (data.percentageUsed >= 70) {
+                quotaFill.classList.add('warning');
+            }
+        }
+        
+        // Function to show messages
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            container.appendChild(messageDiv);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(refreshQuota, 30000);
+        
+        // Initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshQuota();
+        });
+    </script>
+</body>
+</html>

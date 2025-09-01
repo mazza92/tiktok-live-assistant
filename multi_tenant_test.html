@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tenant TikTok Live Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .user-session {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fafafa;
+        }
+        .user-session.connected {
+            border-color: #4CAF50;
+            background: #f1f8e9;
+        }
+        .user-session.connecting {
+            border-color: #FF9800;
+            background: #fff3e0;
+        }
+        .user-session.disconnected {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn-connect {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .metric {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status.connected { background: #4CAF50; color: white; }
+        .status.connecting { background: #FF9800; color: white; }
+        .status.disconnected { background: #f44336; color: white; }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-info { color: #2196F3; }
+        .log-success { color: #4CAF50; }
+        .log-error { color: #f44336; }
+        .log-warning { color: #FF9800; }
+    </style>
+</head>
+<body>
+    <h1>🎭 Multi-Tenant TikTok Live Test</h1>
+    <p>This page demonstrates how multiple users can connect to different TikTok streams simultaneously without interfering with each other.</p>
+    
+    <div class="container">
+        <h2>📊 Active Sessions</h2>
+        <div id="sessionsInfo">
+            <p>Loading sessions...</p>
+        </div>
+        <button onclick="refreshSessions()" class="btn-primary">🔄 Refresh Sessions</button>
+    </div>
+    
+    <div class="container">
+        <h2>➕ Create New User Session</h2>
+        <div class="input-group">
+            <input type="text" id="newUsername" placeholder="Enter TikTok username (e.g., username123)" />
+            <button onclick="createNewSession()" class="btn-connect">🚀 Create Session</button>
+        </div>
+    </div>
+    
+    <div id="userSessions">
+        <!-- User sessions will be dynamically added here -->
+    </div>
+    
+    <div class="container">
+        <h2>📝 System Logs</h2>
+        <div id="logs" class="logs"></div>
+        <button onclick="clearLogs()" class="btn-primary">🗑️ Clear Logs</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentUserId = null;
+        let userSessions = new Map();
+        
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}`);
+            
+            ws.onopen = function() {
+                log('WebSocket connected', 'success');
+                refreshSessions();
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    log('Error parsing WebSocket message: ' + error.message, 'error');
+                }
+            };
+            
+            ws.onclose = function() {
+                log('WebSocket disconnected', 'warning');
+                setTimeout(initWebSocket, 3000); // Reconnect after 3 seconds
+            };
+            
+            ws.onerror = function(error) {
+                log('WebSocket error: ' + error.message, 'error');
+            };
+        }
+        
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'metrics':
+                    updateUserMetrics(currentUserId, data.data);
+                    break;
+                case 'connected':
+                    log(`Connected to TikTok Live!`, 'success');
+                    updateUserStatus(currentUserId, 'connected');
+                    break;
+                case 'disconnected':
+                    log(`Disconnected from TikTok Live`, 'warning');
+                    updateUserStatus(currentUserId, 'disconnected');
+                    break;
+                case 'connectionError':
+                    log(`Connection error: ${data.data.error}`, 'error');
+                    updateUserStatus(currentUserId, 'disconnected');
+                    break;
+                case 'usernameChanged':
+                    log(`Username changed to: ${data.username}`, 'success');
+                    break;
+                case 'usernameChangeError':
+                    log(`Username change error: ${data.error}`, 'error');
+                    break;
+                default:
+                    log(`Received message: ${data.type}`, 'info');
+            }
+        }
+        
+        // Create a new user session
+        function createNewSession() {
+            const username = document.getElementById('newUsername').value.trim();
+            if (!username) {
+                alert('Please enter a TikTok username');
+                return;
+            }
+            
+            // Create a new user session div
+            const sessionId = 'session_' + Date.now();
+            const sessionDiv = document.createElement('div');
+            sessionDiv.id = sessionId;
+            sessionDiv.className = 'user-session disconnected';
+            sessionDiv.innerHTML = `
+                <h3>👤 User Session: ${sessionId}</h3>
+                <div class="status disconnected">Disconnected</div>
+                <div class="input-group">
+                    <input type="text" placeholder="TikTok username" value="${username}" />
+                    <button onclick="connectToTikTok('${sessionId}')" class="btn-connect">🔗 Connect</button>
+                    <button onclick="disconnectFromTikTok('${sessionId}')" class="btn-disconnect">🔌 Disconnect</button>
+                    <button onclick="removeSession('${sessionId}')" class="btn-disconnect">🗑️ Remove</button>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="${sessionId}_viewers">0</div>
+                        <div class="metric-label">Viewers</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="${sessionId}_likes">0</div>
+                        <div class="metric-label">Likes</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="${sessionId}_gifts">0</div>
+                        <div class="metric-label">Gifts</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="${sessionId}_comments">0</div>
+                        <div class="metric-label">Comments</div>
+                    </div>
+                </div>
+                <div class="logs" id="${sessionId}_logs" style="height: 100px;"></div>
+            `;
+            
+            document.getElementById('userSessions').appendChild(sessionDiv);
+            
+            // Store session info
+            userSessions.set(sessionId, {
+                username: username,
+                status: 'disconnected',
+                metrics: {
+                    viewers: 0,
+                    likes: 0,
+                    gifts: 0,
+                    comments: 0
+                }
+            });
+            
+            log(`Created new session: ${sessionId} for username: ${username}`, 'success');
+            refreshSessions();
+        }
+        
+        // Connect to TikTok for a specific session
+        function connectToTikTok(sessionId) {
+            const session = userSessions.get(sessionId);
+            if (!session) return;
+            
+            const usernameInput = document.querySelector(`#${sessionId} input[type="text"]`);
+            const username = usernameInput.value.trim();
+            
+            if (!username) {
+                alert('Please enter a TikTok username');
+                return;
+            }
+            
+            // Update session
+            session.username = username;
+            updateUserStatus(sessionId, 'connecting');
+            
+            // Send connection request via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                currentUserId = sessionId; // Set current user for this request
+                ws.send(JSON.stringify({
+                    type: 'changeUsername',
+                    username: username
+                }));
+                
+                log(`Session ${sessionId}: Connecting to @${username}...`, 'info');
+            } else {
+                log(`Session ${sessionId}: WebSocket not connected`, 'error');
+                updateUserStatus(sessionId, 'disconnected');
+            }
+        }
+        
+        // Disconnect from TikTok for a specific session
+        function disconnectFromTikTok(sessionId) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                currentUserId = sessionId;
+                ws.send(JSON.stringify({
+                    type: 'disconnectStream'
+                }));
+                
+                log(`Session ${sessionId}: Disconnecting...`, 'info');
+            }
+        }
+        
+        // Remove a session
+        function removeSession(sessionId) {
+            const sessionDiv = document.getElementById(sessionId);
+            if (sessionDiv) {
+                // Disconnect first if connected
+                if (userSessions.get(sessionId)?.status === 'connected') {
+                    disconnectFromTikTok(sessionId);
+                }
+                
+                sessionDiv.remove();
+                userSessions.delete(sessionId);
+                log(`Removed session: ${sessionId}`, 'info');
+                refreshSessions();
+            }
+        }
+        
+        // Update user status
+        function updateUserStatus(sessionId, status) {
+            const session = userSessions.get(sessionId);
+            if (!session) return;
+            
+            session.status = status;
+            
+            const sessionDiv = document.getElementById(sessionId);
+            if (sessionDiv) {
+                sessionDiv.className = `user-session ${status}`;
+                
+                const statusDiv = sessionDiv.querySelector('.status');
+                if (statusDiv) {
+                    statusDiv.className = `status ${status}`;
+                    statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                }
+            }
+        }
+        
+        // Update user metrics
+        function updateUserMetrics(sessionId, metrics) {
+            const session = userSessions.get(sessionId);
+            if (!session) return;
+            
+            // Update stored metrics
+            Object.assign(session.metrics, metrics);
+            
+            // Update UI
+            if (metrics.currentViewerCount !== undefined) {
+                document.getElementById(`${sessionId}_viewers`).textContent = metrics.currentViewerCount;
+            }
+            if (metrics.totalLikes !== undefined) {
+                document.getElementById(`${sessionId}_likes`).textContent = metrics.totalLikes;
+            }
+            if (metrics.totalGifts !== undefined) {
+                document.getElementById(`${sessionId}_gifts`).textContent = metrics.totalGifts;
+            }
+            if (metrics.totalComments !== undefined) {
+                document.getElementById(`${sessionId}_comments`).textContent = metrics.totalComments;
+            }
+        }
+        
+        // Refresh sessions info
+        async function refreshSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const sessionsInfo = document.getElementById('sessionsInfo');
+                    sessionsInfo.innerHTML = `
+                        <p><strong>Active Sessions:</strong> ${data.data.sessionCount}</p>
+                        <p><strong>Total WebSocket Clients:</strong> ${data.data.activeSessions.length}</p>
+                    `;
+                }
+            } catch (error) {
+                log('Error refreshing sessions: ' + error.message, 'error');
+            }
+        }
+        
+        // Logging functions
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        // Initialize when page loads
+        window.onload = function() {
+            initWebSocket();
+            log('Multi-tenant TikTok Live test page loaded', 'success');
+        };
+    </script>
+</body>
+</html>
