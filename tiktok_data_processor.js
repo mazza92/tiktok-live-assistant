@@ -2881,6 +2881,7 @@ function handleChatEventForSession(data, session) {
     });
     
     // Broadcast updated metrics immediately
+    console.log(`📊 [SESSION ${session.id}] Broadcasting updated metrics after chat - totalComments: ${session.metrics.totalComments}`);
     broadcastToSession(session, 'metrics', {
         currentViewerCount: session.metrics.currentViewerCount,
         totalLikes: session.metrics.totalLikes,
