@@ -3463,9 +3463,12 @@ function handleChatEventForSession(data, session) {
 
 function handleLikeEventForSession(data, session) {
     console.log(`❤️ [SESSION ${session.id}] Like event:`, data);
+    console.log(`❤️ [SESSION ${session.id}] Raw like data structure:`, JSON.stringify(data, null, 2));
     
     // Extract user information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
+    
+    console.log(`❤️ [SESSION ${session.id}] Extracted like user info:`, { userId, nickname });
     
     // Update session metrics
     session.metrics.totalLikes++;
@@ -3497,6 +3500,7 @@ function handleLikeEventForSession(data, session) {
 
 function handleGiftEventForSession(data, session) {
     console.log(`🎁 [SESSION ${session.id}] Gift event:`, data);
+    console.log(`🎁 [SESSION ${session.id}] Raw gift data structure:`, JSON.stringify(data, null, 2));
     
     // Extract gift information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
@@ -3504,6 +3508,8 @@ function handleGiftEventForSession(data, session) {
     const giftValue = data.giftValue || data.gift?.diamondCount || data.gift?.value || 1;
     const giftId = data.giftId || data.gift?.id || 'gift';
     const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
+    
+    console.log(`🎁 [SESSION ${session.id}] Extracted gift info:`, { userId, nickname, giftName, giftValue, giftId, profilePicture });
     
     // Update session metrics
     session.metrics.totalGifts++;
