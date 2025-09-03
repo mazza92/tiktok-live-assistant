@@ -374,8 +374,8 @@ function extractInitialRoomState(state) {
         
         console.log('✅ [ROOM STATE] Initial room state extraction complete');
         
-        // Broadcast updated metrics to dashboard if we found any data
-        if (initialLikes > 0 || initialGifts > 0 || initialComments > 0 || initialViewers > 0) {
+        // Broadcast updated metrics to dashboard if we found any data (only if no sessions active)
+        if (userSessions.size === 0 && (initialLikes > 0 || initialGifts > 0 || initialComments > 0 || initialViewers > 0)) {
             broadcastMetrics();
         }
         
@@ -977,8 +977,10 @@ function extractRoomInfoTotals(roomInfo) {
         
         console.log('✅ [ROOM INFO] Room info totals extraction complete');
         
-        // Broadcast updated metrics to dashboard
-        broadcastMetrics();
+        // Broadcast updated metrics to dashboard (only if no sessions active)
+        if (userSessions.size === 0) {
+            broadcastMetrics();
+        }
         
     } catch (error) {
         console.error('❌ [ROOM INFO] Error extracting room info totals:', error);
@@ -4641,8 +4643,10 @@ function setCurrentRoomTotals(likes = null, gifts = null, comments = null, viewe
         console.log(`🎯 [MANUAL OVERRIDE] Set current viewer count: ${viewers.toLocaleString()}`);
     }
     
-    // Broadcast updated metrics to dashboard
-    broadcastMetrics();
+    // Broadcast updated metrics to dashboard (only if no sessions active)
+    if (userSessions.size === 0) {
+        broadcastMetrics();
+    }
     console.log('✅ [MANUAL OVERRIDE] Room totals updated and broadcasted');
 }
 
