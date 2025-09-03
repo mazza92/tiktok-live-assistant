@@ -3236,8 +3236,6 @@ function updateSessionPerMinuteMetrics(session) {
 function generateSessionEngagementRanking(session) {
     const viewers = Object.values(session.metrics.viewers || {});
     
-    console.log(`🏆 [SESSION ${session.id}] Generating engagement ranking for ${viewers.length} viewers`);
-    
     if (viewers.length === 0) {
         session.metrics.viewerStats.engagementRanking = [];
         return;
@@ -3252,13 +3250,11 @@ function generateSessionEngagementRanking(session) {
                                 (viewer.totalShares || 0) * 3 +
                                 (viewer.totalDiamonds || 0) * 0.1;
         
-        // Watch time score (1 point per minute watched)
-        const watchTimeScore = Math.floor((viewer.watchTime || 0) / 60);
+        // Watch time score (1 point per 10 seconds watched, minimum 1 point for any watch time)
+        const watchTimeScore = Math.max(1, Math.floor((viewer.watchTime || 0) / 10));
         
         // Total engagement score
         const engagementScore = interactionScore + watchTimeScore;
-        
-        console.log(`🏆 [SESSION ${session.id}] Viewer ${viewer.nickname}: interactionScore=${interactionScore}, watchTimeScore=${watchTimeScore}, totalScore=${engagementScore}`);
         
         return {
             nickname: viewer.nickname,
@@ -3294,7 +3290,11 @@ function calculateSessionViewerRetention(session) {
     const retentionRate = currentViewers / totalUniqueViewers;
     
     // Cap at 100% to avoid unrealistic percentages
-    return Math.min(retentionRate, 1.0);
+    const cappedRate = Math.min(retentionRate, 1.0);
+    
+    console.log(`📊 [SESSION ${session.id}] Retention calculation: currentViewers=${currentViewers}, totalUniqueViewers=${totalUniqueViewers}, rate=${(cappedRate * 100).toFixed(1)}%`);
+    
+    return cappedRate;
 }
 
 // Calculate entertainment metrics for a specific session
@@ -3332,7 +3332,6 @@ function calculateSessionEntertainmentMetrics(session) {
 // Session-specific event handlers
 function handleChatEventForSession(data, session) {
     console.log(`💬 [SESSION ${session.id}] Chat event:`, data);
-    console.log(`💬 [SESSION ${session.id}] Raw data structure:`, JSON.stringify(data, null, 2));
     
     // Extract user information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
