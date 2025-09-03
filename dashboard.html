@@ -6117,8 +6117,12 @@
                                 break;
                             case 'metrics':
                                 // Only update metrics if this is for our session
+                                console.log('📊 [FRONTEND] Metrics received - currentSessionId:', window.currentSessionId, 'messageSessionId:', message.sessionId);
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
+                                    console.log('📊 [FRONTEND] Processing metrics for session:', message.sessionId);
                                     updateMetrics(message.data);
+                                } else {
+                                    console.log('📊 [FRONTEND] Ignoring metrics - session mismatch');
                                 }
                                 break;
                             case 'chat':
