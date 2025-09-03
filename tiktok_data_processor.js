@@ -3148,6 +3148,36 @@ function trackViewerForSession(userId, nickname, profilePic, session) {
     updateSessionViewerStats(session);
 }
 
+// Update viewer activity for a specific session
+function updateSessionViewerActivity(userId, activityType, session) {
+    if (!session.metrics.viewers[userId]) return;
+    
+    const now = new Date();
+    session.metrics.viewers[userId].lastSeen = now;
+    
+    // Update activity-specific counters
+    switch (activityType) {
+        case 'like':
+            session.metrics.viewers[userId].totalLikes++;
+            break;
+        case 'gift':
+            session.metrics.viewers[userId].totalGifts++;
+            break;
+        case 'comment':
+            session.metrics.viewers[userId].totalComments++;
+            break;
+        case 'follow':
+            session.metrics.viewers[userId].isFollower = true;
+            session.metrics.viewers[userId].followTime = now;
+            break;
+        case 'share':
+            session.metrics.viewers[userId].totalShares++;
+            break;
+    }
+    
+    console.log(`👤 [SESSION ${session.id}] Updated ${activityType} for ${session.metrics.viewers[userId].nickname}: ${activityType}s=${session.metrics.viewers[userId][`total${activityType.charAt(0).toUpperCase() + activityType.slice(1)}s`] || session.metrics.viewers[userId].isFollower}`);
+}
+
 // Update viewer stats for a specific session
 function updateSessionViewerStats(session) {
     // Ensure viewers object exists
@@ -3319,32 +3349,48 @@ function generateSessionEngagementRanking(session) {
         return;
     }
     
-    // Calculate engagement score for each viewer
+    console.log(`🏆 [SESSION ${session.id}] Calculating engagement ranking for ${viewers.length} viewers`);
+    
+    // Calculate engagement score for each viewer using the same system as global
     const engagementData = viewers.map(viewer => {
-        // Base engagement score from interactions
-        const interactionScore = (viewer.totalLikes || 0) * 1 + 
-                                (viewer.totalComments || 0) * 2 + 
-                                (viewer.totalGifts || 0) * 5 + 
-                                (viewer.totalShares || 0) * 3 +
-                                (viewer.totalDiamonds || 0) * 0.1;
+        // Use the same scoring system as getViewerEngagementRanking
+        const likesScore = (viewer.totalLikes || 0) * 8;
+        const giftsScore = (viewer.totalGifts || 0) * 50;
+        const commentsScore = (viewer.totalComments || 0) * 15;
+        const sharesScore = (viewer.totalShares || 0) * 20;
+        const diamondsScore = (viewer.totalDiamonds || 0) * 1;
+        const watchTimeScore = (viewer.watchTime || 0) * 0.0001;
         
-        // Watch time score (1 point per 10 seconds watched, minimum 1 point for any watch time)
-        const watchTimeScore = Math.max(1, Math.floor((viewer.watchTime || 0) / 10));
+        // Calculate total engagement score
+        const engagementScore = likesScore + giftsScore + commentsScore + sharesScore + diamondsScore + watchTimeScore;
         
-        // Total engagement score
-        const engagementScore = interactionScore + watchTimeScore;
+        // Calculate engagement multiplier based on activity diversity
+        let engagementMultiplier = 1.0;
+        const hasLikes = (viewer.totalLikes || 0) > 0;
+        const hasGifts = (viewer.totalGifts || 0) > 0;
+        const hasComments = (viewer.totalComments || 0) > 0;
+        const hasShares = (viewer.totalShares || 0) > 0;
+        
+        // Bonus for multiple types of engagement
+        const engagementTypes = [hasLikes, hasGifts, hasComments, hasShares].filter(Boolean).length;
+        if (engagementTypes >= 3) engagementMultiplier = 1.5;
+        else if (engagementTypes >= 2) engagementMultiplier = 1.25;
+        
+        const finalScore = engagementScore * engagementMultiplier;
         
         return {
             nickname: viewer.nickname,
             userId: viewer.userId,
-            engagementScore: engagementScore,
+            engagementScore: finalScore,
             totalLikes: viewer.totalLikes || 0,
             totalComments: viewer.totalComments || 0,
             totalGifts: viewer.totalGifts || 0,
             totalShares: viewer.totalShares || 0,
             totalDiamonds: viewer.totalDiamonds || 0,
             watchTime: viewer.watchTime || 0,
-            isActive: viewer.isActive || false
+            isActive: viewer.isActive || false,
+            isFollower: viewer.isFollower || false,
+            followTime: viewer.followTime
         };
     });
     
@@ -3353,6 +3399,8 @@ function generateSessionEngagementRanking(session) {
     
     // Take top 10 most engaged viewers
     session.metrics.viewerStats.engagementRanking = engagementData.slice(0, 10);
+    
+    console.log(`🏆 [SESSION ${session.id}] Top 5 engagement scores:`, engagementData.slice(0, 5).map(v => `${v.nickname}: ${v.engagementScore.toFixed(1)}`));
 }
 
 // Calculate viewer retention rate for a specific session
@@ -3425,6 +3473,9 @@ function handleChatEventForSession(data, session) {
     // Track viewer activity for session
     trackViewerForSession(userId, nickname, profilePicture, session);
     
+    // Update individual user activity counts
+    updateSessionViewerActivity(userId, 'comment', session);
+    
     // Process sentiment
     if (data.comment) {
         const sentimentResult = sentiment.analyze(data.comment);
@@ -3495,6 +3546,12 @@ function handleLikeEventForSession(data, session) {
         session.metrics.userLikeCounts[nickname] = (session.metrics.userLikeCounts[nickname] || 0) + 1;
     }
     
+    // Track viewer activity for session
+    trackViewerForSession(userId, nickname, data.profilePictureUrl, session);
+    
+    // Update individual user activity counts
+    updateSessionViewerActivity(userId, 'like', session);
+    
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
     
@@ -3548,6 +3605,15 @@ function handleGiftEventForSession(data, session) {
     // Track viewer activity for session
     trackViewerForSession(userId, nickname, profilePicture, session);
     
+    // Update individual user activity counts
+    updateSessionViewerActivity(userId, 'gift', session);
+    
+    // Update viewer's diamond count
+    if (session.metrics.viewers[userId]) {
+        session.metrics.viewers[userId].totalDiamonds += giftValue;
+        session.metrics.viewers[userId].totalGiftValue += giftValue * 0.0127; // Convert diamonds to USD
+    }
+    
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
     
@@ -3594,6 +3660,12 @@ function handleFollowEventForSession(data, session) {
     // Update session metrics
     session.metrics.sessionFollowersGained++;
     session.metrics.lastActivity = Date.now();
+    
+    // Track viewer activity for session
+    trackViewerForSession(userId, nickname, data.profilePictureUrl, session);
+    
+    // Update individual user activity counts
+    updateSessionViewerActivity(userId, 'follow', session);
     
     // Add to new followers list
     if (!session.metrics.newFollowers) {
