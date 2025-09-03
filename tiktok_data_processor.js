@@ -2653,8 +2653,35 @@ function cleanupMemory() {
     console.log('🧹 [MEMORY] Cleanup completed');
 }
 
+// Cleanup expired connections from cache
+function cleanupExpiredConnections() {
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    for (const [key, cachedConnection] of connectionCache.entries()) {
+        if ((now - cachedConnection.timestamp) > CONNECTION_CACHE_DURATION) {
+            try {
+                if (cachedConnection.connection) {
+                    cachedConnection.connection.disconnect();
+                }
+            } catch (error) {
+                console.log('⚠️ [CACHE] Error disconnecting cached connection:', error.message);
+            }
+            connectionCache.delete(key);
+            cleanedCount++;
+        }
+    }
+    
+    if (cleanedCount > 0) {
+        console.log(`🧹 [CACHE] Cleaned up ${cleanedCount} expired connections`);
+    }
+}
+
 // Run memory cleanup every 5 minutes
 setInterval(cleanupMemory, 5 * 60 * 1000);
+
+// Set up periodic cleanup of expired connections
+setInterval(cleanupExpiredConnections, 2 * 60 * 1000); // Every 2 minutes
 
 // Multi-user session management
 const userSessions = new Map(); // sessionId -> { connection, metrics, username, wsClients }
@@ -2820,8 +2847,15 @@ let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const reconnectDelay = 5000; // 5 seconds
 
-// Session-aware connection management
-async function connectToTikTokForSession(session) {
+// Rate limiting and retry management
+const connectionAttempts = new Map(); // Track connection attempts per session
+const connectionCache = new Map(); // Cache connections to reuse them
+const MAX_RETRY_ATTEMPTS = 5;
+const BASE_RETRY_DELAY = 30000; // 30 seconds base delay
+const CONNECTION_CACHE_DURATION = 300000; // 5 minutes cache duration
+
+// Session-aware connection management with rate limiting bypass
+async function connectToTikTokForSession(session, retryAttempt = 0) {
     if (session.isConnecting) return;
     
     // Check if username is set
@@ -2830,12 +2864,34 @@ async function connectToTikTokForSession(session) {
         return;
     }
     
+    // Check if we've exceeded retry attempts
+    if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
+        console.error(`❌ [SESSION ${session.id}] Max retry attempts reached for ${session.username}`);
+        return;
+    }
+    
     session.isConnecting = true;
-    console.log(`🔗 [SESSION ${session.id}] Attempting to connect to TikTok Live: ${session.username}`);
+    console.log(`🔗 [SESSION ${session.id}] Attempting to connect to TikTok Live: ${session.username} (Attempt ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})`);
     
     try {
-        session.connection = new WebcastPushConnection(session.username, {
-            requestPollingIntervalMs: 3000,
+        // Check if we have a cached connection for this username
+        const cacheKey = session.username;
+        const cachedConnection = connectionCache.get(cacheKey);
+        const now = Date.now();
+        
+        if (cachedConnection && (now - cachedConnection.timestamp) < CONNECTION_CACHE_DURATION) {
+            console.log(`♻️ [SESSION ${session.id}] Reusing cached connection for ${session.username}`);
+            session.connection = cachedConnection.connection;
+        } else {
+            // Add random delay to avoid rate limiting (0-5 seconds)
+            const randomDelay = Math.random() * 5000;
+            if (randomDelay > 0) {
+                console.log(`⏳ [SESSION ${session.id}] Adding random delay: ${randomDelay.toFixed(0)}ms`);
+                await new Promise(resolve => setTimeout(resolve, randomDelay));
+            }
+            
+            session.connection = new WebcastPushConnection(session.username, {
+            requestPollingIntervalMs: 3000 + Math.random() * 2000, // Randomize polling interval
             sessionId: undefined,
             clientParams: {
                 "app_language": "en-US",
@@ -2863,6 +2919,14 @@ async function connectToTikTokForSession(session) {
         
         // Connect to the live stream
         await session.connection.connect();
+        
+            // Cache the connection for reuse
+            connectionCache.set(cacheKey, {
+                connection: session.connection,
+                timestamp: now
+            });
+            console.log(`💾 [SESSION ${session.id}] Cached connection for ${session.username}`);
+        }
         
     } catch (error) {
         console.error(`❌ [SESSION ${session.id}] Failed to connect:`, error);
@@ -2951,6 +3015,60 @@ function setupSessionEventHandlers(session) {
     // Add catch-all event handler to see what other events are available
     connection.on('*', (eventName, data) => {
         console.log(`🔍 [SESSION ${session.id}] Received event: ${eventName}`, data);
+    });
+
+    // Add error handling with retry logic
+    connection.on('error', (error) => {
+        console.error(`❌ [SESSION ${session.id}] Connection error:`, error);
+        session.isConnecting = false;
+        
+        // Check if it's a rate limiting error
+        if (error.message && (error.message.includes('Rate Limited') || error.message.includes('rate_limit'))) {
+            console.log(`⏳ [SESSION ${session.id}] Rate limit detected, implementing exponential backoff...`);
+            
+            // Calculate exponential backoff delay
+            const backoffDelay = BASE_RETRY_DELAY * Math.pow(2, retryAttempt);
+            const jitter = Math.random() * 10000; // Add up to 10 seconds of jitter
+            const totalDelay = backoffDelay + jitter;
+            
+            console.log(`⏳ [SESSION ${session.id}] Retrying in ${Math.round(totalDelay/1000)}s (attempt ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})`);
+            
+            // Schedule retry with exponential backoff
+            setTimeout(async () => {
+                if (!session.isConnecting) {
+                    await connectToTikTokForSession(session, retryAttempt + 1);
+                }
+            }, totalDelay);
+            
+            // Notify frontend about rate limiting
+            broadcastToSession(session, 'rateLimited', {
+                message: `Rate limited. Retrying in ${Math.round(totalDelay/1000)} seconds...`,
+                retryAttempt: retryAttempt + 1,
+                maxAttempts: MAX_RETRY_ATTEMPTS,
+                delay: totalDelay
+            });
+        } else {
+            // For other errors, use standard retry logic
+            if (retryAttempt < MAX_RETRY_ATTEMPTS) {
+                const retryDelay = 5000 + (retryAttempt * 2000); // 5s, 7s, 9s, 11s, 13s
+                console.log(`🔄 [SESSION ${session.id}] Retrying connection in ${retryDelay/1000}s...`);
+                
+                setTimeout(async () => {
+                    if (!session.isConnecting) {
+                        await connectToTikTokForSession(session, retryAttempt + 1);
+                    }
+                }, retryDelay);
+            } else {
+                console.error(`❌ [SESSION ${session.id}] Max retry attempts reached for connection error`);
+            }
+        }
+        
+        // Broadcast error to frontend
+        broadcastToSession(session, 'connectionError', {
+            error: error.message,
+            retryAttempt: retryAttempt + 1,
+            maxAttempts: MAX_RETRY_ATTEMPTS
+        });
     });
 }
 

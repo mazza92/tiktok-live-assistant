@@ -6279,6 +6279,13 @@
                                 }
                                 
                                 alert(alertMessage);
+                                break;
+                            case 'rateLimited':
+                                console.log('⏳ Rate limit notification:', message.data);
+                                // Show rate limit notification to user
+                                const rateLimitMessage = `Rate Limited: ${message.data.message}\n\nAttempt ${message.data.retryAttempt}/${message.data.maxAttempts}`;
+                                alert(rateLimitMessage);
+                                break;
                                 
                                 // Clear restoration flag if we were restoring
                                 if (window.isRestoringConnection) {
