@@ -5245,6 +5245,16 @@ setInterval(() => {
             // Calculate viewer retention
             const retentionRate = calculateSessionViewerRetention(session);
             
+            // Ensure all fields are properly initialized before broadcasting
+            ensureSessionMetricsFields(session);
+            
+            // Debug: Check if fields are properly initialized
+            console.log(`📊 [SESSION ${session.id}] Metrics before broadcast:`, {
+                totalGiftDiamonds: session.metrics.totalGiftDiamonds,
+                totalGiftValue: session.metrics.totalGiftValue,
+                totalShares: session.metrics.totalShares
+            });
+            
             // Broadcast updated metrics
             broadcastToSession(session, 'metrics', {
                 currentViewerCount: session.metrics.currentViewerCount,
