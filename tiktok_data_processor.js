@@ -2577,10 +2577,15 @@ function generateSessionId() {
 }
 
 function createUserSession(username, wsClient) {
+    // Validate username
+    if (!username || typeof username !== 'string') {
+        throw new Error('Invalid username provided to createUserSession');
+    }
+    
     const sessionId = generateSessionId();
     const session = {
         id: sessionId,
-        username: username,
+        username: username.trim(),
         connection: null,
         isConnecting: false,
         reconnectAttempts: 0,
@@ -3345,10 +3350,22 @@ async function changeTikTokUsername(newUsername, ws) {
     try {
         console.log(`🔄 [USERNAME] Changing to ${newUsername}`);
         
-        // Validate username
-        if (!newUsername || newUsername.trim() === '') {
+        // Validate username with more defensive checks
+        if (!newUsername) {
+            throw new Error('Username is required');
+        }
+        
+        if (typeof newUsername !== 'string') {
+            throw new Error('Username must be a string');
+        }
+        
+        const trimmedUsername = newUsername.trim();
+        if (trimmedUsername === '') {
             throw new Error('Username cannot be empty');
         }
+        
+        // Use the trimmed username
+        newUsername = trimmedUsername;
         
         // Get or create session for this WebSocket client
         let session = getSessionByClient(ws);
@@ -4619,13 +4636,28 @@ wss.on('connection', (ws) => {
             switch (data.type) {
                 case 'changeUsername':
                     console.log('🔄 [WEBSOCKET] Username change request:', data.username);
+                    
+                    // Validate username data
+                    if (!data.username) {
+                        console.error('❌ [WEBSOCKET] No username provided in changeUsername request');
+                        ws.send(JSON.stringify({
+                            type: 'usernameChangeError',
+                            error: 'No username provided',
+                            username: data.username || 'undefined',
+                            timestamp: Date.now()
+                        }));
+                        break;
+                    }
+                    
                     try {
                         await changeTikTokUsername(data.username, ws);
                     } catch (error) {
                         console.error('❌ [WEBSOCKET] Username change error:', error);
                         ws.send(JSON.stringify({
                             type: 'usernameChangeError',
-                            data: { error: error.message }
+                            error: error.message,
+                            username: data.username,
+                            timestamp: Date.now()
                         }));
                     }
                     break;
