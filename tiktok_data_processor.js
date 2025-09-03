@@ -2313,9 +2313,18 @@ function calculateRetentionRate() {
 
 // Helper function to extract user information
 function getUserInfo(data) {
+    // Try multiple possible field names for user ID
+    const userId = data.uniqueId || data.userId || data.user?.uniqueId || data.user?.userId || 
+                   data.user?.id || data.id || 'Unknown';
+    
+    // Try multiple possible field names for nickname
+    const nickname = data.nickname || data.user?.nickname || data.user?.displayName || 
+                     data.displayName || data.user?.name || data.name || 
+                     data.user?.username || data.username || 'Anonymous';
+    
     return {
-        userId: data.uniqueId || data.userId || data.user?.uniqueId || data.user?.userId || 'Unknown',
-        nickname: data.nickname || data.user?.nickname || data.user?.displayName || data.displayName || 'Unknown'
+        userId: userId,
+        nickname: nickname
     };
 }
 
@@ -3227,6 +3236,8 @@ function updateSessionPerMinuteMetrics(session) {
 function generateSessionEngagementRanking(session) {
     const viewers = Object.values(session.metrics.viewers || {});
     
+    console.log(`🏆 [SESSION ${session.id}] Generating engagement ranking for ${viewers.length} viewers`);
+    
     if (viewers.length === 0) {
         session.metrics.viewerStats.engagementRanking = [];
         return;
@@ -3234,11 +3245,20 @@ function generateSessionEngagementRanking(session) {
     
     // Calculate engagement score for each viewer
     const engagementData = viewers.map(viewer => {
-        const engagementScore = (viewer.totalLikes || 0) * 1 + 
-                               (viewer.totalComments || 0) * 2 + 
-                               (viewer.totalGifts || 0) * 5 + 
-                               (viewer.totalShares || 0) * 3 +
-                               (viewer.totalDiamonds || 0) * 0.1;
+        // Base engagement score from interactions
+        const interactionScore = (viewer.totalLikes || 0) * 1 + 
+                                (viewer.totalComments || 0) * 2 + 
+                                (viewer.totalGifts || 0) * 5 + 
+                                (viewer.totalShares || 0) * 3 +
+                                (viewer.totalDiamonds || 0) * 0.1;
+        
+        // Watch time score (1 point per minute watched)
+        const watchTimeScore = Math.floor((viewer.watchTime || 0) / 60);
+        
+        // Total engagement score
+        const engagementScore = interactionScore + watchTimeScore;
+        
+        console.log(`🏆 [SESSION ${session.id}] Viewer ${viewer.nickname}: interactionScore=${interactionScore}, watchTimeScore=${watchTimeScore}, totalScore=${engagementScore}`);
         
         return {
             nickname: viewer.nickname,
@@ -3312,10 +3332,13 @@ function calculateSessionEntertainmentMetrics(session) {
 // Session-specific event handlers
 function handleChatEventForSession(data, session) {
     console.log(`💬 [SESSION ${session.id}] Chat event:`, data);
+    console.log(`💬 [SESSION ${session.id}] Raw data structure:`, JSON.stringify(data, null, 2));
     
     // Extract user information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
     const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
+    
+    console.log(`💬 [SESSION ${session.id}] Extracted user info:`, { userId, nickname, profilePicture });
     
     // Update session metrics
     session.metrics.totalComments++;
