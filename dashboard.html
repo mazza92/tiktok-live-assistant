@@ -5783,7 +5783,7 @@
                 }
             }
         }
-
+        
         // Update connection UI based on state
         function updateConnectionUI(state, username = '') {
             const connectBtn = document.getElementById('connectBtn');
@@ -6120,7 +6120,7 @@
                                 console.log('📊 [FRONTEND] Metrics received - currentSessionId:', window.currentSessionId, 'messageSessionId:', message.sessionId);
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
                                     console.log('📊 [FRONTEND] Processing metrics for session:', message.sessionId);
-                                    updateMetrics(message.data);
+                                updateMetrics(message.data);
                                 } else {
                                     console.log('📊 [FRONTEND] Ignoring metrics - session mismatch');
                                 }
@@ -6128,30 +6128,30 @@
                             case 'chat':
                                 // Only process chat if this is for our session
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
-                                    console.log('💬 Chat message:', message.data);
+                                console.log('💬 Chat message:', message.data);
                                     addActivityItem('💬', message.data.user, message.data.comment, message.data.sentimentScore, message.data.timestamp);
                                 }
                                 break;
                             case 'like':
                                 // Only process likes if this is for our session
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
-                                    console.log('❤️ Like event:', message.data);
-                                    const likeText = message.data.likeCount > 1 ? 
-                                        `sent ${message.data.likeCount} likes` : 
-                                        'sent a like';
+                                console.log('❤️ Like event:', message.data);
+                                const likeText = message.data.likeCount > 1 ? 
+                                    `sent ${message.data.likeCount} likes` : 
+                                    'sent a like';
                                     addActivityItem('❤️', message.data.user, likeText, null, message.data.timestamp);
                                 }
                                 break;
                             case 'gift':
                                 // Only process gifts if this is for our session
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
-                                    console.log('🎁 Gift event:', message.data);
+                                console.log('🎁 Gift event:', message.data);
                                     const giftName = message.data.gift || 'Unknown Gift';
                                     const diamondCount = message.data.value || 'unknown';
                                     addActivityItem('🎁', message.data.user, `sent ${giftName} (${diamondCount} diamonds)`, null, message.data.timestamp);
-                                    
-                                    // Show gift alert overlay
-                                    showGiftAlert(message.data);
+                                
+                                // Show gift alert overlay
+                                showGiftAlert(message.data);
                                 }
                                 break;
                             case 'share':
@@ -6220,21 +6220,21 @@
                                         console.log('⚠️ [SESSION] No sessionId in usernameChanged message');
                                     }
                                     
-                                    // Clear restoration flag if we were restoring
-                                    if (window.isRestoringConnection) {
-                                        console.log('✅ [STATE] Reconnection successful, clearing restoration flag');
-                                        window.isRestoringConnection = false;
-                                    }
-                                    
-                                    // Update UI to connected state
+                                                                    // Clear restoration flag if we were restoring
+                                if (window.isRestoringConnection) {
+                                    console.log('✅ [STATE] Reconnection successful, clearing restoration flag');
+                                    window.isRestoringConnection = false;
+                                }
+                                
+                                // Update UI to connected state
                                     updateConnectionUI('connected', message.username);
-                                    
-                                    // Save successful connection state
-                                    saveConnectionState({
-                                        isConnected: true,
+                                
+                                // Save successful connection state
+                                saveConnectionState({
+                                    isConnected: true,
                                         username: message.username,
                                         sessionId: message.sessionId,
-                                        timestamp: Date.now(),
+                                    timestamp: Date.now(),
                                     status: 'connected'
                                 });
                                 

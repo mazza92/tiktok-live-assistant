@@ -1,0 +1,5 @@
+[33meb9ddac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: Fix entertainment metrics calculation for sessions
+[33m9fb4b56[m fix: Fix Top Engaged Users showing 0 likes & gifts
+[33me69857d[m fix: Restore Live Assistant AI functionality for multi-user sessions
+[33m6590a6a[m fix: Fix gift profile images and chat activity undefined usernames
+[33m1ca141f[m fix: Fix gift alert display showing undefined undefined

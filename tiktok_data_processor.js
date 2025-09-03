@@ -3425,104 +3425,50 @@ function calculateSessionViewerRetention(session) {
 
 // Calculate entertainment metrics for a specific session
 function calculateSessionEntertainmentMetrics(session) {
-    const currentViewers = session.metrics.currentViewerCount || 1;
+    // Ensure metrics exist
+    ensureSessionMetricsFields(session);
     
-    // 1. ENGAGEMENT INTENSITY (30% weight) - Use per-minute metrics like global system
-    const likesPerViewer = (session.metrics.likesPerMinute || 0) / currentViewers;
-    const commentsPerViewer = (session.metrics.commentsPerMinute || 0) / currentViewers;
-    const giftsPerViewer = (session.metrics.giftsPerMinute || 0) / currentViewers;
+    const currentViewers = Math.max(session.metrics.currentViewerCount || 1, 1);
+    const totalLikes = session.metrics.totalLikes || 0;
+    const totalComments = session.metrics.totalComments || 0;
+    const totalGifts = session.metrics.totalGifts || 0;
+    const totalGiftDiamonds = session.metrics.totalGiftDiamonds || 0;
     
-    // Weight different engagement types (same as global system)
-    const weightedEngagement = (likesPerViewer * 0.4) + (commentsPerViewer * 0.4) + (giftsPerViewer * 0.2);
-    const engagementIntensity = Math.min(weightedEngagement / 0.5, 1);
+    // Calculate engagement intensity based on session metrics
+    const likesPerViewer = totalLikes / currentViewers;
+    const commentsPerViewer = totalComments / currentViewers;
+    const giftsPerViewer = totalGifts / currentViewers;
     
-    // 2. CONTENT RECEPTION (25% weight) - Enhanced calculation
-    let contentReception = 0;
+    // More comprehensive engagement calculation
+    const engagementIntensity = Math.min((likesPerViewer + commentsPerViewer + giftsPerViewer) / 5, 1);
     
-    // Sentiment quality (40% weight)
-    if (session.metrics.sentimentHistory && session.metrics.sentimentHistory.length >= 10) {
-        const recentSentiments = session.metrics.sentimentHistory.slice(-10);
-        const positiveComments = recentSentiments.filter(s => s > 0).length;
-        const sentimentQuality = positiveComments / recentSentiments.length;
-        contentReception += sentimentQuality * 0.4;
-    } else {
-        // Fallback to rolling sentiment
-        const sentimentScore = Math.max(0, Math.min(1, (session.metrics.rollingSentimentScore || 0) / 5 + 0.5));
-        contentReception += sentimentScore * 0.4;
+    // Calculate content reception based on sentiment (improved calculation)
+    let contentReception = 0.5; // Default neutral
+    if (session.metrics.rollingSentimentScore !== undefined && session.metrics.rollingSentimentScore !== 0) {
+        // Convert sentiment score (-1 to 1) to 0-1 scale, then to 0-1 for content reception
+        contentReception = Math.max(0, Math.min(1, (session.metrics.rollingSentimentScore + 1) / 2));
+    } else if (session.metrics.sentimentScore !== undefined && session.metrics.sentimentScore !== 0) {
+        // Fallback to current sentiment score
+        contentReception = Math.max(0, Math.min(1, (session.metrics.sentimentScore + 1) / 2));
     }
     
-    // Comment quality (30% weight) - check if we have recent comments
-    if (session.metrics.recentComments && session.metrics.recentComments.length >= 5) {
-        const recentComments = session.metrics.recentComments.slice(-5);
-        const qualityComments = recentComments.filter(c => 
-            c.comment && c.comment.length > 10 && !c.comment.includes('?') && !c.comment.includes('!')
-        ).length;
-        const commentQuality = qualityComments / recentComments.length;
-        contentReception += commentQuality * 0.3;
-    } else {
-        // Fallback based on comment rate
-        const commentQuality = Math.min((session.metrics.commentsPerMinute || 0) / 10, 1);
-        contentReception += commentQuality * 0.3;
-    }
+    // Calculate audience energy based on activity (improved formula)
+    const totalActivity = totalLikes + totalComments + totalGifts;
+    const activityScore = totalActivity / currentViewers;
+    const audienceEnergy = Math.min(activityScore / 10, 1); // More sensitive to activity
     
-    // Gift frequency (30% weight)
-    const giftFrequency = Math.min((session.metrics.giftsPerMinute || 0) / 10, 1);
-    contentReception += giftFrequency * 0.3;
+    // Calculate retention quality based on viewer count and engagement
+    const baseRetention = Math.min(currentViewers / 30, 1); // Lower threshold for better scoring
+    const engagementBonus = Math.min(totalActivity / (currentViewers * 5), 0.3); // Bonus for high engagement
+    const retentionQuality = Math.min(baseRetention + engagementBonus, 1);
     
-    contentReception = Math.min(contentReception, 1);
-    
-    // 3. AUDIENCE ENERGY (25% weight) - Enhanced calculation
-    let audienceEnergy = 0;
-    
-    // Rapid engagement (40% weight)
-    const rapidEngagement = Math.min((session.metrics.likesPerMinute + session.metrics.commentsPerMinute) / 50, 1);
-    audienceEnergy += rapidEngagement * 0.4;
-    
-    // Viewer growth momentum (30% weight) - use viewer history if available
-    if (session.metrics.viewerHistory && session.metrics.viewerHistory.length >= 5) {
-        const recentViewers = session.metrics.viewerHistory.slice(-5);
-        const growthMomentum = recentViewers[recentViewers.length - 1].count - recentViewers[0].count;
-        const normalizedGrowth = Math.min(Math.max(growthMomentum / 10, 0), 1);
-        audienceEnergy += normalizedGrowth * 0.3;
-    } else {
-        // Fallback based on current viewer count
-        const growthScore = Math.min(currentViewers / 100, 1);
-        audienceEnergy += growthScore * 0.3;
-    }
-    
-    // Active participation (30% weight)
-    const recentActivity = (session.metrics.recentComments?.length || 0) + (session.metrics.recentLikes?.length || 0);
-    const activeParticipation = Math.min(recentActivity / 20, 1);
-    audienceEnergy += activeParticipation * 0.3;
-    
-    audienceEnergy = Math.min(audienceEnergy, 1);
-    
-    // 4. RETENTION QUALITY (20% weight) - Enhanced calculation
-    let retentionQuality = 0;
-    
-    if (session.metrics.viewerHistory && session.metrics.viewerHistory.length >= 10) {
-        // Use stability analysis like global system
-        const recentViewers = session.metrics.viewerHistory.slice(-10);
-        const avgViewers = recentViewers.reduce((sum, entry) => sum + entry.count, 0) / recentViewers.length;
-        
-        // Calculate stability (less variance = better retention)
-        const variance = recentViewers.reduce((sum, entry) => sum + Math.pow(entry.count - avgViewers, 2), 0) / recentViewers.length;
-        const stability = Math.max(0, 1 - (variance / Math.pow(avgViewers, 2)));
-        
-        // Factor in viewer count (higher counts = better retention potential)
-        const countFactor = Math.min(avgViewers / 100, 1);
-        
-        retentionQuality = (stability * 0.7) + (countFactor * 0.3);
-    } else {
-        // Fallback based on current viewer count and session duration
-        const sessionDuration = (Date.now() - session.metrics.sessionStartTime) / (1000 * 60); // minutes
-        const stabilityScore = Math.min(sessionDuration / 30, 1); // More stable if session is longer
-        const countFactor = Math.min(currentViewers / 100, 1);
-        retentionQuality = (stabilityScore * 0.7) + (countFactor * 0.3);
-    }
-    
-    // Calculate final entertainment score (0-100) with same weights as global system
-    const entertainmentScore = Math.round((engagementIntensity * 30 + contentReception * 25 + audienceEnergy * 25 + retentionQuality * 20));
+    // Calculate final entertainment score (0-100) with improved weighting
+    const entertainmentScore = Math.round(
+        engagementIntensity * 35 +      // Increased weight for engagement
+        contentReception * 25 +         // Content reception
+        audienceEnergy * 25 +           // Audience energy
+        retentionQuality * 15           // Reduced weight for retention
+    );
     
     // Update session entertainment metrics
     session.metrics.entertainmentMetrics.entertainmentScore = entertainmentScore;
@@ -3531,7 +3477,7 @@ function calculateSessionEntertainmentMetrics(session) {
     session.metrics.entertainmentMetrics.audienceEnergy = audienceEnergy;
     session.metrics.entertainmentMetrics.retentionQuality = retentionQuality;
     
-    console.log(`🎭 [SESSION ${session.id}] Entertainment Score: ${entertainmentScore}/100 | Engagement: ${engagementIntensity.toFixed(2)} | Content: ${contentReception.toFixed(2)} | Energy: ${audienceEnergy.toFixed(2)} | Retention: ${retentionQuality.toFixed(2)}`);
+    console.log(`🎭 [SESSION ${session.id}] Entertainment Score: ${entertainmentScore}/100 | Engagement: ${engagementIntensity.toFixed(2)} | Content: ${contentReception.toFixed(2)} | Energy: ${audienceEnergy.toFixed(2)} | Retention: ${retentionQuality.toFixed(2)} | Viewers: ${currentViewers} | Activity: ${totalActivity}`);
 }
 
 // Session-specific event handlers
@@ -3555,7 +3501,7 @@ function handleChatEventForSession(data, session) {
     // Update individual user activity counts
     updateSessionViewerActivity(userId, 'comment', session);
     
-    // Process sentiment and store recent comments
+    // Process sentiment
     if (data.comment) {
         const sentimentResult = sentiment.analyze(data.comment);
         session.metrics.sentimentScore = sentimentResult.score;
@@ -3569,23 +3515,6 @@ function handleChatEventForSession(data, session) {
             session.metrics.sentimentHistory.shift();
         }
         session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
-        
-        // Store recent comments for entertainment calculation
-        if (!session.metrics.recentComments) {
-            session.metrics.recentComments = [];
-        }
-        const commentData = {
-            userId,
-            nickname,
-            comment: data.comment,
-            sentimentScore: sentimentResult.score,
-            timestamp: new Date(),
-            originalComment: data.comment
-        };
-        session.metrics.recentComments.unshift(commentData);
-        if (session.metrics.recentComments.length > 50) {
-            session.metrics.recentComments = session.metrics.recentComments.slice(0, 50);
-        }
         
         // Detect questions in comments for session
         const detectedQuestion = detectQuestionsForSession(data.comment, data.userId, data.nickname, session);
@@ -3647,20 +3576,6 @@ function handleLikeEventForSession(data, session) {
     
     // Update individual user activity counts
     updateSessionViewerActivity(userId, 'like', session);
-    
-    // Store recent likes for entertainment calculation
-    if (!session.metrics.recentLikes) {
-        session.metrics.recentLikes = [];
-    }
-    const likeData = {
-        userId,
-        nickname,
-        timestamp: new Date()
-    };
-    session.metrics.recentLikes.unshift(likeData);
-    if (session.metrics.recentLikes.length > 50) {
-        session.metrics.recentLikes = session.metrics.recentLikes.slice(0, 50);
-    }
     
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
@@ -3822,18 +3737,6 @@ function handleRoomUserEventForSession(data, session) {
     if (typeof data.viewerCount === 'number') {
         session.metrics.currentViewerCount = data.viewerCount;
         session.metrics.lastActivity = Date.now();
-        
-        // Store viewer history for entertainment calculation
-        if (!session.metrics.viewerHistory) {
-            session.metrics.viewerHistory = [];
-        }
-        session.metrics.viewerHistory.push({
-            count: data.viewerCount,
-            timestamp: Date.now()
-        });
-        if (session.metrics.viewerHistory.length > 100) {
-            session.metrics.viewerHistory = session.metrics.viewerHistory.slice(-100);
-        }
         
         // Broadcast updated viewer count
         broadcastToSession(session, 'viewerCount', { 
@@ -5491,6 +5394,9 @@ setInterval(() => {
             // Calculate viewer retention
             const retentionRate = calculateSessionViewerRetention(session);
             
+            // Calculate entertainment metrics
+            calculateSessionEntertainmentMetrics(session);
+            
             // Ensure all fields are properly initialized
             ensureSessionMetricsFields(session);
         }
@@ -5511,7 +5417,7 @@ setInterval(() => {
                 if (automatedPrompt) {
                     console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
                     broadcastToSession(session, 'automatedPrompt', automatedPrompt);
-                } else {
+        } else {
                     console.log(`🤖 [PERIODIC AI CHECK] No prompts triggered at this time`);
                 }
             }).catch(error => {
