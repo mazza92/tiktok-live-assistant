@@ -6209,9 +6209,9 @@
                                 updateNewFollowers(message.data);
                                 break;
                             case 'usernameChanged':
-                                console.log('🔄 Username changed:', message.data);
+                                console.log('🔄 Username changed:', message.username);
                                 console.log('🔄 [SESSION] Full usernameChanged message:', message);
-                                if (message.data && message.data.username) {
+                                if (message.username) {
                                     // Store session ID
                                     if (message.sessionId) {
                                         window.currentSessionId = message.sessionId;
@@ -6227,21 +6227,21 @@
                                     }
                                     
                                     // Update UI to connected state
-                                    updateConnectionUI('connected', message.data.username);
+                                    updateConnectionUI('connected', message.username);
                                     
                                     // Save successful connection state
                                     saveConnectionState({
                                         isConnected: true,
-                                        username: message.data.username,
+                                        username: message.username,
                                         sessionId: message.sessionId,
                                         timestamp: Date.now(),
                                     status: 'connected'
                                 });
                                 
                                 // Start monitoring for actual data to confirm connection is working
-                                startConnectionHealthCheck(message.data.username);
+                                startConnectionHealthCheck(message.username);
                                 
-                                addActivityItem('🔄', 'System', message.data.message || 'Username changed successfully', null, new Date());
+                                addActivityItem('🔄', 'System', message.message || 'Username changed successfully', null, new Date());
                                 } else {
                                     console.warn('⚠️ Username changed message missing data:', message);
                                     updateConnectionUI('connected', '');
