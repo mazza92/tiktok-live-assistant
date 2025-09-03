@@ -979,7 +979,7 @@ function extractRoomInfoTotals(roomInfo) {
         
         // Broadcast updated metrics to dashboard (only if no sessions active)
         if (userSessions.size === 0) {
-            broadcastMetrics();
+        broadcastMetrics();
         }
         
     } catch (error) {
@@ -2409,7 +2409,7 @@ function updatePerMinuteMetrics() {
     
     // Broadcast updated metrics to all connected clients (only if no sessions active)
     if (userSessions.size === 0) {
-        broadcastMetrics();
+    broadcastMetrics();
     }
 }
 
@@ -3095,8 +3095,81 @@ function updateSessionViewerStats(session) {
     }
 }
 
+// Ensure session metrics have all required fields (for existing sessions)
+function ensureSessionMetricsFields(session) {
+    // Ensure all required fields exist with proper defaults
+    if (session.metrics.totalGiftDiamonds === undefined) session.metrics.totalGiftDiamonds = 0;
+    if (session.metrics.totalGiftValue === undefined) session.metrics.totalGiftValue = 0;
+    if (session.metrics.totalShares === undefined) session.metrics.totalShares = 0;
+    if (session.metrics.sharesPerMinute === undefined) session.metrics.sharesPerMinute = 0;
+    if (session.metrics.followersGainsPerMinute === undefined) session.metrics.followersGainsPerMinute = 0;
+    if (session.metrics.giftsPerMinuteDiamonds === undefined) session.metrics.giftsPerMinuteDiamonds = 0;
+    if (session.metrics.giftsPerMinuteValue === undefined) session.metrics.giftsPerMinuteValue = 0;
+    
+    // Ensure per-minute tracking arrays exist
+    if (!session.metrics.likesInLastMinute) session.metrics.likesInLastMinute = [];
+    if (!session.metrics.giftsInLastMinute) session.metrics.giftsInLastMinute = [];
+    if (!session.metrics.commentsInLastMinute) session.metrics.commentsInLastMinute = [];
+    if (!session.metrics.sharesInLastMinute) session.metrics.sharesInLastMinute = [];
+    if (!session.metrics.followersGainedInLastMinute) session.metrics.followersGainedInLastMinute = [];
+    
+    // Ensure viewer stats structure is complete
+    if (!session.metrics.viewerStats) session.metrics.viewerStats = {};
+    if (!session.metrics.viewerStats.viewersByWatchTime) {
+        session.metrics.viewerStats.viewersByWatchTime = {
+            '0-5min': 0,
+            '5-15min': 0,
+            '15-30min': 0,
+            '30min+': 0
+        };
+    }
+    if (session.metrics.viewerStats.activeViewers === undefined) session.metrics.viewerStats.activeViewers = 0;
+    if (!session.metrics.viewerStats.engagementRanking) session.metrics.viewerStats.engagementRanking = [];
+    
+    // Ensure entertainment metrics exist
+    if (!session.metrics.entertainmentMetrics) {
+        session.metrics.entertainmentMetrics = {
+            entertainmentScore: 0,
+            engagementIntensity: 0,
+            contentReception: 0,
+            audienceEnergy: 0,
+            retentionQuality: 0
+        };
+    }
+    
+    // Ensure question detection exists
+    if (!session.metrics.questionDetection) {
+        session.metrics.questionDetection = {
+            pendingQuestions: [],
+            answeredQuestions: [],
+            questionStats: {
+                totalQuestions: 0,
+                answeredQuestions: 0,
+                unansweredQuestions: 0,
+                averageResponseTime: 0
+            }
+        };
+    }
+    
+    // Ensure predictive metrics exist
+    if (!session.metrics.predictiveMetrics) {
+        session.metrics.predictiveMetrics = {
+            churnRiskScore: 0,
+            monetizationOpportunityScore: 0,
+            engagementTrend: 'stable',
+            viewerRetentionRate: 0,
+            sentimentVolatility: 0,
+            peakEngagementTime: null,
+            recommendedActions: []
+        };
+    }
+}
+
 // Update per-minute metrics for a specific session
 function updateSessionPerMinuteMetrics(session) {
+    // Ensure all required fields exist first
+    ensureSessionMetricsFields(session);
+    
     const now = Date.now();
     const oneMinuteAgo = now - 60000;
     
@@ -3119,6 +3192,44 @@ function updateSessionPerMinuteMetrics(session) {
     session.metrics.giftsPerMinuteValue = session.metrics.giftsPerMinute * 10; // Rough estimate
     
     session.metrics.lastUpdate = new Date();
+}
+
+// Generate engagement ranking for a specific session
+function generateSessionEngagementRanking(session) {
+    const viewers = Object.values(session.metrics.viewers || {});
+    
+    if (viewers.length === 0) {
+        session.metrics.viewerStats.engagementRanking = [];
+        return;
+    }
+    
+    // Calculate engagement score for each viewer
+    const engagementData = viewers.map(viewer => {
+        const engagementScore = (viewer.totalLikes || 0) * 1 + 
+                               (viewer.totalComments || 0) * 2 + 
+                               (viewer.totalGifts || 0) * 5 + 
+                               (viewer.totalShares || 0) * 3 +
+                               (viewer.totalDiamonds || 0) * 0.1;
+        
+        return {
+            nickname: viewer.nickname,
+            userId: viewer.userId,
+            engagementScore: engagementScore,
+            totalLikes: viewer.totalLikes || 0,
+            totalComments: viewer.totalComments || 0,
+            totalGifts: viewer.totalGifts || 0,
+            totalShares: viewer.totalShares || 0,
+            totalDiamonds: viewer.totalDiamonds || 0,
+            watchTime: viewer.watchTime || 0,
+            isActive: viewer.isActive || false
+        };
+    });
+    
+    // Sort by engagement score (highest first)
+    engagementData.sort((a, b) => b.engagementScore - a.engagementScore);
+    
+    // Take top 10 most engaged viewers
+    session.metrics.viewerStats.engagementRanking = engagementData.slice(0, 10);
 }
 
 // Calculate entertainment metrics for a specific session
@@ -3191,7 +3302,8 @@ function handleChatEventForSession(data, session) {
         calculateSessionEntertainmentMetrics(session);
     }
     
-    // Update per-minute metrics
+    // Ensure all required fields exist and update per-minute metrics
+    ensureSessionMetricsFields(session);
     updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients
@@ -3247,7 +3359,8 @@ function handleLikeEventForSession(data, session) {
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
     
-    // Update per-minute metrics
+    // Ensure all required fields exist and update per-minute metrics
+    ensureSessionMetricsFields(session);
     updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients
@@ -3305,7 +3418,8 @@ function handleGiftEventForSession(data, session) {
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
     
-    // Update per-minute metrics
+    // Ensure all required fields exist and update per-minute metrics
+    ensureSessionMetricsFields(session);
     updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients with proper data
@@ -4761,7 +4875,7 @@ wss.on('connection', (ws) => {
                     // Validate username data
                     if (!data.username) {
                         console.error('❌ [WEBSOCKET] No username provided in changeUsername request');
-                        ws.send(JSON.stringify({
+                ws.send(JSON.stringify({
                             type: 'usernameChangeError',
                             error: 'No username provided',
                             username: data.username || 'undefined',
@@ -5036,7 +5150,7 @@ function setCurrentRoomTotals(likes = null, gifts = null, comments = null, viewe
     
     // Broadcast updated metrics to dashboard (only if no sessions active)
     if (userSessions.size === 0) {
-        broadcastMetrics();
+    broadcastMetrics();
     }
     console.log('✅ [MANUAL OVERRIDE] Room totals updated and broadcasted');
 }
@@ -5054,6 +5168,9 @@ setInterval(() => {
             
             // Update viewer stats
             updateSessionViewerStats(session);
+            
+            // Generate engagement ranking
+            generateSessionEngagementRanking(session);
             
             // Broadcast updated metrics
             broadcastToSession(session, 'metrics', {
@@ -5083,8 +5200,8 @@ setInterval(() => {
                 predictiveMetrics: session.metrics.predictiveMetrics,
                 sessionId: sessionId,
                 username: session.username,
-                timestamp: new Date()
-            });
-        }
+        timestamp: new Date()
+    });
+}
     });
 }, 5000); // Broadcast every 5 seconds
