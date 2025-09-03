@@ -2837,14 +2837,14 @@ function handleChatEventForSession(data, session) {
     
     // Process sentiment
     if (data.comment) {
-        const sentiment = sentimentAnalyzer.analyze(data.comment);
-        session.metrics.sentimentScore = sentiment.score;
+        const sentimentResult = sentiment.analyze(data.comment);
+        session.metrics.sentimentScore = sentimentResult.score;
         
         // Update rolling sentiment
         if (!session.metrics.sentimentHistory) {
             session.metrics.sentimentHistory = [];
         }
-        session.metrics.sentimentHistory.push(sentiment.score);
+        session.metrics.sentimentHistory.push(sentimentResult.score);
         if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
             session.metrics.sentimentHistory.shift();
         }
@@ -2986,13 +2986,13 @@ async function changeTikTokUsername(newUsername, ws) {
         } else {
             // Update existing session
             console.log(`🔄 [SESSION ${session.id}] Updating username from ${session.username} to ${newUsername}`);
-            
-            // Disconnect current connection if exists
+        
+        // Disconnect current connection if exists
             if (session.connection) {
                 console.log(`🔌 [SESSION ${session.id}] Disconnecting current TikTok connection...`);
-                try {
+            try {
                     session.connection.disconnect();
-                } catch (disconnectError) {
+            } catch (disconnectError) {
                     console.log('⚠️ [SESSION] Error during disconnect (continuing):', disconnectError.message);
                 }
                 session.connection = null;
@@ -4521,8 +4521,8 @@ setInterval(() => {
                 predictiveMetrics: session.metrics.predictiveMetrics,
                 sessionId: sessionId,
                 username: session.username,
-                timestamp: new Date()
-            });
-        }
+        timestamp: new Date()
+    });
+}
     });
 }, 5000); // Broadcast every 5 seconds
