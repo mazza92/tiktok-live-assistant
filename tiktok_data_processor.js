@@ -2407,8 +2407,10 @@ function updatePerMinuteMetrics() {
     // Update entertainment level when engagement metrics change
     calculateEntertainmentLevel();
     
-    // Broadcast updated metrics to all connected clients
-    broadcastMetrics();
+    // Broadcast updated metrics to all connected clients (only if no sessions active)
+    if (userSessions.size === 0) {
+        broadcastMetrics();
+    }
 }
 
 // Broadcast metrics to all connected WebSocket clients (legacy - only when no sessions active)
@@ -2655,12 +2657,20 @@ function createEmptyMetrics() {
         currentViewerCount: 0,
         totalLikes: 0,
         totalGifts: 0,
+        totalGiftDiamonds: 0,
+        totalGiftValue: 0,
         totalComments: 0,
+        totalShares: 0,
         likesPerMinute: 0,
         giftsPerMinute: 0,
+        giftsPerMinuteDiamonds: 0,
+        giftsPerMinuteValue: 0,
         commentsPerMinute: 0,
+        sharesPerMinute: 0,
+        followersGainsPerMinute: 0,
         sentimentScore: 0,
         rollingSentimentScore: 0,
+        sentimentHistory: [],
         keywordFrequency: {},
         userLikeCounts: {},
         viewers: {},
@@ -2668,7 +2678,13 @@ function createEmptyMetrics() {
             totalUniqueViewers: 0,
             averageWatchTime: 0,
             longestWatchTime: 0,
-            viewersByWatchTime: [],
+            viewersByWatchTime: {
+                '0-5min': 0,
+                '5-15min': 0,
+                '15-30min': 0,
+                '30min+': 0
+            },
+            activeViewers: 0,
             engagementRanking: []
         },
         newFollowers: [],
@@ -2692,12 +2708,21 @@ function createEmptyMetrics() {
         },
         predictiveMetrics: {
             churnRiskScore: 0,
+            monetizationOpportunityScore: 0,
             engagementTrend: 'stable',
+            viewerRetentionRate: 0,
+            sentimentVolatility: 0,
             peakEngagementTime: null,
             recommendedActions: []
         },
         sessionStartTime: Date.now(),
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
+        // Per-minute tracking arrays
+        likesInLastMinute: [],
+        giftsInLastMinute: [],
+        commentsInLastMinute: [],
+        sharesInLastMinute: [],
+        followersGainedInLastMinute: []
     };
 }
 
@@ -3070,6 +3095,32 @@ function updateSessionViewerStats(session) {
     }
 }
 
+// Update per-minute metrics for a specific session
+function updateSessionPerMinuteMetrics(session) {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+    
+    // Filter arrays to only include events from the last minute
+    session.metrics.likesInLastMinute = session.metrics.likesInLastMinute.filter(timestamp => timestamp > oneMinuteAgo);
+    session.metrics.giftsInLastMinute = session.metrics.giftsInLastMinute.filter(timestamp => timestamp > oneMinuteAgo);
+    session.metrics.commentsInLastMinute = session.metrics.commentsInLastMinute.filter(timestamp => timestamp > oneMinuteAgo);
+    session.metrics.sharesInLastMinute = session.metrics.sharesInLastMinute.filter(timestamp => timestamp > oneMinuteAgo);
+    session.metrics.followersGainedInLastMinute = session.metrics.followersGainedInLastMinute.filter(timestamp => timestamp > oneMinuteAgo);
+    
+    // Update per-minute counts
+    session.metrics.likesPerMinute = session.metrics.likesInLastMinute.length;
+    session.metrics.giftsPerMinute = session.metrics.giftsInLastMinute.length;
+    session.metrics.commentsPerMinute = session.metrics.commentsInLastMinute.length;
+    session.metrics.sharesPerMinute = session.metrics.sharesInLastMinute.length;
+    session.metrics.followersGainsPerMinute = session.metrics.followersGainedInLastMinute.length;
+    
+    // Calculate gift value per minute (simplified - would need more complex tracking for accurate value)
+    session.metrics.giftsPerMinuteDiamonds = session.metrics.giftsPerMinute * 10; // Rough estimate
+    session.metrics.giftsPerMinuteValue = session.metrics.giftsPerMinute * 10; // Rough estimate
+    
+    session.metrics.lastUpdate = new Date();
+}
+
 // Calculate entertainment metrics for a specific session
 function calculateSessionEntertainmentMetrics(session) {
     const currentViewers = session.metrics.currentViewerCount || 1;
@@ -3112,6 +3163,7 @@ function handleChatEventForSession(data, session) {
     
     // Update session metrics
     session.metrics.totalComments++;
+    session.metrics.commentsInLastMinute.push(Date.now());
     session.metrics.lastActivity = Date.now();
     
     // Track viewer activity for session
@@ -3138,6 +3190,9 @@ function handleChatEventForSession(data, session) {
         // Calculate basic entertainment metrics for session
         calculateSessionEntertainmentMetrics(session);
     }
+    
+    // Update per-minute metrics
+    updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients
     broadcastToSession(session, 'chat', {
@@ -3181,6 +3236,7 @@ function handleLikeEventForSession(data, session) {
     
     // Update session metrics
     session.metrics.totalLikes++;
+    session.metrics.likesInLastMinute.push(Date.now());
     session.metrics.lastActivity = Date.now();
     
     // Track user likes
@@ -3190,6 +3246,9 @@ function handleLikeEventForSession(data, session) {
     
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
+    
+    // Update per-minute metrics
+    updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients
     broadcastToSession(session, 'like', {
@@ -3235,6 +3294,9 @@ function handleGiftEventForSession(data, session) {
     
     // Update session metrics
     session.metrics.totalGifts++;
+    session.metrics.totalGiftDiamonds += giftValue;
+    session.metrics.totalGiftValue += giftValue;
+    session.metrics.giftsInLastMinute.push(Date.now());
     session.metrics.lastActivity = Date.now();
     
     // Track viewer activity for session
@@ -3242,6 +3304,9 @@ function handleGiftEventForSession(data, session) {
     
     // Calculate entertainment metrics for session
     calculateSessionEntertainmentMetrics(session);
+    
+    // Update per-minute metrics
+    updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients with proper data
     broadcastToSession(session, 'gift', {
@@ -4981,17 +5046,31 @@ global.setCurrentRoomTotals = setCurrentRoomTotals;
 
 // Set up periodic metrics updates for all sessions
 setInterval(() => {
-    // Broadcast metrics for each active session
+    // Update per-minute metrics and broadcast for each active session
     userSessions.forEach((session, sessionId) => {
         if (session.wsClients.size > 0) {
+            // Update per-minute metrics
+            updateSessionPerMinuteMetrics(session);
+            
+            // Update viewer stats
+            updateSessionViewerStats(session);
+            
+            // Broadcast updated metrics
             broadcastToSession(session, 'metrics', {
                 currentViewerCount: session.metrics.currentViewerCount,
                 totalLikes: session.metrics.totalLikes,
                 totalGifts: session.metrics.totalGifts,
+                totalGiftDiamonds: session.metrics.totalGiftDiamonds,
+                totalGiftValue: session.metrics.totalGiftValue,
                 totalComments: session.metrics.totalComments,
+                totalShares: session.metrics.totalShares,
                 likesPerMinute: session.metrics.likesPerMinute,
                 giftsPerMinute: session.metrics.giftsPerMinute,
+                giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
+                giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
                 commentsPerMinute: session.metrics.commentsPerMinute,
+                sharesPerMinute: session.metrics.sharesPerMinute,
+                followersGainsPerMinute: session.metrics.followersGainsPerMinute,
                 sentimentScore: session.metrics.sentimentScore,
                 rollingSentimentScore: session.metrics.rollingSentimentScore,
                 keywordFrequency: session.metrics.keywordFrequency,
