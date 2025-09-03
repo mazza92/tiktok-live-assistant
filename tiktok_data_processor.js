@@ -2524,6 +2524,81 @@ function broadcastMetrics() {
 }
 
 // Broadcast events to all connected dashboard clients
+// Global broadcast function for metrics (similar to b594427 approach)
+function broadcastGlobalMetrics() {
+    // Create a comprehensive metrics object for all sessions
+    const allSessionsData = {};
+    
+    userSessions.forEach((session, sessionId) => {
+        if (session.wsClients.size > 0) {
+            // Ensure all fields are properly initialized
+            ensureSessionMetricsFields(session);
+            
+            allSessionsData[sessionId] = {
+                currentViewerCount: session.metrics.currentViewerCount,
+                
+                // Cumulative totals (all-time)
+                totalLikes: session.metrics.totalLikes,
+                totalGifts: session.metrics.totalGifts,
+                totalGiftDiamonds: session.metrics.totalGiftDiamonds,
+                totalGiftValue: session.metrics.totalGiftValue,
+                totalComments: session.metrics.totalComments,
+                totalShares: session.metrics.totalShares,
+                
+                // Per-minute metrics
+                likesPerMinute: session.metrics.likesPerMinute,
+                giftsPerMinute: session.metrics.giftsPerMinute,
+                giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
+                giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
+                commentsPerMinute: session.metrics.commentsPerMinute,
+                sharesPerMinute: session.metrics.sharesPerMinute,
+                followersGainsPerMinute: session.metrics.followersGainsPerMinute,
+                
+                // Sentiment and engagement
+                sentimentScore: session.metrics.sentimentScore,
+                rollingSentimentScore: session.metrics.rollingSentimentScore,
+                keywordFrequency: session.metrics.keywordFrequency,
+                userLikeCounts: session.metrics.userLikeCounts,
+                
+                // Entertainment metrics
+                entertainmentMetrics: session.metrics.entertainmentMetrics,
+                
+                // Question detection
+                questionDetection: session.metrics.questionDetection,
+                
+                // Predictive metrics
+                predictiveMetrics: session.metrics.predictiveMetrics,
+                
+                // Viewer stats with engagement ranking
+                viewerStats: session.metrics.viewerStats,
+                
+                // Followers
+                newFollowers: session.metrics.newFollowers || [],
+                sessionFollowersGained: session.metrics.sessionFollowersGained || 0,
+                
+                // Session info
+                sessionId: sessionId,
+                username: session.username,
+                timestamp: new Date()
+            };
+        }
+    });
+    
+    // Broadcast to all connected clients
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            try {
+                client.send(JSON.stringify({
+                    type: 'metrics',
+                    data: allSessionsData
+                }));
+            } catch (error) {
+                console.error('Error broadcasting global metrics to client:', error);
+            }
+        }
+    });
+}
+
 function broadcastEvent(type, data) {
     const message = JSON.stringify({ type, data });
     console.log(`📤 Broadcasting ${type}:`, data);
@@ -3381,37 +3456,9 @@ function handleChatEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Broadcast updated metrics immediately
+    // Broadcast updated metrics immediately using global broadcast (b594427 approach)
     console.log(`📊 [SESSION ${session.id}] Broadcasting updated metrics after chat - totalComments: ${session.metrics.totalComments}`);
-    broadcastToSession(session, 'metrics', {
-        currentViewerCount: session.metrics.currentViewerCount,
-        totalLikes: session.metrics.totalLikes,
-        totalGifts: session.metrics.totalGifts,
-        totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-        totalGiftValue: session.metrics.totalGiftValue,
-        totalComments: session.metrics.totalComments,
-        totalShares: session.metrics.totalShares,
-        likesPerMinute: session.metrics.likesPerMinute,
-        giftsPerMinute: session.metrics.giftsPerMinute,
-        giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
-        giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
-        commentsPerMinute: session.metrics.commentsPerMinute,
-        sharesPerMinute: session.metrics.sharesPerMinute,
-        followersGainsPerMinute: session.metrics.followersGainsPerMinute,
-        sentimentScore: session.metrics.sentimentScore,
-        rollingSentimentScore: session.metrics.rollingSentimentScore,
-        keywordFrequency: session.metrics.keywordFrequency,
-        userLikeCounts: session.metrics.userLikeCounts,
-        viewerStats: session.metrics.viewerStats,
-        newFollowers: session.metrics.newFollowers,
-        sessionFollowersGained: session.metrics.sessionFollowersGained,
-        entertainmentMetrics: session.metrics.entertainmentMetrics,
-        questionDetection: session.metrics.questionDetection,
-        predictiveMetrics: session.metrics.predictiveMetrics,
-        sessionId: session.id,
-        username: session.username,
-        timestamp: new Date().toISOString()
-    });
+    broadcastGlobalMetrics();
 }
 
 function handleLikeEventForSession(data, session) {
@@ -3444,36 +3491,8 @@ function handleLikeEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Broadcast updated metrics immediately
-    broadcastToSession(session, 'metrics', {
-        currentViewerCount: session.metrics.currentViewerCount,
-        totalLikes: session.metrics.totalLikes,
-        totalGifts: session.metrics.totalGifts,
-        totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-        totalGiftValue: session.metrics.totalGiftValue,
-        totalComments: session.metrics.totalComments,
-        totalShares: session.metrics.totalShares,
-        likesPerMinute: session.metrics.likesPerMinute,
-        giftsPerMinute: session.metrics.giftsPerMinute,
-        giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
-        giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
-        commentsPerMinute: session.metrics.commentsPerMinute,
-        sharesPerMinute: session.metrics.sharesPerMinute,
-        followersGainsPerMinute: session.metrics.followersGainsPerMinute,
-        sentimentScore: session.metrics.sentimentScore,
-        rollingSentimentScore: session.metrics.rollingSentimentScore,
-        keywordFrequency: session.metrics.keywordFrequency,
-        userLikeCounts: session.metrics.userLikeCounts,
-        viewerStats: session.metrics.viewerStats,
-        newFollowers: session.metrics.newFollowers,
-        sessionFollowersGained: session.metrics.sessionFollowersGained,
-        entertainmentMetrics: session.metrics.entertainmentMetrics,
-        questionDetection: session.metrics.questionDetection,
-        predictiveMetrics: session.metrics.predictiveMetrics,
-        sessionId: session.id,
-        username: session.username,
-        timestamp: new Date().toISOString()
-    });
+    // Broadcast updated metrics immediately using global broadcast (b594427 approach)
+    broadcastGlobalMetrics();
 }
 
 function handleGiftEventForSession(data, session) {
@@ -3514,36 +3533,8 @@ function handleGiftEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Broadcast updated metrics immediately
-    broadcastToSession(session, 'metrics', {
-        currentViewerCount: session.metrics.currentViewerCount,
-        totalLikes: session.metrics.totalLikes,
-        totalGifts: session.metrics.totalGifts,
-        totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-        totalGiftValue: session.metrics.totalGiftValue,
-        totalComments: session.metrics.totalComments,
-        totalShares: session.metrics.totalShares,
-        likesPerMinute: session.metrics.likesPerMinute,
-        giftsPerMinute: session.metrics.giftsPerMinute,
-        giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
-        giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
-        commentsPerMinute: session.metrics.commentsPerMinute,
-        sharesPerMinute: session.metrics.sharesPerMinute,
-        followersGainsPerMinute: session.metrics.followersGainsPerMinute,
-        sentimentScore: session.metrics.sentimentScore,
-        rollingSentimentScore: session.metrics.rollingSentimentScore,
-        keywordFrequency: session.metrics.keywordFrequency,
-        userLikeCounts: session.metrics.userLikeCounts,
-        viewerStats: session.metrics.viewerStats,
-        newFollowers: session.metrics.newFollowers,
-        sessionFollowersGained: session.metrics.sessionFollowersGained,
-        entertainmentMetrics: session.metrics.entertainmentMetrics,
-        questionDetection: session.metrics.questionDetection,
-        predictiveMetrics: session.metrics.predictiveMetrics,
-        sessionId: session.id,
-        username: session.username,
-        timestamp: new Date().toISOString()
-    });
+    // Broadcast updated metrics immediately using global broadcast (b594427 approach)
+    broadcastGlobalMetrics();
 }
 
 function handleFollowEventForSession(data, session) {
@@ -3577,36 +3568,8 @@ function handleFollowEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Broadcast updated metrics immediately
-    broadcastToSession(session, 'metrics', {
-        currentViewerCount: session.metrics.currentViewerCount,
-        totalLikes: session.metrics.totalLikes,
-        totalGifts: session.metrics.totalGifts,
-        totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-        totalGiftValue: session.metrics.totalGiftValue,
-        totalComments: session.metrics.totalComments,
-        totalShares: session.metrics.totalShares,
-        likesPerMinute: session.metrics.likesPerMinute,
-        giftsPerMinute: session.metrics.giftsPerMinute,
-        giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
-        giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
-        commentsPerMinute: session.metrics.commentsPerMinute,
-        sharesPerMinute: session.metrics.sharesPerMinute,
-        followersGainsPerMinute: session.metrics.followersGainsPerMinute,
-        sentimentScore: session.metrics.sentimentScore,
-        rollingSentimentScore: session.metrics.rollingSentimentScore,
-        keywordFrequency: session.metrics.keywordFrequency,
-        userLikeCounts: session.metrics.userLikeCounts,
-        viewerStats: session.metrics.viewerStats,
-        newFollowers: session.metrics.newFollowers,
-        sessionFollowersGained: session.metrics.sessionFollowersGained,
-        entertainmentMetrics: session.metrics.entertainmentMetrics,
-        questionDetection: session.metrics.questionDetection,
-        predictiveMetrics: session.metrics.predictiveMetrics,
-        sessionId: session.id,
-        username: session.username,
-        timestamp: new Date().toISOString()
-    });
+    // Broadcast updated metrics immediately using global broadcast (b594427 approach)
+    broadcastGlobalMetrics();
 }
 
 function handleRoomUserEventForSession(data, session) {
@@ -5253,9 +5216,9 @@ function setCurrentRoomTotals(likes = null, gifts = null, comments = null, viewe
 // Make manual override function available globally for testing
 global.setCurrentRoomTotals = setCurrentRoomTotals;
 
-// Set up periodic metrics updates for all sessions
+// Set up periodic metrics updates for all sessions (b594427 approach)
 setInterval(() => {
-    // Update per-minute metrics and broadcast for each active session
+    // Update per-minute metrics for each active session
     userSessions.forEach((session, sessionId) => {
         if (session.wsClients.size > 0) {
             // Update per-minute metrics
@@ -5273,47 +5236,13 @@ setInterval(() => {
             // Calculate viewer retention
             const retentionRate = calculateSessionViewerRetention(session);
             
-            // Ensure all fields are properly initialized before broadcasting
+            // Ensure all fields are properly initialized
             ensureSessionMetricsFields(session);
-            
-            // Debug: Check if fields are properly initialized
-            console.log(`📊 [SESSION ${session.id}] Metrics before broadcast:`, {
-                totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-                totalGiftValue: session.metrics.totalGiftValue,
-                totalShares: session.metrics.totalShares
-            });
-            
-            // Broadcast updated metrics
-            broadcastToSession(session, 'metrics', {
-                currentViewerCount: session.metrics.currentViewerCount,
-                totalLikes: session.metrics.totalLikes,
-                totalGifts: session.metrics.totalGifts,
-                totalGiftDiamonds: session.metrics.totalGiftDiamonds,
-                totalGiftValue: session.metrics.totalGiftValue,
-                totalComments: session.metrics.totalComments,
-                totalShares: session.metrics.totalShares,
-                likesPerMinute: session.metrics.likesPerMinute,
-                giftsPerMinute: session.metrics.giftsPerMinute,
-                giftsPerMinuteDiamonds: session.metrics.giftsPerMinuteDiamonds,
-                giftsPerMinuteValue: session.metrics.giftsPerMinuteValue,
-                commentsPerMinute: session.metrics.commentsPerMinute,
-                sharesPerMinute: session.metrics.sharesPerMinute,
-                followersGainsPerMinute: session.metrics.followersGainsPerMinute,
-                sentimentScore: session.metrics.sentimentScore,
-                rollingSentimentScore: session.metrics.rollingSentimentScore,
-                keywordFrequency: session.metrics.keywordFrequency,
-                userLikeCounts: session.metrics.userLikeCounts,
-                viewerStats: session.metrics.viewerStats,
-                newFollowers: session.metrics.newFollowers || [],
-                sessionFollowersGained: session.metrics.sessionFollowersGained || 0,
-                entertainmentMetrics: session.metrics.entertainmentMetrics,
-                questionDetection: session.metrics.questionDetection,
-                predictiveMetrics: session.metrics.predictiveMetrics,
-                                sessionId: sessionId,
-                username: session.username,
-                retentionRate: retentionRate,
-                timestamp: new Date()
-            });
         }
     });
+    
+    // Use global broadcast function (b594427 approach) - single broadcast for all sessions
+    if (userSessions.size > 0) {
+        broadcastGlobalMetrics();
+    }
 }, 5000); // Broadcast every 5 seconds
