@@ -6129,7 +6129,7 @@
                                 // Only process chat if this is for our session
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
                                     console.log('💬 Chat message:', message.data);
-                                    addActivityItem('💬', message.data.nickname, message.data.comment, message.data.sentimentScore, message.data.timestamp);
+                                    addActivityItem('💬', message.data.user, message.data.comment, message.data.sentimentScore, message.data.timestamp);
                                 }
                                 break;
                             case 'like':
@@ -6139,16 +6139,16 @@
                                     const likeText = message.data.likeCount > 1 ? 
                                         `sent ${message.data.likeCount} likes` : 
                                         'sent a like';
-                                    addActivityItem('❤️', message.data.nickname, likeText, null, message.data.timestamp);
+                                    addActivityItem('❤️', message.data.user, likeText, null, message.data.timestamp);
                                 }
                                 break;
                             case 'gift':
                                 // Only process gifts if this is for our session
                                 if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
                                     console.log('🎁 Gift event:', message.data);
-                                    const giftName = message.data.gift?.name || message.data.giftName || 'Unknown Gift';
-                                    const diamondCount = message.data.gift?.diamondCount || message.data.diamondCount || 'unknown';
-                                    addActivityItem('🎁', message.data.nickname, `sent ${giftName} (${diamondCount} diamonds)`, null, message.data.timestamp);
+                                    const giftName = message.data.gift || 'Unknown Gift';
+                                    const diamondCount = message.data.value || 'unknown';
+                                    addActivityItem('🎁', message.data.user, `sent ${giftName} (${diamondCount} diamonds)`, null, message.data.timestamp);
                                     
                                     // Show gift alert overlay
                                     showGiftAlert(message.data);
@@ -8583,7 +8583,7 @@
                     <span class="gift-notification-title">Gift Received!</span>
                 </div>
                 <div class="gift-notification-sender">
-                    <img class="gift-sender-avatar" src="${giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
+                    <img class="gift-sender-avatar" src="${giftData.profilePicture || giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
                     <span class="gift-sender-name">${giftData.user}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}</span>
                 </div>
                 <div class="gift-notification-details">
