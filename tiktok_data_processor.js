@@ -4052,8 +4052,14 @@ console.log("👥 Multi-user support: ENABLED");
 console.log("📡 Ready for user connections via dashboard");
 console.log("=".repeat(60));
 
-// Set up periodic metrics updates
-setInterval(updatePerMinuteMetrics, 1000); // Update every second
+// Set up periodic metrics updates (legacy - only when no sessions active)
+setInterval(() => {
+    // Skip legacy metrics updates if there are active sessions
+    if (userSessions.size > 0) {
+        return;
+    }
+    updatePerMinuteMetrics();
+}, 1000); // Update every second
 
 // Set up periodic AI prompt checks - more frequent for proactive assistance (legacy - only when no sessions active)
 setInterval(() => {
@@ -4099,8 +4105,13 @@ setInterval(() => {
     cleanupDuplicateFollowers();
 }, 60000); // Clean up every minute
 
-// Set up proactive AI assistance for small streams (< 15 viewers)
+// Set up proactive AI assistance for small streams (< 15 viewers) (legacy - only when no sessions active)
 setInterval(() => {
+    // Skip legacy AI assistance if there are active sessions
+    if (userSessions.size > 0) {
+        return;
+    }
+    
     const viewerCount = metrics.currentViewerCount || 0;
     if (viewerCount > 0 && viewerCount < 15) {
         console.log(`🤖 [SMALL STREAM AI] Proactive assistance for ${viewerCount} viewers...`);
