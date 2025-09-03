@@ -2412,6 +2412,7 @@ function updatePerMinuteMetrics() {
 // Broadcast metrics to all connected WebSocket clients (legacy - only when no sessions active)
 function broadcastMetrics() {
     // Skip legacy broadcasting if there are active sessions
+    console.log('📊 [BROADCAST] broadcastMetrics called - userSessions.size:', userSessions.size);
     if (userSessions.size > 0) {
         console.log('📊 [BROADCAST] Skipping legacy broadcast - active sessions detected:', userSessions.size);
         return;
