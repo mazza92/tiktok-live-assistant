@@ -3888,17 +3888,28 @@ async function changeTikTokUsername(newUsername, ws) {
         console.error('❌ [USERNAME] Error changing username:', error.message);
         console.error('❌ [USERNAME] Error stack:', error.stack);
         
+        // Provide more specific error messages
+        let errorMessage = error.message || 'Unknown error occurred';
+        if (error.message.includes('Cannot read properties of undefined')) {
+            errorMessage = 'Session initialization error. Please try again.';
+        } else if (error.message.includes('connection')) {
+            errorMessage = 'Failed to connect to TikTok Live. Please check the username and try again.';
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Connection timeout. Please try again.';
+        }
+        
         // Send detailed error to dashboard
         if (ws && ws.readyState === ws.OPEN) {
-            const errorMessage = {
+            const errorResponse = {
                 type: 'usernameChangeError',
-                error: error.message || 'Unknown error occurred',
+                error: errorMessage,
                 username: newUsername,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                originalError: error.message
             };
             
-            console.log('📤 [USERNAME] Sending error message to dashboard:', errorMessage);
-            ws.send(JSON.stringify(errorMessage));
+            console.log('📤 [USERNAME] Sending error message to dashboard:', errorResponse);
+            ws.send(JSON.stringify(errorResponse));
             console.log('✅ [USERNAME] Error message sent successfully');
         } else {
             console.error('❌ [USERNAME] Cannot send error - WebSocket not ready. State:', ws?.readyState);

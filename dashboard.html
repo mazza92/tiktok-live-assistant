@@ -6260,8 +6260,13 @@
                                 break;
                             case 'usernameChangeError':
                                 console.error('❌ Username change error - Full message:', message);
-                                console.error('❌ Username change error - Message data:', message.data);
+                                console.error('❌ Username change error - Error:', message.error);
+                                console.error('❌ Username change error - Username:', message.username);
                                 console.error('❌ Username change error - Message type:', message.type);
+                                
+                                // Show error to user with more details
+                                const errorDetails = message.originalError ? `\n\nTechnical details: ${message.originalError}` : '';
+                                alert(`Failed to connect to TikTok Live: ${message.error}\nUsername: ${message.username}${errorDetails}`);
                                 
                                 // Clear restoration flag if we were restoring
                                 if (window.isRestoringConnection) {
