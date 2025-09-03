@@ -2879,6 +2879,30 @@ function handleChatEventForSession(data, session) {
         timestamp: Date.now(),
         sessionId: session.id
     });
+    
+    // Broadcast updated metrics immediately
+    broadcastToSession(session, 'metrics', {
+        currentViewerCount: session.metrics.currentViewerCount,
+        totalLikes: session.metrics.totalLikes,
+        totalGifts: session.metrics.totalGifts,
+        totalComments: session.metrics.totalComments,
+        likesPerMinute: session.metrics.likesPerMinute,
+        giftsPerMinute: session.metrics.giftsPerMinute,
+        commentsPerMinute: session.metrics.commentsPerMinute,
+        sentimentScore: session.metrics.sentimentScore,
+        rollingSentimentScore: session.metrics.rollingSentimentScore,
+        keywordFrequency: session.metrics.keywordFrequency,
+        userLikeCounts: session.metrics.userLikeCounts,
+        viewerStats: session.metrics.viewerStats,
+        newFollowers: session.metrics.newFollowers,
+        sessionFollowersGained: session.metrics.sessionFollowersGained,
+        entertainmentMetrics: session.metrics.entertainmentMetrics,
+        questionDetection: session.metrics.questionDetection,
+        predictiveMetrics: session.metrics.predictiveMetrics,
+        sessionId: session.id,
+        username: session.username,
+        timestamp: new Date().toISOString()
+    });
 }
 
 function handleLikeEventForSession(data, session) {
@@ -2899,6 +2923,30 @@ function handleLikeEventForSession(data, session) {
         timestamp: Date.now(),
         sessionId: session.id
     });
+    
+    // Broadcast updated metrics immediately
+    broadcastToSession(session, 'metrics', {
+        currentViewerCount: session.metrics.currentViewerCount,
+        totalLikes: session.metrics.totalLikes,
+        totalGifts: session.metrics.totalGifts,
+        totalComments: session.metrics.totalComments,
+        likesPerMinute: session.metrics.likesPerMinute,
+        giftsPerMinute: session.metrics.giftsPerMinute,
+        commentsPerMinute: session.metrics.commentsPerMinute,
+        sentimentScore: session.metrics.sentimentScore,
+        rollingSentimentScore: session.metrics.rollingSentimentScore,
+        keywordFrequency: session.metrics.keywordFrequency,
+        userLikeCounts: session.metrics.userLikeCounts,
+        viewerStats: session.metrics.viewerStats,
+        newFollowers: session.metrics.newFollowers,
+        sessionFollowersGained: session.metrics.sessionFollowersGained,
+        entertainmentMetrics: session.metrics.entertainmentMetrics,
+        questionDetection: session.metrics.questionDetection,
+        predictiveMetrics: session.metrics.predictiveMetrics,
+        sessionId: session.id,
+        username: session.username,
+        timestamp: new Date().toISOString()
+    });
 }
 
 function handleGiftEventForSession(data, session) {
@@ -2915,6 +2963,30 @@ function handleGiftEventForSession(data, session) {
         value: data.giftValue,
         timestamp: Date.now(),
         sessionId: session.id
+    });
+    
+    // Broadcast updated metrics immediately
+    broadcastToSession(session, 'metrics', {
+        currentViewerCount: session.metrics.currentViewerCount,
+        totalLikes: session.metrics.totalLikes,
+        totalGifts: session.metrics.totalGifts,
+        totalComments: session.metrics.totalComments,
+        likesPerMinute: session.metrics.likesPerMinute,
+        giftsPerMinute: session.metrics.giftsPerMinute,
+        commentsPerMinute: session.metrics.commentsPerMinute,
+        sentimentScore: session.metrics.sentimentScore,
+        rollingSentimentScore: session.metrics.rollingSentimentScore,
+        keywordFrequency: session.metrics.keywordFrequency,
+        userLikeCounts: session.metrics.userLikeCounts,
+        viewerStats: session.metrics.viewerStats,
+        newFollowers: session.metrics.newFollowers,
+        sessionFollowersGained: session.metrics.sessionFollowersGained,
+        entertainmentMetrics: session.metrics.entertainmentMetrics,
+        questionDetection: session.metrics.questionDetection,
+        predictiveMetrics: session.metrics.predictiveMetrics,
+        sessionId: session.id,
+        username: session.username,
+        timestamp: new Date().toISOString()
     });
 }
 
@@ -2945,6 +3017,30 @@ function handleFollowEventForSession(data, session) {
         timestamp: Date.now(),
         sessionId: session.id
     });
+    
+    // Broadcast updated metrics immediately
+    broadcastToSession(session, 'metrics', {
+        currentViewerCount: session.metrics.currentViewerCount,
+        totalLikes: session.metrics.totalLikes,
+        totalGifts: session.metrics.totalGifts,
+        totalComments: session.metrics.totalComments,
+        likesPerMinute: session.metrics.likesPerMinute,
+        giftsPerMinute: session.metrics.giftsPerMinute,
+        commentsPerMinute: session.metrics.commentsPerMinute,
+        sentimentScore: session.metrics.sentimentScore,
+        rollingSentimentScore: session.metrics.rollingSentimentScore,
+        keywordFrequency: session.metrics.keywordFrequency,
+        userLikeCounts: session.metrics.userLikeCounts,
+        viewerStats: session.metrics.viewerStats,
+        newFollowers: session.metrics.newFollowers,
+        sessionFollowersGained: session.metrics.sessionFollowersGained,
+        entertainmentMetrics: session.metrics.entertainmentMetrics,
+        questionDetection: session.metrics.questionDetection,
+        predictiveMetrics: session.metrics.predictiveMetrics,
+        sessionId: session.id,
+        username: session.username,
+        timestamp: new Date().toISOString()
+    });
 }
 
 function handleRoomUserEventForSession(data, session) {
@@ -2959,6 +3055,30 @@ function handleRoomUserEventForSession(data, session) {
         broadcastToSession(session, 'viewerCount', { 
             count: data.viewerCount,
             sessionId: session.id
+        });
+        
+        // Broadcast updated metrics immediately
+        broadcastToSession(session, 'metrics', {
+            currentViewerCount: session.metrics.currentViewerCount,
+            totalLikes: session.metrics.totalLikes,
+            totalGifts: session.metrics.totalGifts,
+            totalComments: session.metrics.totalComments,
+            likesPerMinute: session.metrics.likesPerMinute,
+            giftsPerMinute: session.metrics.giftsPerMinute,
+            commentsPerMinute: session.metrics.commentsPerMinute,
+            sentimentScore: session.metrics.sentimentScore,
+            rollingSentimentScore: session.metrics.rollingSentimentScore,
+            keywordFrequency: session.metrics.keywordFrequency,
+            userLikeCounts: session.metrics.userLikeCounts,
+            viewerStats: session.metrics.viewerStats,
+            newFollowers: session.metrics.newFollowers,
+            sessionFollowersGained: session.metrics.sessionFollowersGained,
+            entertainmentMetrics: session.metrics.entertainmentMetrics,
+            questionDetection: session.metrics.questionDetection,
+            predictiveMetrics: session.metrics.predictiveMetrics,
+            sessionId: session.id,
+            username: session.username,
+            timestamp: new Date().toISOString()
         });
     }
 }
