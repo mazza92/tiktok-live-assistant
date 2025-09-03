@@ -2526,15 +2526,13 @@ function broadcastMetrics() {
 // Broadcast events to all connected dashboard clients
 // Global broadcast function for metrics (similar to b594427 approach)
 function broadcastGlobalMetrics() {
-    // Create a comprehensive metrics object for all sessions
-    const allSessionsData = {};
-    
+    // Broadcast metrics for each session individually (b594427 approach)
     userSessions.forEach((session, sessionId) => {
         if (session.wsClients.size > 0) {
             // Ensure all fields are properly initialized
             ensureSessionMetricsFields(session);
             
-            allSessionsData[sessionId] = {
+            const sessionMetrics = {
                 currentViewerCount: session.metrics.currentViewerCount,
                 
                 // Cumulative totals (all-time)
@@ -2581,20 +2579,21 @@ function broadcastGlobalMetrics() {
                 username: session.username,
                 timestamp: new Date()
             };
-        }
-    });
-    
-    // Broadcast to all connected clients
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            try {
-                client.send(JSON.stringify({
-                    type: 'metrics',
-                    data: allSessionsData
-                }));
-            } catch (error) {
-                console.error('Error broadcasting global metrics to client:', error);
-            }
+            
+            // Broadcast to all connected clients with sessionId in the message
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    try {
+                        client.send(JSON.stringify({
+                            type: 'metrics',
+                            sessionId: sessionId,
+                            data: sessionMetrics
+                        }));
+                    } catch (error) {
+                        console.error('Error broadcasting metrics to client:', error);
+                    }
+                }
+            });
         }
     });
 }
@@ -3463,12 +3462,9 @@ function handleChatEventForSession(data, session) {
 
 function handleLikeEventForSession(data, session) {
     console.log(`❤️ [SESSION ${session.id}] Like event:`, data);
-    console.log(`❤️ [SESSION ${session.id}] Raw like data structure:`, JSON.stringify(data, null, 2));
     
     // Extract user information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
-    
-    console.log(`❤️ [SESSION ${session.id}] Extracted like user info:`, { userId, nickname });
     
     // Update session metrics
     session.metrics.totalLikes++;
@@ -3500,7 +3496,6 @@ function handleLikeEventForSession(data, session) {
 
 function handleGiftEventForSession(data, session) {
     console.log(`🎁 [SESSION ${session.id}] Gift event:`, data);
-    console.log(`🎁 [SESSION ${session.id}] Raw gift data structure:`, JSON.stringify(data, null, 2));
     
     // Extract gift information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
@@ -3508,8 +3503,6 @@ function handleGiftEventForSession(data, session) {
     const giftValue = data.giftValue || data.gift?.diamondCount || data.gift?.value || 1;
     const giftId = data.giftId || data.gift?.id || 'gift';
     const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
-    
-    console.log(`🎁 [SESSION ${session.id}] Extracted gift info:`, { userId, nickname, giftName, giftValue, giftId, profilePicture });
     
     // Update session metrics
     session.metrics.totalGifts++;
