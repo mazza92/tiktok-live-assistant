@@ -2803,23 +2803,33 @@ function setupSessionEventHandlers(session) {
     // Add all other event handlers here (chat, like, gift, etc.)
     // These will be similar to the existing handlers but will use session-specific metrics
     connection.on('chat', (data) => {
+        console.log(`💬 [SESSION ${session.id}] Chat event received:`, data);
         handleChatEventForSession(data, session);
     });
 
     connection.on('like', (data) => {
+        console.log(`❤️ [SESSION ${session.id}] Like event received:`, data);
         handleLikeEventForSession(data, session);
     });
 
     connection.on('gift', (data) => {
+        console.log(`🎁 [SESSION ${session.id}] Gift event received:`, data);
         handleGiftEventForSession(data, session);
     });
 
     connection.on('follow', (data) => {
+        console.log(`🆕 [SESSION ${session.id}] Follow event received:`, data);
         handleFollowEventForSession(data, session);
     });
 
     connection.on('roomUser', (data) => {
+        console.log(`👥 [SESSION ${session.id}] Room user event:`, data);
         handleRoomUserEventForSession(data, session);
+    });
+
+    // Add catch-all event handler to see what other events are available
+    connection.on('*', (eventName, data) => {
+        console.log(`🔍 [SESSION ${session.id}] Received event: ${eventName}`, data);
     });
 }
 
