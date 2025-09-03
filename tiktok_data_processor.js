@@ -2851,6 +2851,38 @@ function broadcastToSession(session, type, data) {
     });
 }
 
+// Calculate entertainment metrics for a specific session
+function calculateSessionEntertainmentMetrics(session) {
+    const currentViewers = session.metrics.currentViewerCount || 1;
+    
+    // Calculate engagement intensity based on session metrics
+    const likesPerViewer = (session.metrics.totalLikes || 0) / currentViewers;
+    const commentsPerViewer = (session.metrics.totalComments || 0) / currentViewers;
+    const engagementIntensity = Math.min((likesPerViewer + commentsPerViewer) / 10, 1);
+    
+    // Calculate content reception based on sentiment
+    const contentReception = Math.max(0, Math.min(1, (session.metrics.rollingSentimentScore || 0) / 5 + 0.5));
+    
+    // Calculate audience energy based on activity
+    const activityScore = (session.metrics.totalLikes + session.metrics.totalComments + session.metrics.totalGifts) / currentViewers;
+    const audienceEnergy = Math.min(activityScore / 20, 1);
+    
+    // Calculate retention quality based on viewer count stability
+    const retentionQuality = Math.min(currentViewers / 50, 1);
+    
+    // Calculate final entertainment score (0-100)
+    const entertainmentScore = Math.round((engagementIntensity * 30 + contentReception * 25 + audienceEnergy * 25 + retentionQuality * 20));
+    
+    // Update session entertainment metrics
+    session.metrics.entertainmentMetrics.entertainmentScore = entertainmentScore;
+    session.metrics.entertainmentMetrics.engagementIntensity = engagementIntensity;
+    session.metrics.entertainmentMetrics.contentReception = contentReception;
+    session.metrics.entertainmentMetrics.audienceEnergy = audienceEnergy;
+    session.metrics.entertainmentMetrics.retentionQuality = retentionQuality;
+    
+    console.log(`🎭 [SESSION ${session.id}] Entertainment Score: ${entertainmentScore}/100 | Engagement: ${engagementIntensity.toFixed(2)} | Content: ${contentReception.toFixed(2)} | Energy: ${audienceEnergy.toFixed(2)} | Retention: ${retentionQuality.toFixed(2)}`);
+}
+
 // Session-specific event handlers
 function handleChatEventForSession(data, session) {
     console.log(`💬 [SESSION ${session.id}] Chat event:`, data);
@@ -2864,15 +2896,18 @@ function handleChatEventForSession(data, session) {
         const sentimentResult = sentiment.analyze(data.comment);
         session.metrics.sentimentScore = sentimentResult.score;
         
-        // Update rolling sentiment
-        if (!session.metrics.sentimentHistory) {
-            session.metrics.sentimentHistory = [];
-        }
-        session.metrics.sentimentHistory.push(sentimentResult.score);
-        if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
-            session.metrics.sentimentHistory.shift();
-        }
-        session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
+            // Update rolling sentiment
+    if (!session.metrics.sentimentHistory) {
+        session.metrics.sentimentHistory = [];
+    }
+    session.metrics.sentimentHistory.push(sentimentResult.score);
+    if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
+        session.metrics.sentimentHistory.shift();
+    }
+    session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
+    
+    // Calculate basic entertainment metrics for session
+    calculateSessionEntertainmentMetrics(session);
     }
     
     // Broadcast to session clients
@@ -2920,6 +2955,9 @@ function handleLikeEventForSession(data, session) {
     if (data.nickname) {
         session.metrics.userLikeCounts[data.nickname] = (session.metrics.userLikeCounts[data.nickname] || 0) + 1;
     }
+    
+    // Calculate entertainment metrics for session
+    calculateSessionEntertainmentMetrics(session);
     
     // Broadcast to session clients
     broadcastToSession(session, 'like', {
