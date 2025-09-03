@@ -24,6 +24,52 @@
             overflow-x: hidden;
         }
 
+        /* Session Info Display Styles */
+        .session-info-display {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .session-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+        }
+
+        .session-info span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .session-id {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .session-status {
+            color: #FFC107;
+            font-weight: 600;
+        }
+
+        .session-username {
+            color: #2196F3;
+            font-weight: 600;
+        }
+
+        .total-sessions {
+            color: #9C27B0;
+            font-weight: 600;
+        }
+
         /* Language Switcher Styles */
         .language-switcher {
             display: flex;
@@ -4387,6 +4433,11 @@
                 <button class="language-btn" onclick="switchLanguage('fr')">🇫🇷 FR</button>
             </div>
         </div>
+        <div id="sessionInfo" class="session-info-display">
+            <div class="session-info">
+                <span class="session-status">Connecting...</span>
+            </div>
+        </div>
         <div class="connection-status" id="connectionStatus">
             <span class="status-text" id="statusText">Connecting...</span>
             <button class="refresh-btn" onclick="manualReconnect()" id="refreshBtn" style="display: none;">🔄</button>
@@ -5706,6 +5757,33 @@
             }
         }
         
+        // Update session info display
+        function updateSessionInfo(sessionData) {
+            console.log('📊 [SESSION] Updating session info:', sessionData);
+            
+            // Update session info in the UI
+            const sessionInfoElement = document.getElementById('sessionInfo');
+            if (sessionInfoElement) {
+                if (sessionData.sessionId) {
+                    sessionInfoElement.innerHTML = `
+                        <div class="session-info">
+                            <span class="session-id">Session: ${sessionData.sessionId}</span>
+                            <span class="session-status">Status: ${sessionData.status}</span>
+                            ${sessionData.username ? `<span class="session-username">Streamer: @${sessionData.username}</span>` : ''}
+                            <span class="total-sessions">Total Sessions: ${sessionData.totalSessions}</span>
+                        </div>
+                    `;
+                } else {
+                    sessionInfoElement.innerHTML = `
+                        <div class="session-info">
+                            <span class="session-status">${sessionData.message}</span>
+                            <span class="total-sessions">Total Sessions: ${sessionData.totalSessions}</span>
+                        </div>
+                    `;
+                }
+            }
+        }
+
         // Update connection UI based on state
         function updateConnectionUI(state, username = '') {
             const connectBtn = document.getElementById('connectBtn');
@@ -6033,28 +6111,44 @@
                         console.log('📨 Received message:', message.type);
                         
                         switch (message.type) {
+                            case 'sessionInfo':
+                                console.log('📊 Session info received:', message.data);
+                                updateSessionInfo(message.data);
+                                break;
                             case 'metrics':
-                                updateMetrics(message.data);
+                                // Only update metrics if this is for our session
+                                if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
+                                    updateMetrics(message.data);
+                                }
                                 break;
                             case 'chat':
-                                console.log('💬 Chat message:', message.data);
-                                addActivityItem('💬', message.data.nickname, message.data.comment, message.data.sentimentScore, message.data.timestamp);
+                                // Only process chat if this is for our session
+                                if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
+                                    console.log('💬 Chat message:', message.data);
+                                    addActivityItem('💬', message.data.nickname, message.data.comment, message.data.sentimentScore, message.data.timestamp);
+                                }
                                 break;
                             case 'like':
-                                console.log('❤️ Like event:', message.data);
-                                const likeText = message.data.likeCount > 1 ? 
-                                    `sent ${message.data.likeCount} likes` : 
-                                    'sent a like';
-                                addActivityItem('❤️', message.data.nickname, likeText, null, message.data.timestamp);
+                                // Only process likes if this is for our session
+                                if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
+                                    console.log('❤️ Like event:', message.data);
+                                    const likeText = message.data.likeCount > 1 ? 
+                                        `sent ${message.data.likeCount} likes` : 
+                                        'sent a like';
+                                    addActivityItem('❤️', message.data.nickname, likeText, null, message.data.timestamp);
+                                }
                                 break;
                             case 'gift':
-                                console.log('🎁 Gift event:', message.data);
-                                const giftName = message.data.gift?.name || message.data.giftName || 'Unknown Gift';
-                                const diamondCount = message.data.gift?.diamondCount || message.data.diamondCount || 'unknown';
-                                addActivityItem('🎁', message.data.nickname, `sent ${giftName} (${diamondCount} diamonds)`, null, message.data.timestamp);
-                                
-                                // Show gift alert overlay
-                                showGiftAlert(message.data);
+                                // Only process gifts if this is for our session
+                                if (!window.currentSessionId || message.sessionId === window.currentSessionId) {
+                                    console.log('🎁 Gift event:', message.data);
+                                    const giftName = message.data.gift?.name || message.data.giftName || 'Unknown Gift';
+                                    const diamondCount = message.data.gift?.diamondCount || message.data.diamondCount || 'unknown';
+                                    addActivityItem('🎁', message.data.nickname, `sent ${giftName} (${diamondCount} diamonds)`, null, message.data.timestamp);
+                                    
+                                    // Show gift alert overlay
+                                    showGiftAlert(message.data);
+                                }
                                 break;
                             case 'share':
                                 console.log('📤 Share event:', message.data);
@@ -6113,20 +6207,27 @@
                             case 'usernameChanged':
                                 console.log('🔄 Username changed:', message.data);
                                 if (message.data && message.data.username) {
-                                                                    // Clear restoration flag if we were restoring
-                                if (window.isRestoringConnection) {
-                                    console.log('✅ [STATE] Reconnection successful, clearing restoration flag');
-                                    window.isRestoringConnection = false;
-                                }
-                                
-                                // Update UI to connected state
-                                updateConnectionUI('connected', message.data.username);
-                                
-                                // Save successful connection state
-                                saveConnectionState({
-                                    isConnected: true,
-                                    username: message.data.username,
-                                    timestamp: Date.now(),
+                                    // Store session ID
+                                    if (message.sessionId) {
+                                        window.currentSessionId = message.sessionId;
+                                        console.log('📊 [SESSION] Stored session ID:', message.sessionId);
+                                    }
+                                    
+                                    // Clear restoration flag if we were restoring
+                                    if (window.isRestoringConnection) {
+                                        console.log('✅ [STATE] Reconnection successful, clearing restoration flag');
+                                        window.isRestoringConnection = false;
+                                    }
+                                    
+                                    // Update UI to connected state
+                                    updateConnectionUI('connected', message.data.username);
+                                    
+                                    // Save successful connection state
+                                    saveConnectionState({
+                                        isConnected: true,
+                                        username: message.data.username,
+                                        sessionId: message.sessionId,
+                                        timestamp: Date.now(),
                                     status: 'connected'
                                 });
                                 

@@ -24,147 +24,6 @@ console.log('🤖 [GEMINI] Service initialized:', geminiService.getHealthStatus(
 // Global language setting for AI prompts (default: English)
 let currentLanguage = 'en';
 
-// Multi-user session management
-const userSessions = new Map(); // sessionId -> userSession object
-const sessionMetrics = new Map(); // sessionId -> metrics object
-
-// Session management functions
-function generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function createUserSession(sessionId, ws) {
-    const session = {
-        id: sessionId,
-        ws: ws,
-        connection: null,
-        isConnecting: false,
-        reconnectAttempts: 0,
-        username: null,
-        language: 'en',
-        createdAt: new Date(),
-        lastActivity: new Date()
-    };
-    
-    // Create isolated metrics for this session
-    const metrics = createIsolatedMetrics();
-    sessionMetrics.set(sessionId, metrics);
-    userSessions.set(sessionId, session);
-    
-    console.log(`🆕 [SESSION] Created new session: ${sessionId}`);
-    return session;
-}
-
-function getSessionMetrics(sessionId) {
-    return sessionMetrics.get(sessionId) || createIsolatedMetrics();
-}
-
-function createIsolatedMetrics() {
-    return {
-        currentViewerCount: 0,
-        
-        // Cumulative totals (all-time, never reset)
-        totalLikes: 0,
-        totalGifts: 0,
-        totalGiftDiamonds: 0,
-        totalGiftValue: 0,
-        totalComments: 0,
-        totalShares: 0,
-        sessionFollowersGained: 0,
-        
-        // Per-minute metrics
-        likesPerMinute: 0,
-        giftsPerMinute: 0,
-        giftsPerMinuteDiamonds: 0,
-        giftsPerMinuteValue: 0,
-        commentsPerMinute: 0,
-        followersGainsPerMinute: 0,
-        
-        // Recent activity arrays (limited size for memory efficiency)
-        recentComments: [],
-        recentLikes: [],
-        recentGifts: [],
-        recentShares: [],
-        recentFollowers: [],
-        
-        // Sentiment analysis
-        sentimentScore: 0,
-        rollingSentimentScore: 0,
-        sentimentHistory: [],
-        
-        // Keyword frequency tracking
-        keywordFrequency: {},
-        
-        // User engagement tracking
-        userLikeCounts: {},
-        userCommentCounts: {},
-        userGiftCounts: {},
-        
-        // Viewer statistics
-        viewerStats: {
-            totalUniqueViewers: 0,
-            averageWatchTime: 0,
-            longestWatchTime: 0,
-            viewersByWatchTime: {},
-            activeViewers: 0
-        },
-        viewers: {},
-        
-        // New followers tracking
-        newFollowers: [],
-        
-        // Entertainment metrics
-        entertainmentMetrics: {
-            entertainmentScore: 0,
-            engagementIntensity: 0,
-            contentReception: 0,
-            audienceEnergy: 0,
-            retentionQuality: 0
-        },
-        
-        // Question detection
-        questionDetection: {
-            pendingQuestions: [],
-            questionStats: {
-                totalQuestions: 0,
-                answeredQuestions: 0,
-                unansweredQuestions: 0,
-                averageResponseTime: 0
-            }
-        },
-        
-        // Predictive metrics
-        predictiveMetrics: {
-            churnRiskScore: 0,
-            monetizationOpportunityScore: 0,
-            engagementTrend: 'stable',
-            viewerRetentionRate: 0,
-            sentimentVolatility: 0
-        }
-    };
-}
-
-function cleanupSession(sessionId) {
-    const session = userSessions.get(sessionId);
-    if (session) {
-        // Disconnect TikTok connection if exists
-        if (session.connection) {
-            try {
-                session.connection.removeAllListeners();
-                session.connection.disconnect();
-            } catch (error) {
-                console.log('⚠️ [SESSION] Error disconnecting during cleanup:', error.message);
-            }
-        }
-        
-        // Remove from maps
-        userSessions.delete(sessionId);
-        sessionMetrics.delete(sessionId);
-        
-        console.log(`🗑️ [SESSION] Cleaned up session: ${sessionId}`);
-    }
-}
-
 // AI Prompt Translations
 const promptTranslations = {
     en: {
@@ -331,28 +190,27 @@ let sharesInLastMinute = [];
 let followersGainedInLastMinute = []; // Track when followers were gained
 
 // Reset session-specific metrics for new stream
-function resetSessionMetrics(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    console.log(`🔄 [METRICS] Resetting session metrics for session ${sessionId}...`);
-    sessionMetrics.sessionFollowersGained = 0;
-    sessionMetrics.newFollowers = [];
+function resetSessionMetrics() {
+    console.log('🔄 [METRICS] Resetting session metrics for new stream...');
+    metrics.sessionFollowersGained = 0;
+    metrics.newFollowers = [];
     followersGainedInLastMinute = [];
     
     // Reset processed followers tracking to prevent duplicates in new sessions
-    if (sessionMetrics.processedFollowers) {
-        sessionMetrics.processedFollowers.clear();
+    if (metrics.processedFollowers) {
+        metrics.processedFollowers.clear();
         console.log('🧹 [METRICS] Cleared processed followers tracking for new session');
     }
     
     // Clean up any existing duplicates
     if (typeof cleanupDuplicateFollowers === 'function') {
-        cleanupDuplicateFollowers(sessionId);
+        cleanupDuplicateFollowers();
     }
     
     // Reset new metrics
-    sessionMetrics.streamStartTime = new Date();
-    sessionMetrics.streamPhase = 'start';
-    sessionMetrics.promptHistory = [];
+    metrics.streamStartTime = new Date();
+    metrics.streamPhase = 'start';
+    metrics.promptHistory = [];
     
     console.log('✅ [METRICS] Session metrics reset complete');
 }
@@ -619,40 +477,39 @@ function addViewer(userId, nickname, profilePic = null) {
     }
 }
 
-function updateViewerActivity(userId, activityType = 'activity', sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    if (sessionMetrics.viewers[userId]) {
+function updateViewerActivity(userId, activityType = 'activity') {
+    if (metrics.viewers[userId]) {
         const now = new Date();
-        sessionMetrics.viewers[userId].lastSeen = now;
+        metrics.viewers[userId].lastSeen = now;
         
         // Update activity-specific counters
         switch (activityType) {
             case 'like':
-                sessionMetrics.viewers[userId].totalLikes++;
+                metrics.viewers[userId].totalLikes++;
                 break;
             case 'gift':
-                sessionMetrics.viewers[userId].totalGifts++;
+                metrics.viewers[userId].totalGifts++;
                 // Note: totalDiamonds is updated separately in gift event handler
                 break;
             case 'comment':
-                sessionMetrics.viewers[userId].totalComments++;
+                metrics.viewers[userId].totalComments++;
                 break;
             case 'follow':
-                sessionMetrics.viewers[userId].isFollower = true;
-                sessionMetrics.viewers[userId].followTime = new Date();
+                metrics.viewers[userId].isFollower = true;
+                metrics.viewers[userId].followTime = new Date();
                 break;
             case 'share':
-                sessionMetrics.viewers[userId].totalShares++;
+                metrics.viewers[userId].totalShares++;
                 break;
         }
         
-        // Send viewer activity update to this session only
+        // Broadcast viewer activity update
         broadcastEvent('viewerActivity', {
             userId: userId,
-            nickname: sessionMetrics.viewers[userId].nickname,
+            nickname: metrics.viewers[userId].nickname,
             activityType: activityType,
             timestamp: now
-        }, sessionId);
+        });
     }
 }
 
@@ -1141,63 +998,60 @@ function extractKeywords(commentText) {
 }
 
 // Update keyword frequency tracking
-function updateKeywordFrequency(keywords, sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
+function updateKeywordFrequency(keywords) {
     keywords.forEach(keyword => {
-        if (!sessionMetrics.keywordFrequency[keyword]) {
-            sessionMetrics.keywordFrequency[keyword] = 0;
+        if (!metrics.keywordFrequency[keyword]) {
+            metrics.keywordFrequency[keyword] = 0;
         }
-        sessionMetrics.keywordFrequency[keyword]++;
+        metrics.keywordFrequency[keyword]++;
     });
 }
 
 // Calculate rolling sentiment average
-function updateRollingSentiment(sentimentScore, sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    sessionMetrics.commentSentiments = sessionMetrics.commentSentiments || [];
-    sessionMetrics.commentSentiments.push(sentimentScore);
+function updateRollingSentiment(sentimentScore) {
+    metrics.commentSentiments.push(sentimentScore);
     
     // Keep only last 100 sentiment scores
-    if (sessionMetrics.commentSentiments.length > 100) {
-        sessionMetrics.commentSentiments = sessionMetrics.commentSentiments.slice(-100);
+    if (metrics.commentSentiments.length > 100) {
+        metrics.commentSentiments = metrics.commentSentiments.slice(-100);
     }
     
     // Calculate rolling average
-    const sum = sessionMetrics.commentSentiments.reduce((a, b) => a + b, 0);
-    sessionMetrics.rollingSentimentScore = sum / sessionMetrics.commentSentiments.length;
+    const sum = metrics.commentSentiments.reduce((a, b) => a + b, 0);
+    metrics.rollingSentimentScore = sum / metrics.commentSentiments.length;
     
     // Update entertainment level when sentiment changes
-    calculateEntertainmentLevel(sessionId);
+    calculateEntertainmentLevel();
 }
 
 // ===== ENTERTAINMENT LEVEL ENGINE =====
 
 // Calculate entertainment level based on multiple engagement factors
-function calculateEntertainmentLevel(sessionId) {
+function calculateEntertainmentLevel() {
     const now = Date.now();
     let totalScore = 0;
     let maxScore = 0;
     
     // 1. ENGAGEMENT INTENSITY (30% weight)
-    const engagementIntensity = calculateEngagementIntensity(sessionId);
+    const engagementIntensity = calculateEngagementIntensity();
     const engagementScore = Math.min(engagementIntensity * 30, 30);
     totalScore += engagementScore;
     maxScore += 30;
     
     // 2. CONTENT RECEPTION (25% weight)
-    const contentReception = calculateContentReception(sessionId);
+    const contentReception = calculateContentReception();
     const contentScore = Math.min(contentReception * 25, 25);
     totalScore += contentScore;
     maxScore += 25;
     
     // 3. AUDIENCE ENERGY (25% weight)
-    const audienceEnergy = calculateAudienceEnergy(sessionId);
+    const audienceEnergy = calculateAudienceEnergy();
     const energyScore = Math.min(audienceEnergy * 25, 25);
     totalScore += energyScore;
     maxScore += 25;
     
     // 4. RETENTION QUALITY (20% weight)
-    const retentionQuality = calculateRetentionQuality(sessionId);
+    const retentionQuality = calculateRetentionQuality();
     const retentionScore = Math.min(retentionQuality * 20, 20);
     totalScore += retentionScore;
     maxScore += 20;
@@ -1206,13 +1060,12 @@ function calculateEntertainmentLevel(sessionId) {
     const entertainmentScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
     
     // Update entertainment metrics
-    const sessionMetrics = getSessionMetrics(sessionId);
-    sessionMetrics.entertainmentMetrics.entertainmentScore = entertainmentScore;
-    sessionMetrics.entertainmentMetrics.engagementIntensity = engagementIntensity;
-    sessionMetrics.entertainmentMetrics.contentReception = contentReception;
-    sessionMetrics.entertainmentMetrics.audienceEnergy = audienceEnergy;
-    sessionMetrics.entertainmentMetrics.retentionQuality = retentionQuality;
-    sessionMetrics.entertainmentMetrics.lastEntertainmentUpdate = new Date();
+    metrics.entertainmentMetrics.entertainmentScore = entertainmentScore;
+    metrics.entertainmentMetrics.engagementIntensity = engagementIntensity;
+    metrics.entertainmentMetrics.contentReception = contentReception;
+    metrics.entertainmentMetrics.audienceEnergy = audienceEnergy;
+    metrics.entertainmentMetrics.retentionQuality = retentionQuality;
+    metrics.entertainmentMetrics.lastEntertainmentUpdate = new Date();
     
     console.log(`🎭 [ENTERTAINMENT] Score: ${entertainmentScore}/100 | Engagement: ${engagementIntensity.toFixed(2)} | Content: ${contentReception.toFixed(2)} | Energy: ${audienceEnergy.toFixed(2)} | Retention: ${retentionQuality.toFixed(2)}`);
     
@@ -1220,14 +1073,13 @@ function calculateEntertainmentLevel(sessionId) {
 }
 
 // Calculate engagement intensity (0-1 scale)
-function calculateEngagementIntensity(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    const currentViewers = sessionMetrics.currentViewerCount || 1;
+function calculateEngagementIntensity() {
+    const currentViewers = metrics.currentViewerCount || 1;
     
     // Normalize engagement metrics per viewer
-    const likesPerViewer = (sessionMetrics.likesPerMinute || 0) / currentViewers;
-    const commentsPerViewer = (sessionMetrics.commentsPerMinute || 0) / currentViewers;
-    const giftsPerViewer = (sessionMetrics.giftsPerMinute || 0) / currentViewers;
+    const likesPerViewer = (metrics.likesPerMinute || 0) / currentViewers;
+    const commentsPerViewer = (metrics.commentsPerMinute || 0) / currentViewers;
+    const giftsPerViewer = (metrics.giftsPerMinute || 0) / currentViewers;
     
     // Weight different engagement types
     const weightedEngagement = (likesPerViewer * 0.4) + (commentsPerViewer * 0.4) + (giftsPerViewer * 0.2);
@@ -1239,21 +1091,20 @@ function calculateEngagementIntensity(sessionId) {
 }
 
 // Calculate content reception quality (0-1 scale)
-function calculateContentReception(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
+function calculateContentReception() {
     let receptionScore = 0;
     
     // 1. Sentiment quality (40% weight)
-    if (sessionMetrics.commentSentiments && sessionMetrics.commentSentiments.length >= 10) {
-        const recentSentiments = sessionMetrics.commentSentiments.slice(-10);
+    if (metrics.commentSentiments.length >= 10) {
+        const recentSentiments = metrics.commentSentiments.slice(-10);
         const positiveComments = recentSentiments.filter(s => s > 0).length;
         const sentimentQuality = positiveComments / recentSentiments.length;
         receptionScore += sentimentQuality * 0.4;
     }
     
     // 2. Comment quality (30% weight)
-    if (sessionMetrics.recentComments && sessionMetrics.recentComments.length >= 5) {
-        const recentComments = sessionMetrics.recentComments.slice(-5);
+    if (metrics.recentComments.length >= 5) {
+        const recentComments = metrics.recentComments.slice(-5);
         const qualityComments = recentComments.filter(c => 
             c.comment && c.comment.length > 10 && !c.comment.includes('?') && !c.comment.includes('!')
         ).length;
@@ -1262,42 +1113,40 @@ function calculateContentReception(sessionId) {
     }
     
     // 3. Gift frequency (30% weight)
-    const giftFrequency = Math.min((sessionMetrics.giftsPerMinute || 0) / 10, 1); // Normalize to 0-1
+    const giftFrequency = Math.min((metrics.giftsPerMinute || 0) / 10, 1); // Normalize to 0-1
     receptionScore += giftFrequency * 0.3;
     
     return Math.min(receptionScore, 1);
 }
 
 // Calculate audience energy level (0-1 scale)
-function calculateAudienceEnergy(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
+function calculateAudienceEnergy() {
     let energyScore = 0;
     
     // 1. Rapid engagement (40% weight)
-    const rapidEngagement = Math.min((sessionMetrics.likesPerMinute + sessionMetrics.commentsPerMinute) / 50, 1);
+    const rapidEngagement = Math.min((metrics.likesPerMinute + metrics.commentsPerMinute) / 50, 1);
     energyScore += rapidEngagement * 0.4;
     
     // 2. Viewer growth momentum (30% weight)
-    if (sessionMetrics.viewerHistory && sessionMetrics.viewerHistory.length >= 5) {
-        const recentViewers = sessionMetrics.viewerHistory.slice(-5);
+    if (metrics.viewerHistory.length >= 5) {
+        const recentViewers = metrics.viewerHistory.slice(-5);
         const growthMomentum = recentViewers[recentViewers.length - 1].count - recentViewers[0].count;
         const normalizedGrowth = Math.min(Math.max(growthMomentum / 10, 0), 1);
         energyScore += normalizedGrowth * 0.3;
     }
     
     // 3. Active participation (30% weight)
-    const activeParticipation = Math.min(((sessionMetrics.recentComments?.length || 0) + (sessionMetrics.recentLikes?.length || 0)) / 20, 1);
+    const activeParticipation = Math.min((metrics.recentComments.length + metrics.recentLikes.length) / 20, 1);
     energyScore += activeParticipation * 0.3;
     
     return Math.min(energyScore, 1);
 }
 
 // Calculate retention quality (0-1 scale)
-function calculateRetentionQuality(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    if (!sessionMetrics.viewerHistory || sessionMetrics.viewerHistory.length < 10) return 0.5; // Default assumption
+function calculateRetentionQuality() {
+    if (metrics.viewerHistory.length < 10) return 0.5; // Default assumption
     
-    const recentViewers = sessionMetrics.viewerHistory.slice(-10);
+    const recentViewers = metrics.viewerHistory.slice(-10);
     const avgViewers = recentViewers.reduce((sum, entry) => sum + entry.count, 0) / recentViewers.length;
     
     // Calculate stability (less variance = better retention)
@@ -1630,7 +1479,7 @@ function analyzeContentPerformance() {
 // ===== QUESTION DETECTION ENGINE =====
 
 // Detect questions in chat comments
-function detectQuestions(comment, userId, nickname, sessionId) {
+function detectQuestions(comment, userId, nickname) {
     const questionPatterns = [
         // Direct questions
         /\?$/, // Ends with question mark
@@ -1668,21 +1517,20 @@ function detectQuestions(comment, userId, nickname, sessionId) {
         };
         
         // Add to pending questions
-        const sessionMetrics = getSessionMetrics(sessionId);
-        sessionMetrics.questionDetection.pendingQuestions.push(questionData);
+        metrics.questionDetection.pendingQuestions.push(questionData);
         
         // Keep only last 20 pending questions
-        if (sessionMetrics.questionDetection.pendingQuestions.length > 20) {
-            sessionMetrics.questionDetection.pendingQuestions = sessionMetrics.questionDetection.pendingQuestions.slice(-20);
+        if (metrics.questionDetection.pendingQuestions.length > 20) {
+            metrics.questionDetection.pendingQuestions = metrics.questionDetection.pendingQuestions.slice(-20);
         }
         
         // Update question stats
-        updateQuestionStats(sessionId);
+        updateQuestionStats();
         
         console.log(`❓ [QUESTION DETECTED] ${nickname}: "${comment}" (Priority: ${questionData.priority})`);
         
-        // Send question to this session only
-        broadcastEvent('questionDetected', questionData, sessionId);
+        // Broadcast question to dashboard
+        broadcastEvent('questionDetected', questionData);
         
         return questionData;
     }
@@ -1754,23 +1602,22 @@ function markQuestionAnswered(questionId) {
 }
 
 // Update question statistics
-function updateQuestionStats(sessionId) {
-    const sessionMetrics = getSessionMetrics(sessionId);
-    const stats = sessionMetrics.questionDetection.questionStats;
-    const pending = sessionMetrics.questionDetection.pendingQuestions.length;
-    const answered = sessionMetrics.questionDetection.answeredQuestions ? sessionMetrics.questionDetection.answeredQuestions.length : 0;
+function updateQuestionStats() {
+    const stats = metrics.questionDetection.questionStats;
+    const pending = metrics.questionDetection.pendingQuestions.length;
+    const answered = metrics.questionDetection.answeredQuestions.length;
     
     stats.totalQuestions = pending + answered;
     stats.answeredQuestions = answered;
     stats.responseRate = stats.totalQuestions > 0 ? (answered / stats.totalQuestions) * 100 : 0;
     
     // Calculate average response time
-    if (answered > 0 && sessionMetrics.questionDetection.answeredQuestions) {
-        const totalResponseTime = sessionMetrics.questionDetection.answeredQuestions.reduce((sum, q) => sum + (q.responseTime || 0), 0);
+    if (answered > 0) {
+        const totalResponseTime = metrics.questionDetection.answeredQuestions.reduce((sum, q) => sum + (q.responseTime || 0), 0);
         stats.averageResponseTime = totalResponseTime / answered;
     }
     
-    sessionMetrics.questionDetection.lastQuestionUpdate = new Date();
+    metrics.questionDetection.lastQuestionUpdate = new Date();
 }
 
 // Generate automated prompts using AI service with fallback to legacy system
@@ -2652,32 +2499,19 @@ function broadcastMetrics() {
 }
 
 // Broadcast events to all connected dashboard clients
-function broadcastEvent(type, data, sessionId = null) {
+function broadcastEvent(type, data) {
     const message = JSON.stringify({ type, data });
     console.log(`📤 Broadcasting ${type}:`, data);
     
-    if (sessionId) {
-        // Send to specific session only
-        const session = userSessions.get(sessionId);
-        if (session && session.ws && session.ws.readyState === WebSocket.OPEN) {
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
             try {
-                session.ws.send(message);
+                client.send(message);
             } catch (error) {
-                console.error('❌ Error sending to session:', error);
+                console.error('❌ Error sending to dashboard:', error);
             }
         }
-    } else {
-        // Send to all connected clients (for backward compatibility)
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                try {
-                    client.send(message);
-                } catch (error) {
-                    console.error('❌ Error sending to dashboard:', error);
-                }
-            }
-        });
-    }
+    });
 }
 
 // WebSocket connection handling moved to comprehensive handler below
@@ -2719,96 +2553,515 @@ function cleanupMemory() {
 // Run memory cleanup every 5 minutes
 setInterval(cleanupMemory, 5 * 60 * 1000);
 
-// Global connection settings
+// Multi-user session management
+const userSessions = new Map(); // sessionId -> { connection, metrics, username, wsClients }
+let sessionCounter = 0;
+
+// Session management functions
+function generateSessionId() {
+    return `session_${++sessionCounter}_${Date.now()}`;
+}
+
+function createUserSession(username, wsClient) {
+    const sessionId = generateSessionId();
+    const session = {
+        id: sessionId,
+        username: username,
+        connection: null,
+        isConnecting: false,
+        reconnectAttempts: 0,
+        maxReconnectAttempts: 5,
+        reconnectDelay: 5000,
+        metrics: createEmptyMetrics(),
+        wsClients: new Set([wsClient]),
+        createdAt: Date.now(),
+        lastActivity: Date.now()
+    };
+    
+    userSessions.set(sessionId, session);
+    console.log(`🆕 [SESSION] Created new session ${sessionId} for user @${username}`);
+    return session;
+}
+
+function getSessionByClient(wsClient) {
+    for (const [sessionId, session] of userSessions) {
+        if (session.wsClients.has(wsClient)) {
+            return session;
+        }
+    }
+    return null;
+}
+
+function removeClientFromSession(wsClient) {
+    for (const [sessionId, session] of userSessions) {
+        if (session.wsClients.has(wsClient)) {
+            session.wsClients.delete(wsClient);
+            session.lastActivity = Date.now();
+            
+            // If no clients left, clean up session after delay
+            if (session.wsClients.size === 0) {
+                console.log(`🧹 [SESSION] No clients left for session ${sessionId}, scheduling cleanup`);
+                setTimeout(() => {
+                    if (userSessions.has(sessionId) && userSessions.get(sessionId).wsClients.size === 0) {
+                        cleanupSession(sessionId);
+                    }
+                }, 30000); // 30 second delay before cleanup
+            }
+            return session;
+        }
+    }
+    return null;
+}
+
+function cleanupSession(sessionId) {
+    const session = userSessions.get(sessionId);
+    if (session) {
+        console.log(`🧹 [SESSION] Cleaning up session ${sessionId} for @${session.username}`);
+        
+        // Disconnect TikTok connection
+        if (session.connection) {
+            try {
+                session.connection.disconnect();
+            } catch (error) {
+                console.log('⚠️ [SESSION] Error disconnecting during cleanup:', error.message);
+            }
+        }
+        
+        userSessions.delete(sessionId);
+    }
+}
+
+function createEmptyMetrics() {
+    return {
+        currentViewerCount: 0,
+        totalLikes: 0,
+        totalGifts: 0,
+        totalComments: 0,
+        likesPerMinute: 0,
+        giftsPerMinute: 0,
+        commentsPerMinute: 0,
+        sentimentScore: 0,
+        rollingSentimentScore: 0,
+        keywordFrequency: {},
+        userLikeCounts: {},
+        viewers: {},
+        viewerStats: {
+            totalUniqueViewers: 0,
+            averageWatchTime: 0,
+            longestWatchTime: 0,
+            viewersByWatchTime: [],
+            engagementRanking: []
+        },
+        newFollowers: [],
+        sessionFollowersGained: 0,
+        entertainmentMetrics: {
+            entertainmentScore: 0,
+            engagementIntensity: 0,
+            contentReception: 0,
+            audienceEnergy: 0,
+            retentionQuality: 0
+        },
+        questionDetection: {
+            pendingQuestions: [],
+            questionStats: {
+                totalQuestions: 0,
+                answeredQuestions: 0,
+                unansweredQuestions: 0,
+                averageResponseTime: 0
+            }
+        },
+        predictiveMetrics: {
+            churnRiskScore: 0,
+            engagementTrend: 'stable',
+            peakEngagementTime: null,
+            recommendedActions: []
+        },
+        sessionStartTime: Date.now(),
+        lastActivity: Date.now()
+    };
+}
+
+// Legacy variables for backward compatibility (will be removed)
+let connection = null;
+let isConnecting = false;
+let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const reconnectDelay = 5000; // 5 seconds
 
-// Function to change TikTok username dynamically
-async function changeTikTokUsername(newUsername, sessionId) {
-    const session = userSessions.get(sessionId);
-    if (!session) {
-        throw new Error('Session not found');
+// Session-aware connection management
+async function connectToTikTokForSession(session) {
+    if (session.isConnecting) return;
+    
+    // Check if username is set
+    if (!session.username || session.username.trim() === '') {
+        console.log('⚠️ [SESSION] No username set for session', session.id);
+        return;
     }
     
+    session.isConnecting = true;
+    console.log(`🔗 [SESSION ${session.id}] Attempting to connect to TikTok Live: ${session.username}`);
+    
     try {
-        console.log(`🔄 [USERNAME] Session ${sessionId}: Changing from ${session.username} to ${newUsername}`);
+        session.connection = new WebcastPushConnection(session.username, {
+            requestPollingIntervalMs: 3000,
+            sessionId: undefined,
+            clientParams: {
+                "app_language": "en-US",
+                "device_platform": "web",
+                "webcast_sdk_version": "1.3.0",
+                "web_id": "7280301053461791239",
+                "msToken": "msToken",
+                "browser_language": "en",
+                "browser_platform": "Win32",
+                "browser_name": "Mozilla",
+                "browser_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "browser_online": true,
+                "tz_name": "America/New_York",
+                "identity": "en",
+                "room_id": "7280301053461791239",
+                "heartbeatIntervalMs": 15000,
+                "client": "web"
+            },
+            connectTimeoutMs: 30000,
+            requestTimeoutMs: 10000
+        });
+
+        // Set up event handlers for this session
+        setupSessionEventHandlers(session);
+        
+        // Connect to the live stream
+        await session.connection.connect();
+        
+    } catch (error) {
+        console.error(`❌ [SESSION ${session.id}] Failed to connect:`, error);
+        session.isConnecting = false;
+        throw error;
+    }
+}
+
+function setupSessionEventHandlers(session) {
+    const connection = session.connection;
+    
+    connection.on('connected', (state) => {
+        console.log(`✅ [SESSION ${session.id}] Connected to TikTok Live!`);
+        console.log(`📊 [SESSION ${session.id}] Room info:`, state);
+        session.isConnecting = false;
+        session.reconnectAttempts = 0;
+        
+        // Reset session metrics for new stream
+        session.metrics = createEmptyMetrics();
+        
+        // Extract initial room state
+        extractInitialRoomStateForSession(state, session);
+        
+        // Broadcast connection status to session clients
+        broadcastToSession(session, 'connected', { 
+            status: 'connected', 
+            roomInfo: state,
+            sessionId: session.id,
+            username: session.username
+        });
+    });
+
+    connection.on('disconnected', (reason) => {
+        console.log(`❌ [SESSION ${session.id}] Disconnected from TikTok Live:`, reason);
+        session.isConnecting = false;
+        
+        // Broadcast disconnection status to session clients
+        broadcastToSession(session, 'disconnected', { 
+            status: 'disconnected', 
+            reason,
+            sessionId: session.id,
+            username: session.username
+        });
+        
+        // Attempt reconnection if not max attempts
+        if (session.reconnectAttempts < session.maxReconnectAttempts) {
+            session.reconnectAttempts++;
+            console.log(`🔄 [SESSION ${session.id}] Reconnection attempt ${session.reconnectAttempts}/${session.maxReconnectAttempts} in ${session.reconnectDelay/1000}s...`);
+            setTimeout(() => {
+                if (!session.isConnecting) {
+                    connectToTikTokForSession(session);
+                }
+            }, session.reconnectDelay);
+        } else {
+            console.error(`❌ [SESSION ${session.id}] Max reconnection attempts reached.`);
+        }
+    });
+
+    // Add all other event handlers here (chat, like, gift, etc.)
+    // These will be similar to the existing handlers but will use session-specific metrics
+    connection.on('chat', (data) => {
+        handleChatEventForSession(data, session);
+    });
+
+    connection.on('like', (data) => {
+        handleLikeEventForSession(data, session);
+    });
+
+    connection.on('gift', (data) => {
+        handleGiftEventForSession(data, session);
+    });
+
+    connection.on('follow', (data) => {
+        handleFollowEventForSession(data, session);
+    });
+
+    connection.on('roomUser', (data) => {
+        handleRoomUserEventForSession(data, session);
+    });
+}
+
+function broadcastToSession(session, type, data) {
+    const message = JSON.stringify({ type, data, sessionId: session.id });
+    console.log(`📤 [SESSION ${session.id}] Broadcasting ${type}:`, data);
+    
+    session.wsClients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            try {
+                client.send(message);
+            } catch (error) {
+                console.error(`❌ [SESSION ${session.id}] Error sending to client:`, error);
+            }
+        }
+    });
+}
+
+// Session-specific event handlers
+function handleChatEventForSession(data, session) {
+    console.log(`💬 [SESSION ${session.id}] Chat event:`, data);
+    
+    // Update session metrics
+    session.metrics.totalComments++;
+    session.metrics.lastActivity = Date.now();
+    
+    // Process sentiment
+    if (data.comment) {
+        const sentiment = sentimentAnalyzer.analyze(data.comment);
+        session.metrics.sentimentScore = sentiment.score;
+        
+        // Update rolling sentiment
+        if (!session.metrics.sentimentHistory) {
+            session.metrics.sentimentHistory = [];
+        }
+        session.metrics.sentimentHistory.push(sentiment.score);
+        if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
+            session.metrics.sentimentHistory.shift();
+        }
+        session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
+    }
+    
+    // Broadcast to session clients
+    broadcastToSession(session, 'chat', {
+        user: data.nickname,
+        comment: data.comment,
+        timestamp: Date.now(),
+        sessionId: session.id
+    });
+}
+
+function handleLikeEventForSession(data, session) {
+    console.log(`❤️ [SESSION ${session.id}] Like event:`, data);
+    
+    // Update session metrics
+    session.metrics.totalLikes++;
+    session.metrics.lastActivity = Date.now();
+    
+    // Track user likes
+    if (data.nickname) {
+        session.metrics.userLikeCounts[data.nickname] = (session.metrics.userLikeCounts[data.nickname] || 0) + 1;
+    }
+    
+    // Broadcast to session clients
+    broadcastToSession(session, 'like', {
+        user: data.nickname,
+        timestamp: Date.now(),
+        sessionId: session.id
+    });
+}
+
+function handleGiftEventForSession(data, session) {
+    console.log(`🎁 [SESSION ${session.id}] Gift event:`, data);
+    
+    // Update session metrics
+    session.metrics.totalGifts++;
+    session.metrics.lastActivity = Date.now();
+    
+    // Broadcast to session clients
+    broadcastToSession(session, 'gift', {
+        user: data.nickname,
+        gift: data.giftName,
+        value: data.giftValue,
+        timestamp: Date.now(),
+        sessionId: session.id
+    });
+}
+
+function handleFollowEventForSession(data, session) {
+    console.log(`🆕 [SESSION ${session.id}] Follow event:`, data);
+    
+    // Update session metrics
+    session.metrics.sessionFollowersGained++;
+    session.metrics.lastActivity = Date.now();
+    
+    // Add to new followers list
+    if (!session.metrics.newFollowers) {
+        session.metrics.newFollowers = [];
+    }
+    session.metrics.newFollowers.push({
+        nickname: data.nickname,
+        timestamp: Date.now()
+    });
+    
+    // Keep only last 10 followers
+    if (session.metrics.newFollowers.length > 10) {
+        session.metrics.newFollowers.shift();
+    }
+    
+    // Broadcast to session clients
+    broadcastToSession(session, 'newFollower', {
+        nickname: data.nickname,
+        timestamp: Date.now(),
+        sessionId: session.id
+    });
+}
+
+function handleRoomUserEventForSession(data, session) {
+    console.log(`👥 [SESSION ${session.id}] Room user event:`, data);
+    
+    // Update current viewer count from TikTok
+    if (typeof data.viewerCount === 'number') {
+        session.metrics.currentViewerCount = data.viewerCount;
+        session.metrics.lastActivity = Date.now();
+        
+        // Broadcast updated viewer count
+        broadcastToSession(session, 'viewerCount', { 
+            count: data.viewerCount,
+            sessionId: session.id
+        });
+    }
+}
+
+function extractInitialRoomStateForSession(data, session) {
+    // Extract initial room state for session
+    if (data && typeof data === 'object') {
+        if (typeof data.totalLikes === 'number') {
+            session.metrics.totalLikes = data.totalLikes;
+        }
+        if (typeof data.totalGifts === 'number') {
+            session.metrics.totalGifts = data.totalGifts;
+        }
+        if (typeof data.totalComments === 'number') {
+            session.metrics.totalComments = data.totalComments;
+        }
+        if (typeof data.viewerCount === 'number') {
+            session.metrics.currentViewerCount = data.viewerCount;
+        }
+        
+        session.metrics.lastActivity = Date.now();
+        console.log(`📊 [SESSION ${session.id}] Initial room state extracted:`, {
+            totalLikes: session.metrics.totalLikes,
+            totalGifts: session.metrics.totalGifts,
+            totalComments: session.metrics.totalComments,
+            viewerCount: session.metrics.currentViewerCount
+        });
+    }
+}
+
+// Function to change TikTok username dynamically (updated for sessions)
+async function changeTikTokUsername(newUsername, ws) {
+    try {
+        console.log(`🔄 [USERNAME] Changing to ${newUsername}`);
         
         // Validate username
         if (!newUsername || newUsername.trim() === '') {
             throw new Error('Username cannot be empty');
         }
         
-        // Disconnect current connection if exists
-        if (session.connection) {
-            console.log('🔌 [USERNAME] Disconnecting current TikTok connection...');
-            try {
-                session.connection.removeAllListeners();
-                session.connection.disconnect();
-            } catch (disconnectError) {
-                console.log('⚠️ [USERNAME] Error during disconnect (continuing):', disconnectError.message);
+        // Get or create session for this WebSocket client
+        let session = getSessionByClient(ws);
+        if (!session) {
+            // Create new session
+            session = createUserSession(newUsername, ws);
+        } else {
+            // Update existing session
+            console.log(`🔄 [SESSION ${session.id}] Updating username from ${session.username} to ${newUsername}`);
+            
+            // Disconnect current connection if exists
+            if (session.connection) {
+                console.log(`🔌 [SESSION ${session.id}] Disconnecting current TikTok connection...`);
+                try {
+                    session.connection.disconnect();
+                } catch (disconnectError) {
+                    console.log('⚠️ [SESSION] Error during disconnect (continuing):', disconnectError.message);
+                }
+                session.connection = null;
             }
-            session.connection = null;
+            
+            // Update session username
+            session.username = newUsername;
+            session.metrics = createEmptyMetrics();
         }
         
-        // Update session username
-        session.username = newUsername;
-        console.log(`✅ [USERNAME] Session ${sessionId}: Username updated to: ${session.username}`);
+        console.log(`✅ [SESSION ${session.id}] Username updated to: ${session.username}`);
         
-        // Reset metrics for new stream
-        resetSessionMetrics(sessionId);
-        
-        // Notify dashboard of username change
-        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-            session.ws.send(JSON.stringify({
+        // Notify client of username change
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
                 type: 'usernameChanged',
                 username: newUsername,
+                sessionId: session.id,
                 message: `Switched to @${newUsername}`
             }));
             console.log('📤 [USERNAME] Sent usernameChanged message to dashboard');
         }
         
         // Connect to new username
-        console.log('🔗 [USERNAME] Starting connection to new username...');
+        console.log(`🔗 [SESSION ${session.id}] Starting connection to new username...`);
         
         // Send progress update
-        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-            session.ws.send(JSON.stringify({
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
                 type: 'connectionProgress',
                 username: newUsername,
+                sessionId: session.id,
                 message: 'Connecting to TikTok Live...',
-                progress: 25
+                status: 'connecting'
             }));
         }
         
-        await connectToTikTok(sessionId);
+        await connectToTikTokForSession(session);
         
         // Send success message after connection
-        console.log('✅ [USERNAME] Successfully connected to new username');
-        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-            session.ws.send(JSON.stringify({
+        console.log(`✅ [SESSION ${session.id}] Successfully connected to new username`);
+        if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({
                 type: 'usernameChanged',
                 username: newUsername,
+                sessionId: session.id,
                 message: `Successfully connected to @${newUsername}`,
                 status: 'success'
             }));
         }
         
     } catch (error) {
-        console.error('❌ [USERNAME] Error changing username:', error);
+        console.error('❌ [USERNAME] Error changing username:', error.message);
         console.error('❌ [USERNAME] Error stack:', error.stack);
         
         // Send detailed error to dashboard
-        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
+        if (ws && ws.readyState === ws.OPEN) {
             const errorMessage = {
                 type: 'usernameChangeError',
                 error: error.message || 'Unknown error occurred',
-                details: error.toString(),
-                stack: error.stack
+                username: newUsername,
+                timestamp: Date.now()
             };
             
             console.log('📤 [USERNAME] Sending error message to dashboard:', errorMessage);
-            session.ws.send(JSON.stringify(errorMessage));
+            ws.send(JSON.stringify(errorMessage));
             console.log('✅ [USERNAME] Error message sent successfully');
+        } else {
+            console.error('❌ [USERNAME] Cannot send error - WebSocket not ready. State:', ws?.readyState);
         }
     }
 }
@@ -2846,25 +3099,20 @@ require('dotenv').config();
 
 let TIKTOK_USERNAME = process.env.TIKTOK_USERNAME || ""; // Start with no username - will be set via dashboard
 
-async function connectToTikTok(sessionId) {
-    const session = userSessions.get(sessionId);
-    if (!session) {
-        throw new Error('Session not found');
-    }
-    
-    if (session.isConnecting) return;
+async function connectToTikTok() {
+    if (isConnecting) return;
     
     // Check if username is set
-    if (!session.username || session.username.trim() === '') {
-        console.log('⚠️ [CONNECTION] No username set for session. Please use the dashboard to connect to a streamer.');
+    if (!TIKTOK_USERNAME || TIKTOK_USERNAME.trim() === '') {
+        console.log('⚠️ [CONNECTION] No username set. Please use the dashboard to connect to a streamer.');
         return;
     }
     
-    session.isConnecting = true;
-    console.log(`🔗 [CONNECTION] Session ${sessionId}: Attempting to connect to TikTok Live: ${session.username}`);
+    isConnecting = true;
+    console.log(`🔗 [CONNECTION] Attempting to connect to TikTok Live: ${TIKTOK_USERNAME}`);
     
     try {
-        session.connection = new WebcastPushConnection(session.username, {
+        connection = new WebcastPushConnection(TIKTOK_USERNAME, {
             requestPollingIntervalMs: 3000, // Increased for better stability
             sessionId: undefined,
             clientParams: {
@@ -2894,11 +3142,11 @@ async function connectToTikTok(sessionId) {
         
         // Quick connection check
         console.log('🔍 [CONNECTION] Quick connection validation...');
-        if (session.connection.roomId) {
-            console.log('🔍 [CONNECTION] Room ID found:', session.connection.roomId);
+        if (connection.roomId) {
+            console.log('🔍 [CONNECTION] Room ID found:', connection.roomId);
         }
-        if (session.connection.uniqueId) {
-            console.log('🔍 [CONNECTION] Unique ID found:', session.connection.uniqueId);
+        if (connection.uniqueId) {
+            console.log('🔍 [CONNECTION] Unique ID found:', connection.uniqueId);
         }
 
         // Note: resetSessionMetrics function moved to global scope
@@ -2911,18 +3159,18 @@ async function connectToTikTok(sessionId) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // Try to get room info from connection state first (faster)
-                if (session.connection && session.connection.state) {
+                if (connection && connection.state) {
                     console.log('🔍 [ROOM INFO] Checking connection state for room data...');
-                    extractInitialRoomState(session.connection.state, sessionId);
+                    extractInitialRoomState(connection.state);
                 }
                 
                 // Then try to fetch additional room info if needed
-                if (session.connection && typeof session.connection.fetchRoomInfo === 'function') {
+                if (connection && typeof connection.fetchRoomInfo === 'function') {
                     try {
-                        const roomInfo = await session.connection.fetchRoomInfo();
+                        const roomInfo = await connection.fetchRoomInfo();
                         console.log('📊 [ROOM INFO] Room info fetched after connection:', roomInfo);
                         // Extract totals from room info
-                        extractRoomInfoTotals(roomInfo, sessionId);
+                        extractRoomInfoTotals(roomInfo);
                     } catch (fetchError) {
                         console.log('⚠️ [ROOM INFO] Room info fetch failed, using connection state data');
                     }
@@ -2934,54 +3182,44 @@ async function connectToTikTok(sessionId) {
         }
 
         // Connection event handlers
-        session.connection.on('connected', (state) => {
-            console.log(`✅ [CONNECTION] Session ${sessionId}: Connected to TikTok Live!`);
+        connection.on('connected', (state) => {
+            console.log('✅ [CONNECTION] Connected to TikTok Live!');
             console.log('📊 [CONNECTION] Room info:', state);
-            session.isConnecting = false;
-            session.reconnectAttempts = 0;
+            isConnecting = false;
+            reconnectAttempts = 0;
             
             // Clear connection timeout since we're connected
             clearTimeout(connectionTimeout);
             
             // Reset session metrics for new stream
-            resetSessionMetrics(sessionId);
+            resetSessionMetrics();
             
             // Extract initial room state (existing totals from TikTok)
-            extractInitialRoomState(state, sessionId);
+            extractInitialRoomState(state);
             
             // Attempt to fetch room info after connection is established
             fetchRoomInfoAfterConnection();
             
-            // Send connection status to this session only
-            if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-                session.ws.send(JSON.stringify({
-                    type: 'connected',
-                    data: { status: 'connected', roomInfo: state }
-                }));
-            }
+            // Broadcast connection status
+            broadcastEvent('connected', { status: 'connected', roomInfo: state });
         });
 
 
 
-        session.connection.on('disconnected', (reason) => {
-            console.log(`❌ [CONNECTION] Session ${sessionId}: Disconnected from TikTok Live:`, reason);
-            session.isConnecting = false;
+        connection.on('disconnected', (reason) => {
+            console.log('❌ [CONNECTION] Disconnected from TikTok Live:', reason);
+            isConnecting = false;
             
-            // Send disconnection status to this session only
-            if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-                session.ws.send(JSON.stringify({
-                    type: 'disconnected',
-                    data: { status: 'disconnected', reason }
-                }));
-            }
+            // Broadcast disconnection status
+            broadcastEvent('disconnected', { status: 'disconnected', reason });
             
             // Attempt reconnection if not max attempts
-            if (session.reconnectAttempts < maxReconnectAttempts) {
-                session.reconnectAttempts++;
-                console.log(`🔄 [RECONNECTION] Session ${sessionId}: Attempt ${session.reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                console.log(`🔄 [RECONNECTION] Attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);
                 setTimeout(() => {
-                    if (!session.isConnecting) {
-                        connectToTikTok(sessionId);
+                    if (!isConnecting) {
+                        connectToTikTok();
                     }
                 }, reconnectDelay);
             } else {
@@ -2989,9 +3227,9 @@ async function connectToTikTok(sessionId) {
             }
         });
 
-        session.connection.on('error', (error) => {
-            console.error(`❌ [CONNECTION] Session ${sessionId}: TikTok connection error:`, error);
-            session.isConnecting = false;
+        connection.on('error', (error) => {
+            console.error('❌ [CONNECTION] TikTok connection error:', error);
+            isConnecting = false;
             
             // Handle specific error types
             if (error.message && error.message.includes('timeout')) {
@@ -3001,57 +3239,42 @@ async function connectToTikTok(sessionId) {
                 console.error('   - Network connectivity problems');
                 console.error('   - Rate limiting from TikTok');
                 
-                // Send timeout error to this session only
-                if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-                    session.ws.send(JSON.stringify({
-                        type: 'connectionError',
-                        data: { 
-                            type: 'timeout', 
-                            message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
-                            username: session.username
-                        }
-                    }));
-                }
+                // Broadcast timeout error
+                broadcastEvent('connectionError', { 
+                    type: 'timeout', 
+                    message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
+                    username: TIKTOK_USERNAME
+                });
             }
             
-            // Send general error to this session only
-            if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-                session.ws.send(JSON.stringify({
-                    type: 'connectionError',
-                    data: { 
-                        type: 'general', 
-                        message: error.message || 'Unknown connection error',
-                        username: session.username
-                    }
-                }));
-            }
+            // Broadcast general error
+            broadcastEvent('connectionError', { 
+                type: 'general', 
+                message: error.message || 'Unknown connection error',
+                username: TIKTOK_USERNAME
+            });
         });
 
         // Add connection timeout handler
         const connectionTimeout = setTimeout(() => {
-            if (session.isConnecting) {
-                console.error(`⏰ [CONNECTION] Session ${sessionId}: Connection timeout after 30 seconds`);
-                session.isConnecting = false;
+            if (isConnecting) {
+                console.error('⏰ [CONNECTION] Connection timeout after 30 seconds');
+                isConnecting = false;
                 
-                // Send timeout error to this session only
-                if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-                    session.ws.send(JSON.stringify({
-                        type: 'connectionError',
-                        data: { 
-                            type: 'timeout', 
-                            message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
-                            username: session.username
-                        }
-                    }));
-                }
+                // Broadcast timeout error
+                broadcastEvent('connectionError', { 
+                    type: 'timeout', 
+                    message: 'Connection timeout. Please check if the username is correct and the user is live streaming.',
+                    username: TIKTOK_USERNAME
+                });
                 
                 // Attempt reconnection
-                if (session.reconnectAttempts < maxReconnectAttempts) {
-                    session.reconnectAttempts++;
-                    console.log(`🔄 [RECONNECTION] Session ${sessionId}: Attempt ${session.reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`🔄 [RECONNECTION] Attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${reconnectDelay/1000}s...`);
                     setTimeout(() => {
-                        if (!session.isConnecting) {
-                            connectToTikTok(sessionId);
+                        if (!isConnecting) {
+                            connectToTikTok();
                         }
                     }, reconnectDelay);
                 }
@@ -3059,19 +3282,18 @@ async function connectToTikTok(sessionId) {
         }, 30000); // 30 second timeout
 
         // Event handlers for live stream data
-        session.connection.on('chat', (data) => {
+        connection.on('chat', (data) => {
             const { userId, nickname } = getUserInfo(data);
             const cleanedComment = cleanComment(data.comment);
             
             // Track viewer activity for watch time
             if (userId) {
-                updateViewerActivity(userId, 'comment', sessionId);
+                updateViewerActivity(userId, 'comment');
             }
             
             if (cleanedComment) { // Only process non-trivial comments
-                const sessionMetrics = getSessionMetrics(sessionId);
                 // Increment total comments
-                sessionMetrics.totalComments++;
+                metrics.totalComments++;
                 commentsInLastMinute.push(Date.now());
                 
                 // Perform sentiment analysis (with performance optimization)
@@ -3084,14 +3306,14 @@ async function connectToTikTok(sessionId) {
                 }
                 
                 // Update rolling sentiment
-                updateRollingSentiment(sentimentScore, sessionId);
+                updateRollingSentiment(sentimentScore);
                 
                 // Extract and track keywords
                 const keywords = extractKeywords(cleanedComment);
-                updateKeywordFrequency(keywords, sessionId);
+                updateKeywordFrequency(keywords);
                 
                 // Detect questions in comments
-                const detectedQuestion = detectQuestions(cleanedComment, userId, nickname, sessionId);
+                const detectedQuestion = detectQuestions(cleanedComment, userId, nickname);
                 
                 const commentData = {
                     userId,
@@ -3906,12 +4128,30 @@ app.get('/test', (req, res) => {
     res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
 });
 
-// Debug endpoint to check current metrics
+// Debug endpoint to check current metrics and sessions
 app.get('/debug', (req, res) => {
+    const sessionInfo = Array.from(userSessions.entries()).map(([sessionId, session]) => ({
+        sessionId: sessionId,
+        username: session.username,
+        connectedClients: session.wsClients.size,
+        isConnecting: session.isConnecting,
+        hasConnection: !!session.connection,
+        createdAt: new Date(session.createdAt).toISOString(),
+        lastActivity: new Date(session.lastActivity).toISOString(),
+        metrics: {
+            currentViewerCount: session.metrics.currentViewerCount,
+            totalLikes: session.metrics.totalLikes,
+            totalGifts: session.metrics.totalGifts,
+            totalComments: session.metrics.totalComments
+        }
+    }));
+
     res.json({
-        message: 'Current metrics and status',
-        metrics: metrics,
-        connectedClients: wss.clients.size,
+        message: 'Current status and active sessions',
+        totalSessions: userSessions.size,
+        totalConnectedClients: wss.clients.size,
+        sessions: sessionInfo,
+        legacyMetrics: metrics, // Keep for backward compatibility
         timestamp: new Date().toISOString()
     });
 });
@@ -3960,65 +4200,21 @@ app.get('/api/viewers', (req, res) => {
     }
 });
 
-// WebSocket connection handling
+// WebSocket connection handling (updated for multi-user sessions)
 wss.on('connection', (ws) => {
     console.log('🖥️ [WEBSOCKET] Dashboard connected');
     console.log(`📊 Total connected clients: ${wss.clients.size}`);
+    console.log(`📊 Total active sessions: ${userSessions.size}`);
     
-    // Create a new session for this WebSocket connection
-    const sessionId = generateSessionId();
-    const session = createUserSession(sessionId, ws);
-    
-    // Send session ID to client
+    // Send initial session info (no metrics until user connects to a stream)
     ws.send(JSON.stringify({
-        type: 'sessionCreated',
-        data: { sessionId: sessionId }
-    }));
-    
-    // Send initial metrics for this session
-    const sessionMetrics = getSessionMetrics(sessionId);
-    ws.send(JSON.stringify({
-        type: 'metrics',
+        type: 'sessionInfo',
         data: {
-            currentViewerCount: sessionMetrics.currentViewerCount,
-            totalLikes: sessionMetrics.totalLikes,
-            totalGifts: sessionMetrics.totalGifts,
-            totalComments: sessionMetrics.totalComments,
-            likesPerMinute: sessionMetrics.likesPerMinute,
-            giftsPerMinute: sessionMetrics.giftsPerMinute,
-            commentsPerMinute: sessionMetrics.commentsPerMinute,
-            sentimentScore: sessionMetrics.sentimentScore,
-            rollingSentimentScore: sessionMetrics.rollingSentimentScore,
-            keywordFrequency: sessionMetrics.keywordFrequency,
-            userLikeCounts: sessionMetrics.userLikeCounts,
-            viewerStats: {
-                totalUniqueViewers: sessionMetrics.viewerStats.totalUniqueViewers,
-                averageWatchTime: sessionMetrics.viewerStats.averageWatchTime,
-                longestWatchTime: sessionMetrics.viewerStats.longestWatchTime,
-                viewersByWatchTime: sessionMetrics.viewerStats.viewersByWatchTime,
-                activeViewers: Object.values(sessionMetrics.viewers).filter(v => v.isActive).length
-            },
-            newFollowers: sessionMetrics.newFollowers || [],
-            sessionFollowersGained: sessionMetrics.sessionFollowersGained || 0,
-            entertainmentMetrics: {
-                entertainmentScore: sessionMetrics.entertainmentMetrics.entertainmentScore,
-                engagementIntensity: sessionMetrics.entertainmentMetrics.engagementIntensity,
-                contentReception: sessionMetrics.entertainmentMetrics.contentReception,
-                audienceEnergy: sessionMetrics.entertainmentMetrics.audienceEnergy,
-                retentionQuality: sessionMetrics.entertainmentMetrics.retentionQuality
-            },
-            questionDetection: {
-                pendingQuestions: sessionMetrics.questionDetection.pendingQuestions.slice(-5),
-                questionStats: sessionMetrics.questionDetection.questionStats
-            },
-            predictiveMetrics: {
-                churnRiskScore: sessionMetrics.predictiveMetrics.churnRiskScore,
-                monetizationOpportunityScore: sessionMetrics.predictiveMetrics.monetizationOpportunityScore,
-                engagementTrend: sessionMetrics.predictiveMetrics.engagementTrend,
-                viewerRetentionRate: sessionMetrics.predictiveMetrics.viewerRetentionRate,
-                sentimentVolatility: sessionMetrics.predictiveMetrics.sentimentVolatility
-            },
-            timestamp: new Date()
+            sessionId: null,
+            username: null,
+            status: 'disconnected',
+            totalSessions: userSessions.size,
+            message: 'Welcome! Enter a TikTok username to start monitoring a live stream.'
         }
     }));
     
@@ -4031,7 +4227,7 @@ wss.on('connection', (ws) => {
                 case 'changeUsername':
                     console.log('🔄 [WEBSOCKET] Username change request:', data.username);
                     try {
-                        await changeTikTokUsername(data.username, sessionId);
+                        await changeTikTokUsername(data.username, ws);
                     } catch (error) {
                         console.error('❌ [WEBSOCKET] Username change error:', error);
                         ws.send(JSON.stringify({
@@ -4044,8 +4240,9 @@ wss.on('connection', (ws) => {
                 case 'disconnectStream':
                     console.log('❌ [WEBSOCKET] Disconnect request received');
                     try {
-                        if (session.connection) {
-                            console.log('🔌 [WEBSOCKET] Disconnecting TikTok connection...');
+                        const session = getSessionByClient(ws);
+                        if (session && session.connection) {
+                            console.log(`🔌 [SESSION ${session.id}] Disconnecting TikTok connection...`);
                             
                             // Remove all event listeners before disconnecting
                             session.connection.removeAllListeners();
@@ -4054,7 +4251,7 @@ wss.on('connection', (ws) => {
                             try {
                                 session.connection.disconnect();
                             } catch (disconnectError) {
-                                console.log('⚠️ [WEBSOCKET] Error during disconnect (continuing cleanup):', disconnectError.message);
+                                console.log('⚠️ [SESSION] Error during disconnect (continuing cleanup):', disconnectError.message);
                             }
                             
                             // Set connection to null
@@ -4064,18 +4261,19 @@ wss.on('connection', (ws) => {
                             session.isConnecting = false;
                             session.reconnectAttempts = 0;
                             
-                            console.log('✅ [WEBSOCKET] Stream disconnected successfully');
+                            console.log(`✅ [SESSION ${session.id}] Stream disconnected successfully`);
                             
-                            // Reset metrics for this session
-                            resetSessionMetrics(sessionId);
+                            // Reset session metrics
+                            session.metrics = createEmptyMetrics();
                             
-                            // Send disconnect message to this session only
-                            ws.send(JSON.stringify({
-                                type: 'streamDisconnected',
-                                data: { message: 'Stream disconnected successfully' }
-                            }));
+                            // Broadcast disconnect to session clients
+                            broadcastToSession(session, 'streamDisconnected', { 
+                                message: 'Stream disconnected successfully',
+                                sessionId: session.id,
+                                username: session.username
+                            });
                         } else {
-                            console.log('⚠️ [WEBSOCKET] No active connection to disconnect');
+                            console.log('⚠️ [WEBSOCKET] No active session or connection to disconnect');
                             ws.send(JSON.stringify({
                                 type: 'streamDisconnected',
                                 data: { message: 'No active connection' }
@@ -4097,11 +4295,11 @@ wss.on('connection', (ws) => {
                     
                 case 'setLanguage':
                     console.log('🌍 [WEBSOCKET] Language change request:', data.language);
-                    session.language = data.language;
-                    console.log('✅ [WEBSOCKET] Language set to:', session.language);
+                    currentLanguage = data.language;
+                    console.log('✅ [WEBSOCKET] Language set to:', currentLanguage);
                     ws.send(JSON.stringify({ 
                         type: 'languageSet', 
-                        data: { language: session.language } 
+                        data: { language: currentLanguage } 
                     }));
                     break;
                     
@@ -4119,10 +4317,15 @@ wss.on('connection', (ws) => {
     
     ws.on('close', () => {
         console.log('🖥️ [WEBSOCKET] Dashboard disconnected');
-        console.log(`📊 Total connected clients: ${wss.clients.size}`);
         
-        // Cleanup session when WebSocket closes
-        cleanupSession(sessionId);
+        // Remove client from any session
+        const session = removeClientFromSession(ws);
+        if (session) {
+            console.log(`📤 [SESSION ${session.id}] Removed client from session`);
+        }
+        
+        console.log(`📊 Total connected clients: ${wss.clients.size}`);
+        console.log(`📊 Total active sessions: ${userSessions.size}`);
     });
     
     ws.on('error', (error) => {
@@ -4292,3 +4495,34 @@ function setCurrentRoomTotals(likes = null, gifts = null, comments = null, viewe
 
 // Make manual override function available globally for testing
 global.setCurrentRoomTotals = setCurrentRoomTotals;
+
+// Set up periodic metrics updates for all sessions
+setInterval(() => {
+    // Broadcast metrics for each active session
+    userSessions.forEach((session, sessionId) => {
+        if (session.wsClients.size > 0) {
+            broadcastToSession(session, 'metrics', {
+                currentViewerCount: session.metrics.currentViewerCount,
+                totalLikes: session.metrics.totalLikes,
+                totalGifts: session.metrics.totalGifts,
+                totalComments: session.metrics.totalComments,
+                likesPerMinute: session.metrics.likesPerMinute,
+                giftsPerMinute: session.metrics.giftsPerMinute,
+                commentsPerMinute: session.metrics.commentsPerMinute,
+                sentimentScore: session.metrics.sentimentScore,
+                rollingSentimentScore: session.metrics.rollingSentimentScore,
+                keywordFrequency: session.metrics.keywordFrequency,
+                userLikeCounts: session.metrics.userLikeCounts,
+                viewerStats: session.metrics.viewerStats,
+                newFollowers: session.metrics.newFollowers || [],
+                sessionFollowersGained: session.metrics.sessionFollowersGained || 0,
+                entertainmentMetrics: session.metrics.entertainmentMetrics,
+                questionDetection: session.metrics.questionDetection,
+                predictiveMetrics: session.metrics.predictiveMetrics,
+                sessionId: sessionId,
+                username: session.username,
+                timestamp: new Date()
+            });
+        }
+    });
+}, 5000); // Broadcast every 5 seconds
