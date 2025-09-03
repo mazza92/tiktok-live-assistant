@@ -3063,22 +3063,31 @@ function trackViewerForSession(userId, nickname, profilePic, session) {
 
 // Update viewer stats for a specific session
 function updateSessionViewerStats(session) {
-    const activeViewers = Object.values(session.metrics.viewers).filter(v => v.isActive);
+    // Ensure viewers object exists
+    if (!session.metrics.viewers) {
+        session.metrics.viewers = {};
+    }
     
-    if (activeViewers.length > 0) {
-        // Calculate average watch time
-        const totalWatchTime = activeViewers.reduce((sum, v) => sum + v.watchTime, 0);
-        session.metrics.viewerStats.averageWatchTime = Math.floor(totalWatchTime / activeViewers.length);
+    const allViewers = Object.values(session.metrics.viewers);
+    const activeViewers = allViewers.filter(v => v.isActive);
+    
+    // Update total unique viewers count
+    session.metrics.viewerStats.totalUniqueViewers = allViewers.length;
+    
+    if (allViewers.length > 0) {
+        // Calculate average watch time (in seconds)
+        const totalWatchTime = allViewers.reduce((sum, v) => sum + (v.watchTime || 0), 0);
+        session.metrics.viewerStats.averageWatchTime = Math.floor(totalWatchTime / allViewers.length);
         
-        // Find longest watch time
-        session.metrics.viewerStats.longestWatchTime = Math.max(...activeViewers.map(v => v.watchTime));
+        // Find longest watch time (in seconds)
+        session.metrics.viewerStats.longestWatchTime = Math.max(...allViewers.map(v => v.watchTime || 0));
         
         // Categorize viewers by watch time
         session.metrics.viewerStats.viewersByWatchTime = {
-            '0-5min': activeViewers.filter(v => v.watchTime < 300).length,
-            '5-15min': activeViewers.filter(v => v.watchTime >= 300 && v.watchTime < 900).length,
-            '15-30min': activeViewers.filter(v => v.watchTime >= 900 && v.watchTime < 1800).length,
-            '30min+': activeViewers.filter(v => v.watchTime >= 1800).length
+            '0-5min': allViewers.filter(v => (v.watchTime || 0) < 300).length,
+            '5-15min': allViewers.filter(v => (v.watchTime || 0) >= 300 && (v.watchTime || 0) < 900).length,
+            '15-30min': allViewers.filter(v => (v.watchTime || 0) >= 900 && (v.watchTime || 0) < 1800).length,
+            '30min+': allViewers.filter(v => (v.watchTime || 0) >= 1800).length
         };
         
         session.metrics.viewerStats.activeViewers = activeViewers.length;
@@ -3093,6 +3102,26 @@ function updateSessionViewerStats(session) {
         };
         session.metrics.viewerStats.activeViewers = 0;
     }
+}
+
+// Update viewer watch times for a specific session
+function updateSessionViewerWatchTimes(session) {
+    if (!session.metrics.viewers) {
+        session.metrics.viewers = {};
+        return;
+    }
+    
+    const now = Date.now();
+    const sessionStartTime = session.metrics.sessionStartTime || now;
+    
+    Object.values(session.metrics.viewers).forEach(viewer => {
+        if (viewer.isActive) {
+            // Calculate watch time based on join time
+            const watchTimeMs = now - (viewer.joinTime || sessionStartTime);
+            viewer.watchTime = Math.floor(watchTimeMs / 1000); // Convert to seconds
+            viewer.lastSeen = now;
+        }
+    });
 }
 
 // Ensure session metrics have all required fields (for existing sessions)
@@ -3232,6 +3261,22 @@ function generateSessionEngagementRanking(session) {
     session.metrics.viewerStats.engagementRanking = engagementData.slice(0, 10);
 }
 
+// Calculate viewer retention rate for a specific session
+function calculateSessionViewerRetention(session) {
+    const currentViewers = session.metrics.currentViewerCount || 0;
+    const totalUniqueViewers = session.metrics.viewerStats.totalUniqueViewers || 0;
+    
+    if (totalUniqueViewers === 0) {
+        return 0;
+    }
+    
+    // Calculate retention rate (current viewers / total unique viewers)
+    const retentionRate = currentViewers / totalUniqueViewers;
+    
+    // Cap at 100% to avoid unrealistic percentages
+    return Math.min(retentionRate, 1.0);
+}
+
 // Calculate entertainment metrics for a specific session
 function calculateSessionEntertainmentMetrics(session) {
     const currentViewers = session.metrics.currentViewerCount || 1;
@@ -3308,7 +3353,7 @@ function handleChatEventForSession(data, session) {
     
     // Broadcast to session clients
     broadcastToSession(session, 'chat', {
-        user: data.nickname,
+        user: nickname || 'Anonymous',
         comment: data.comment,
         timestamp: Date.now(),
         sessionId: session.id
@@ -3365,7 +3410,7 @@ function handleLikeEventForSession(data, session) {
     
     // Broadcast to session clients
     broadcastToSession(session, 'like', {
-        user: data.nickname,
+        user: nickname || 'Anonymous',
         timestamp: Date.now(),
         sessionId: session.id
     });
@@ -3400,9 +3445,9 @@ function handleGiftEventForSession(data, session) {
     
     // Extract gift information with proper fallbacks
     const { userId, nickname } = getUserInfo(data);
-    const giftName = data.giftName || data.gift?.name || 'Unknown Gift';
-    const giftValue = data.giftValue || data.gift?.diamondCount || 0;
-    const giftId = data.giftId || data.gift?.id || 'unknown';
+    const giftName = data.giftName || data.gift?.name || data.gift?.giftName || 'Gift';
+    const giftValue = data.giftValue || data.gift?.diamondCount || data.gift?.value || 1;
+    const giftId = data.giftId || data.gift?.id || 'gift';
     const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
     
     // Update session metrics
@@ -5166,11 +5211,17 @@ setInterval(() => {
             // Update per-minute metrics
             updateSessionPerMinuteMetrics(session);
             
+            // Update viewer watch times
+            updateSessionViewerWatchTimes(session);
+            
             // Update viewer stats
             updateSessionViewerStats(session);
             
             // Generate engagement ranking
             generateSessionEngagementRanking(session);
+            
+            // Calculate viewer retention
+            const retentionRate = calculateSessionViewerRetention(session);
             
             // Broadcast updated metrics
             broadcastToSession(session, 'metrics', {
@@ -5198,10 +5249,11 @@ setInterval(() => {
                 entertainmentMetrics: session.metrics.entertainmentMetrics,
                 questionDetection: session.metrics.questionDetection,
                 predictiveMetrics: session.metrics.predictiveMetrics,
-                sessionId: sessionId,
+                                sessionId: sessionId,
                 username: session.username,
-        timestamp: new Date()
-    });
-}
+                retentionRate: retentionRate,
+                timestamp: new Date()
+            });
+        }
     });
 }, 5000); // Broadcast every 5 seconds
