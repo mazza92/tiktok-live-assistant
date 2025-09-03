@@ -2371,8 +2371,13 @@ function getGiftInfo(data) {
     };
 }
 
-// Update per-minute metrics
+// Update per-minute metrics (legacy - only when no sessions active)
 function updatePerMinuteMetrics() {
+    // Skip legacy metrics updates if there are active sessions
+    if (userSessions.size > 0) {
+        return;
+    }
+    
     const now = Date.now();
     const oneMinuteAgo = now - 60000;
     
@@ -2404,8 +2409,14 @@ function updatePerMinuteMetrics() {
     broadcastMetrics();
 }
 
-// Broadcast metrics to all connected WebSocket clients
+// Broadcast metrics to all connected WebSocket clients (legacy - only when no sessions active)
 function broadcastMetrics() {
+    // Skip legacy broadcasting if there are active sessions
+    if (userSessions.size > 0) {
+        console.log('📊 [BROADCAST] Skipping legacy broadcast - active sessions detected:', userSessions.size);
+        return;
+    }
+    
     // Create a clean metrics object for broadcasting
     const metricsData = {
         currentViewerCount: metrics.currentViewerCount,
@@ -3899,19 +3910,24 @@ async function connectToTikTok() {
     }
 }
 
-// Start the TikTok Live connection
-const username = "lanocallum1"; // TODO: Make this configurable
+// Start the TikTok Live Data Processor (Multi-User Ready)
 console.log("🎯 TikTok Live Data Processor Starting...");
-console.log(`📡 Connecting to: @${username}`);
 console.log("🖥️  Dashboard will be available at: http://localhost:3000");
 console.log("🔌 WebSocket endpoint: ws://localhost:3000");
+console.log("👥 Multi-user support: ENABLED");
+console.log("📡 Ready for user connections via dashboard");
 console.log("=".repeat(60));
 
 // Set up periodic metrics updates
 setInterval(updatePerMinuteMetrics, 1000); // Update every second
 
-// Set up periodic AI prompt checks - more frequent for proactive assistance
+// Set up periodic AI prompt checks - more frequent for proactive assistance (legacy - only when no sessions active)
 setInterval(() => {
+    // Skip legacy AI prompts if there are active sessions
+    if (userSessions.size > 0) {
+        return;
+    }
+    
     console.log(`🤖 [PERIODIC AI CHECK] Checking for automated prompts...`);
     generateAutomatedPrompt().then(automatedPrompt => {
     if (automatedPrompt) {
@@ -3923,8 +3939,13 @@ setInterval(() => {
     });
 }, 15000); // Check every 15 seconds for more proactive assistance
 
-// Set up periodic viewer watch time updates
+// Set up periodic viewer watch time updates (legacy - only when no sessions active)
 setInterval(() => {
+    // Skip legacy viewer updates if there are active sessions
+    if (userSessions.size > 0) {
+        return;
+    }
+    
     updateViewerWatchTime();
     removeInactiveViewers();
     
