@@ -8474,11 +8474,11 @@
             // Check if we're in connecting state - don't show gifts during connection
             const streamStatus = document.getElementById('streamStatus');
             if (streamStatus && streamStatus.textContent.includes('Connecting')) {
-                console.log('🎁 [GIFT ALERT] Skipping gift during connection:', giftData.nickname);
+                console.log('🎁 [GIFT ALERT] Skipping gift during connection:', giftData.user);
                 return;
             }
             
-            console.log('🎁 [GIFT ALERT] Received gift:', giftData.nickname, giftData.gift?.name);
+            console.log('🎁 [GIFT ALERT] Received gift:', giftData.user, giftData.gift);
             
             // Add gift to queue
             addGiftToQueue(giftData);
@@ -8494,28 +8494,29 @@
             console.log(`🎁 [GIFT ALERT] Current queue length: ${giftQueue.length}`);
             
             // Check if sender already has gifts in queue
-            const existingGiftIndex = giftQueue.findIndex(g => g.nickname === giftData.nickname);
+            const existingGiftIndex = giftQueue.findIndex(g => g.nickname === giftData.user);
             
             if (existingGiftIndex !== -1) {
                 // Merge with existing gift from same sender
                 const existingGift = giftQueue[existingGiftIndex];
                 existingGift.giftCount = (existingGift.giftCount || 1) + 1;
-                existingGift.totalDiamonds = (existingGift.totalDiamonds || 0) + (giftData.diamondCount || 0);
-                existingGift.totalValue = (existingGift.totalValue || 0) + (giftData.usdValue || 0);
+                existingGift.totalDiamonds = (existingGift.totalDiamonds || 0) + (giftData.value || 0);
+                existingGift.totalValue = (existingGift.totalValue || 0) + (giftData.value || 0);
                 existingGift.timestamp = Date.now(); // Update timestamp
-                console.log(`🎁 [GIFT ALERT] Merged gift from ${giftData.nickname}, total: ${existingGift.giftCount}`);
+                console.log(`🎁 [GIFT ALERT] Merged gift from ${giftData.user}, total: ${existingGift.giftCount}`);
             } else {
                 // Add new gift to queue
                 const queuedGift = {
                     ...giftData,
+                    nickname: giftData.user, // Map user to nickname for compatibility
                     giftCount: 1,
-                    totalDiamonds: giftData.diamondCount || 0,
-                    totalValue: giftData.usdValue || 0,
+                    totalDiamonds: giftData.value || 0, // Map value to totalDiamonds
+                    totalValue: giftData.value || 0, // Map value to totalValue
                     timestamp: Date.now()
                 };
                 
                 giftQueue.push(queuedGift);
-                console.log(`🎁 [GIFT ALERT] Added new gift to queue from ${giftData.nickname}`);
+                console.log(`🎁 [GIFT ALERT] Added new gift to queue from ${giftData.user}`);
             }
             
             console.log(`🎁 [GIFT ALERT] Queue length after adding: ${giftQueue.length}`);
@@ -8583,15 +8584,15 @@
                 </div>
                 <div class="gift-notification-sender">
                     <img class="gift-sender-avatar" src="${giftData.profilePic || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4KPC9zdmc+'}" alt="Profile Picture">
-                    <span class="gift-sender-name">${giftData.nickname}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}</span>
+                    <span class="gift-sender-name">${giftData.user}${giftData.giftCount > 1 ? ` (${giftData.giftCount} gifts)` : ''}</span>
                 </div>
                 <div class="gift-notification-details">
-                    <div class="gift-name">${giftData.gift?.name || 'Unknown Gift'}</div>
+                    <div class="gift-name">${giftData.gift || 'Unknown Gift'}</div>
                     <div class="gift-value">${giftData.totalDiamonds || 0} 💎</div>
                 </div>
                 <div class="gift-notification-actions">
-                    <button class="gift-action-mini" onclick="generateShoutout('${giftData.nickname}')" title="Generate shoutout">🎤</button>
-                    <button class="gift-action-mini" onclick="generateThankYou('${giftData.nickname}')" title="Generate thank you">🙏</button>
+                    <button class="gift-action-mini" onclick="generateShoutout('${giftData.user}')" title="Generate shoutout">🎤</button>
+                    <button class="gift-action-mini" onclick="generateThankYou('${giftData.user}')" title="Generate thank you">🙏</button>
                     <button class="gift-action-mini" onclick="removeGiftNotification('${notification.id}')" title="Dismiss">✕</button>
                 </div>
             `;
