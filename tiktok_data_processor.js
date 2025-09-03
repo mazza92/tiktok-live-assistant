@@ -2851,6 +2851,189 @@ function broadcastToSession(session, type, data) {
     });
 }
 
+// Detect questions in chat comments for a specific session
+function detectQuestionsForSession(comment, userId, nickname, session) {
+    const questionPatterns = [
+        // Direct questions
+        /\?$/, // Ends with question mark
+        /^(what|how|why|when|where|who|which|can|could|would|will|do|does|did|is|are|was|were|have|has|had)\b/i, // Question words
+        /^(are you|do you|can you|would you|will you|have you|did you)\b/i, // Question phrases
+        /^(tell me|explain|show me|help me)\b/i, // Request phrases
+        /^(i wonder|i'm curious|i want to know)\b/i, // Curiosity phrases
+    ];
+    
+    // Check if comment matches any question pattern
+    const isQuestion = questionPatterns.some(pattern => pattern.test(comment.trim()));
+    
+    if (isQuestion) {
+        const questionData = {
+            id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId: userId,
+            nickname: nickname,
+            question: comment.trim(),
+            timestamp: new Date(),
+            status: 'pending',
+            priority: calculateQuestionPriority(comment),
+            category: categorizeQuestion(comment)
+        };
+        
+        // Add to session's pending questions
+        session.metrics.questionDetection.pendingQuestions.push(questionData);
+        
+        // Keep only last 20 pending questions
+        if (session.metrics.questionDetection.pendingQuestions.length > 20) {
+            session.metrics.questionDetection.pendingQuestions = session.metrics.questionDetection.pendingQuestions.slice(-20);
+        }
+        
+        // Update session question stats
+        updateSessionQuestionStats(session);
+        
+        console.log(`❓ [SESSION ${session.id}] Question detected: "${comment}" from ${nickname}`);
+        return questionData;
+    }
+    
+    return null;
+}
+
+// Update question statistics for a specific session
+function updateSessionQuestionStats(session) {
+    const stats = session.metrics.questionDetection.questionStats;
+    const pending = session.metrics.questionDetection.pendingQuestions.length;
+    const answered = session.metrics.questionDetection.answeredQuestions.length;
+    
+    stats.totalQuestions = pending + answered;
+    stats.answeredQuestions = answered;
+    stats.unansweredQuestions = pending;
+    stats.responseRate = stats.totalQuestions > 0 ? (answered / stats.totalQuestions) * 100 : 0;
+    
+    // Calculate average response time
+    if (answered > 0) {
+        const totalResponseTime = session.metrics.questionDetection.answeredQuestions.reduce((sum, q) => sum + (q.responseTime || 0), 0);
+        stats.averageResponseTime = totalResponseTime / answered;
+    }
+    
+    session.metrics.questionDetection.lastQuestionUpdate = new Date();
+}
+
+// Calculate question priority for session
+function calculateQuestionPriority(comment) {
+    let priority = 1; // Default priority
+    
+    // High priority indicators
+    if (comment.includes('urgent') || comment.includes('help') || comment.includes('emergency')) {
+        priority = 5;
+    } else if (comment.includes('how to') || comment.includes('tutorial') || comment.includes('guide')) {
+        priority = 4;
+    } else if (comment.includes('what') || comment.includes('why') || comment.includes('when')) {
+        priority = 3;
+    } else if (comment.includes('?') && comment.length > 20) {
+        priority = 2;
+    }
+    
+    return Math.min(priority, 5); // Max priority 5
+}
+
+// Categorize question for session
+function categorizeQuestion(comment) {
+    const lowerComment = comment.toLowerCase();
+    
+    if (lowerComment.includes('how to') || lowerComment.includes('tutorial')) {
+        return 'tutorial';
+    } else if (lowerComment.includes('what') || lowerComment.includes('explain')) {
+        return 'information';
+    } else if (lowerComment.includes('when') || lowerComment.includes('time')) {
+        return 'schedule';
+    } else if (lowerComment.includes('where') || lowerComment.includes('location')) {
+        return 'location';
+    } else if (lowerComment.includes('why') || lowerComment.includes('reason')) {
+        return 'explanation';
+    } else {
+        return 'general';
+    }
+}
+
+// Track viewer for a specific session
+function trackViewerForSession(userId, nickname, profilePic, session) {
+    if (!userId || !nickname) return;
+    
+    const now = new Date();
+    
+    // Check if we're processing this user too quickly (within 1 second)
+    if (session.metrics.viewers[userId] && session.metrics.viewers[userId].lastSeen) {
+        const timeSinceLastSeen = now - session.metrics.viewers[userId].lastSeen;
+        if (timeSinceLastSeen < 1000) { // Less than 1 second
+            console.log(`⏱️ [SESSION ${session.id}] Skipping rapid re-add for ${nickname} (${userId}) - last seen ${timeSinceLastSeen}ms ago`);
+            return;
+        }
+    }
+    
+    if (!session.metrics.viewers[userId]) {
+        session.metrics.viewers[userId] = {
+            userId: userId,
+            nickname: nickname,
+            profilePic: profilePic,
+            joinTime: now,
+            lastSeen: now,
+            isActive: true,
+            watchTime: 0,
+            totalLikes: 0,
+            totalGifts: 0,
+            totalComments: 0,
+            totalShares: 0,
+            totalDiamonds: 0,
+            totalGiftValue: 0,
+            isFollower: false,
+            followTime: null,
+            hasBeenWelcomed: false,
+            welcomeTimestamp: null
+        };
+        session.metrics.viewerStats.totalUniqueViewers++;
+        console.log(`👤 [SESSION ${session.id}] New viewer joined: ${nickname} (${userId})`);
+    } else {
+        // Viewer rejoined, update last seen
+        session.metrics.viewers[userId].lastSeen = now;
+        session.metrics.viewers[userId].isActive = true;
+        console.log(`👤 [SESSION ${session.id}] Viewer rejoined: ${nickname} (${userId})`);
+    }
+    
+    // Update viewer stats for session
+    updateSessionViewerStats(session);
+}
+
+// Update viewer stats for a specific session
+function updateSessionViewerStats(session) {
+    const activeViewers = Object.values(session.metrics.viewers).filter(v => v.isActive);
+    
+    if (activeViewers.length > 0) {
+        // Calculate average watch time
+        const totalWatchTime = activeViewers.reduce((sum, v) => sum + v.watchTime, 0);
+        session.metrics.viewerStats.averageWatchTime = Math.floor(totalWatchTime / activeViewers.length);
+        
+        // Find longest watch time
+        session.metrics.viewerStats.longestWatchTime = Math.max(...activeViewers.map(v => v.watchTime));
+        
+        // Categorize viewers by watch time
+        session.metrics.viewerStats.viewersByWatchTime = {
+            '0-5min': activeViewers.filter(v => v.watchTime < 300).length,
+            '5-15min': activeViewers.filter(v => v.watchTime >= 300 && v.watchTime < 900).length,
+            '15-30min': activeViewers.filter(v => v.watchTime >= 900 && v.watchTime < 1800).length,
+            '30min+': activeViewers.filter(v => v.watchTime >= 1800).length
+        };
+        
+        session.metrics.viewerStats.activeViewers = activeViewers.length;
+    } else {
+        session.metrics.viewerStats.averageWatchTime = 0;
+        session.metrics.viewerStats.longestWatchTime = 0;
+        session.metrics.viewerStats.viewersByWatchTime = {
+            '0-5min': 0,
+            '5-15min': 0,
+            '15-30min': 0,
+            '30min+': 0
+        };
+        session.metrics.viewerStats.activeViewers = 0;
+    }
+}
+
 // Calculate entertainment metrics for a specific session
 function calculateSessionEntertainmentMetrics(session) {
     const currentViewers = session.metrics.currentViewerCount || 1;
@@ -2891,23 +3074,29 @@ function handleChatEventForSession(data, session) {
     session.metrics.totalComments++;
     session.metrics.lastActivity = Date.now();
     
+    // Track viewer activity for session
+    trackViewerForSession(data.userId, data.nickname, data.profilePictureUrl, session);
+    
     // Process sentiment
     if (data.comment) {
         const sentimentResult = sentiment.analyze(data.comment);
         session.metrics.sentimentScore = sentimentResult.score;
         
-            // Update rolling sentiment
-    if (!session.metrics.sentimentHistory) {
-        session.metrics.sentimentHistory = [];
-    }
-    session.metrics.sentimentHistory.push(sentimentResult.score);
-    if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
-        session.metrics.sentimentHistory.shift();
-    }
-    session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
-    
-    // Calculate basic entertainment metrics for session
-    calculateSessionEntertainmentMetrics(session);
+        // Update rolling sentiment
+        if (!session.metrics.sentimentHistory) {
+            session.metrics.sentimentHistory = [];
+        }
+        session.metrics.sentimentHistory.push(sentimentResult.score);
+        if (session.metrics.sentimentHistory.length > MAX_SENTIMENT_HISTORY) {
+            session.metrics.sentimentHistory.shift();
+        }
+        session.metrics.rollingSentimentScore = session.metrics.sentimentHistory.reduce((a, b) => a + b, 0) / session.metrics.sentimentHistory.length;
+        
+        // Detect questions in comments for session
+        const detectedQuestion = detectQuestionsForSession(data.comment, data.userId, data.nickname, session);
+        
+        // Calculate basic entertainment metrics for session
+        calculateSessionEntertainmentMetrics(session);
     }
     
     // Broadcast to session clients
