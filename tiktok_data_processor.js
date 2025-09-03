@@ -2682,6 +2682,7 @@ function createEmptyMetrics() {
         },
         questionDetection: {
             pendingQuestions: [],
+            answeredQuestions: [],
             questionStats: {
                 totalQuestions: 0,
                 answeredQuestions: 0,
@@ -2902,6 +2903,36 @@ function detectQuestionsForSession(comment, userId, nickname, session) {
 
 // Update question statistics for a specific session
 function updateSessionQuestionStats(session) {
+    // Defensive programming - ensure questionDetection structure exists
+    if (!session.metrics.questionDetection) {
+        session.metrics.questionDetection = {
+            pendingQuestions: [],
+            answeredQuestions: [],
+            questionStats: {
+                totalQuestions: 0,
+                answeredQuestions: 0,
+                unansweredQuestions: 0,
+                averageResponseTime: 0
+            }
+        };
+    }
+    
+    // Ensure arrays exist
+    if (!session.metrics.questionDetection.pendingQuestions) {
+        session.metrics.questionDetection.pendingQuestions = [];
+    }
+    if (!session.metrics.questionDetection.answeredQuestions) {
+        session.metrics.questionDetection.answeredQuestions = [];
+    }
+    if (!session.metrics.questionDetection.questionStats) {
+        session.metrics.questionDetection.questionStats = {
+            totalQuestions: 0,
+            answeredQuestions: 0,
+            unansweredQuestions: 0,
+            averageResponseTime: 0
+        };
+    }
+    
     const stats = session.metrics.questionDetection.questionStats;
     const pending = session.metrics.questionDetection.pendingQuestions.length;
     const answered = session.metrics.questionDetection.answeredQuestions.length;
