@@ -6265,8 +6265,20 @@
                                 console.error('❌ Username change error - Message type:', message.type);
                                 
                                 // Show error to user with more details
-                                const errorDetails = message.originalError ? `\n\nTechnical details: ${message.originalError}` : '';
-                                alert(`Failed to connect to TikTok Live: ${message.error}\nUsername: ${message.username}${errorDetails}`);
+                                let alertMessage = `Failed to connect to TikTok Live: ${message.error}\nUsername: ${message.username}`;
+                                
+                                // Add specific guidance for rate limiting
+                                if (message.error.includes('rate limit') || message.error.includes('Too many connections')) {
+                                    alertMessage += '\n\nPlease wait a few minutes before trying again.';
+                                    alertMessage += '\n\nNote: For unlimited connections, consider getting a free API key at https://www.eulerstream.com/pricing';
+                                }
+                                
+                                // Add technical details only if not rate limiting (to avoid overwhelming users)
+                                if (message.originalError && !message.error.includes('rate limit') && !message.error.includes('Too many connections')) {
+                                    alertMessage += `\n\nTechnical details: ${message.originalError}`;
+                                }
+                                
+                                alert(alertMessage);
                                 
                                 // Clear restoration flag if we were restoring
                                 if (window.isRestoringConnection) {

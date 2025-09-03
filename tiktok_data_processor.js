@@ -3890,12 +3890,16 @@ async function changeTikTokUsername(newUsername, ws) {
         
         // Provide more specific error messages
         let errorMessage = error.message || 'Unknown error occurred';
-        if (error.message.includes('Cannot read properties of undefined')) {
+        if (error.message.includes('Rate Limited') || error.message.includes('rate_limit')) {
+            errorMessage = 'TikTok API rate limit reached. Please wait a few minutes before trying again.';
+        } else if (error.message.includes('Cannot read properties of undefined')) {
             errorMessage = 'Session initialization error. Please try again.';
         } else if (error.message.includes('connection')) {
             errorMessage = 'Failed to connect to TikTok Live. Please check the username and try again.';
         } else if (error.message.includes('timeout')) {
             errorMessage = 'Connection timeout. Please try again.';
+        } else if (error.message.includes('Too many connections')) {
+            errorMessage = 'Too many connection attempts. Please wait before trying again.';
         }
         
         // Send detailed error to dashboard
@@ -3905,7 +3909,8 @@ async function changeTikTokUsername(newUsername, ws) {
                 error: errorMessage,
                 username: newUsername,
                 timestamp: Date.now(),
-                originalError: error.message
+                originalError: error.message,
+                isRateLimited: error.message.includes('Rate Limited') || error.message.includes('rate_limit') || error.message.includes('Too many connections')
             };
             
             console.log('📤 [USERNAME] Sending error message to dashboard:', errorResponse);
