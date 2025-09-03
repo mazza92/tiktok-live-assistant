@@ -6210,11 +6210,14 @@
                                 break;
                             case 'usernameChanged':
                                 console.log('🔄 Username changed:', message.data);
+                                console.log('🔄 [SESSION] Full usernameChanged message:', message);
                                 if (message.data && message.data.username) {
                                     // Store session ID
                                     if (message.sessionId) {
                                         window.currentSessionId = message.sessionId;
                                         console.log('📊 [SESSION] Stored session ID:', message.sessionId);
+                                    } else {
+                                        console.log('⚠️ [SESSION] No sessionId in usernameChanged message');
                                     }
                                     
                                     // Clear restoration flag if we were restoring
