@@ -1623,18 +1623,22 @@ function updateQuestionStats() {
 }
 
 // Generate automated prompts using AI service with fallback to legacy system
-async function generateAutomatedPrompt() {
+async function generateAutomatedPrompt(session = null) {
     const now = Date.now();
     
+    // Use session-specific metrics if session is provided, otherwise use global metrics
+    const targetMetrics = session ? session.metrics : metrics;
+    const sessionId = session ? session.id : 'global';
+    
     // Check cooldown to prevent spam - reduced from 30s to 15s for more proactive assistance
-    if (metrics.lastPromptTime && (now - metrics.lastPromptTime) < 15000) { // 15 second cooldown
+    if (targetMetrics.lastPromptTime && (now - targetMetrics.lastPromptTime) < 15000) { // 15 second cooldown
         return null;
     }
     
     try {
         // Try AI service first
-        console.log('🤖 [AI] Calling Gemini service for prompt generation...');
-        const aiPrompt = await geminiService.generatePrompt(metrics, currentLanguage);
+        console.log(`🤖 [AI] Calling Gemini service for prompt generation... (Session: ${sessionId})`);
+        const aiPrompt = await geminiService.generatePrompt(targetMetrics, currentLanguage);
         
         if (aiPrompt && aiPrompt.message) {
             console.log('🤖 [AI] Successfully generated AI prompt:', aiPrompt.message);
@@ -1659,15 +1663,15 @@ async function generateAutomatedPrompt() {
             };
             
             // Update cooldown tracking
-            metrics.lastPromptTime = now;
-            if (!metrics.promptCooldowns) metrics.promptCooldowns = {};
-            metrics.promptCooldowns[enhancedPrompt.trigger] = now;
+            targetMetrics.lastPromptTime = now;
+            if (!targetMetrics.promptCooldowns) targetMetrics.promptCooldowns = {};
+            targetMetrics.promptCooldowns[enhancedPrompt.trigger] = now;
             
             // Update prompt history
-            if (!metrics.promptHistory) metrics.promptHistory = [];
-            metrics.promptHistory.push(enhancedPrompt.trigger);
-            if (metrics.promptHistory.length > 10) {
-                metrics.promptHistory.shift();
+            if (!targetMetrics.promptHistory) targetMetrics.promptHistory = [];
+            targetMetrics.promptHistory.push(enhancedPrompt.trigger);
+            if (targetMetrics.promptHistory.length > 10) {
+                targetMetrics.promptHistory.shift();
             }
             
             return enhancedPrompt;
@@ -1681,7 +1685,7 @@ async function generateAutomatedPrompt() {
     console.log('🤖 [LEGACY] Using legacy prompt generation system...');
     
     // Check if we have recent new viewers that need engagement tips
-    const recentNewViewers = Object.values(metrics.viewers)
+    const recentNewViewers = Object.values(targetMetrics.viewers || {})
         .filter(v => v.hasBeenWelcomed && 
                     v.welcomeTimestamp && 
                     (now - v.welcomeTimestamp) < 300000) // Last 5 minutes
@@ -1693,34 +1697,34 @@ async function generateAutomatedPrompt() {
         console.log(`🤖 [LIVE ASSISTANT] Skipping comprehensive prompts for recent viewers (already sent via aiWelcome): ${recentNewViewers.map(v => v.nickname).join(', ')}`);
         
         // Instead, generate AI-enhanced engagement content for other scenarios
-        return generateAIEnhancedContent();
+        return generateAIEnhancedContent(targetMetrics);
     }
     
     // If no recent new viewers, generate AI-enhanced content
-    return generateAIEnhancedContent();
+    return generateAIEnhancedContent(targetMetrics);
 }
 
 // Enhanced AI content generation for Live Assistant
-function generateAIEnhancedContent() {
+function generateAIEnhancedContent(targetMetrics = metrics) {
     const now = Date.now();
     const prompts = [];
     
     console.log(`🤖 [LEGACY] Generating AI-enhanced fallback prompt...`);
     
     // Helper to get top keyword
-    const topKeyword = Object.entries(metrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
+    const topKeyword = Object.entries(targetMetrics.keywordFrequency || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
     
     // Helper to get top engager
     const topEngager = getViewerEngagementRanking()[0]?.nickname || 'viewers';
     
     // Get current stream metrics
-    const viewerCount = metrics.currentViewerCount || 0;
-        const likeRate = metrics.likesPerMinute || 0;
-    const commentRate = metrics.commentsPerMinute || 0;
-    const giftRate = metrics.giftsPerMinute || 0;
+    const viewerCount = targetMetrics.currentViewerCount || 0;
+        const likeRate = targetMetrics.likesPerMinute || 0;
+    const commentRate = targetMetrics.commentsPerMinute || 0;
+    const giftRate = targetMetrics.giftsPerMinute || 0;
     
     // Check if we have any active viewers to engage with
-    const activeViewers = Object.values(metrics.viewers).filter(v => v.isActive && v.lastSeen > (now - 300000)); // Active in last 5 minutes
+    const activeViewers = Object.values(targetMetrics.viewers || {}).filter(v => v.isActive && v.lastSeen > (now - 300000)); // Active in last 5 minutes
     const recentViewers = activeViewers.slice(0, 3); // Get up to 3 recent active viewers
     
     if (recentViewers.length > 0) {
@@ -3455,6 +3459,21 @@ function handleChatEventForSession(data, session) {
         sessionId: session.id
     });
     
+    // Check for automated prompts every 5 comments
+    if (session.metrics.totalComments % 5 === 0) {
+        console.log(`🤖 [AI CHECK] Checking for automated prompts... (Comments: ${session.metrics.totalComments})`);
+        generateAutomatedPrompt(session).then(automatedPrompt => {
+            if (automatedPrompt) {
+                console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                broadcastToSession(session, 'automatedPrompt', automatedPrompt);
+            } else {
+                console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+            }
+        }).catch(error => {
+            console.error('🤖 [AI CHECK] Error generating prompt:', error);
+        });
+    }
+    
     // Broadcast updated metrics immediately using global broadcast (b594427 approach)
     console.log(`📊 [SESSION ${session.id}] Broadcasting updated metrics after chat - totalComments: ${session.metrics.totalComments}`);
     broadcastGlobalMetrics();
@@ -3481,7 +3500,7 @@ function handleLikeEventForSession(data, session) {
     
     // Ensure all required fields exist and update per-minute metrics
     ensureSessionMetricsFields(session);
-    updateSessionPerMinuteMetrics(session);
+        updateSessionPerMinuteMetrics(session);
     
     // Broadcast to session clients
     broadcastToSession(session, 'like', {
@@ -3489,6 +3508,21 @@ function handleLikeEventForSession(data, session) {
         timestamp: Date.now(),
         sessionId: session.id
     });
+
+    // Check for automated prompts every 10 likes
+    if (session.metrics.totalLikes % 10 === 0) {
+        console.log(`🤖 [AI CHECK] Checking for automated prompts... (Likes: ${session.metrics.totalLikes})`);
+        generateAutomatedPrompt(session).then(automatedPrompt => {
+            if (automatedPrompt) {
+                console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                broadcastToSession(session, 'automatedPrompt', automatedPrompt);
+            } else {
+                console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+            }
+        }).catch(error => {
+            console.error('🤖 [AI CHECK] Error generating prompt:', error);
+        });
+    }
     
     // Broadcast updated metrics immediately using global broadcast (b594427 approach)
     broadcastGlobalMetrics();
@@ -3532,6 +3566,21 @@ function handleGiftEventForSession(data, session) {
         sessionId: session.id
     });
     
+    // Check for automated prompts every 3 gifts
+    if (session.metrics.totalGifts % 3 === 0) {
+        console.log(`🤖 [AI CHECK] Checking for automated prompts... (Gifts: ${session.metrics.totalGifts})`);
+        generateAutomatedPrompt(session).then(automatedPrompt => {
+            if (automatedPrompt) {
+                console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                broadcastToSession(session, 'automatedPrompt', automatedPrompt);
+            } else {
+                console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+            }
+        }).catch(error => {
+            console.error('🤖 [AI CHECK] Error generating prompt:', error);
+        });
+    }
+    
     // Broadcast updated metrics immediately using global broadcast (b594427 approach)
     broadcastGlobalMetrics();
 }
@@ -3565,6 +3614,19 @@ function handleFollowEventForSession(data, session) {
         nickname: data.nickname,
         timestamp: Date.now(),
         sessionId: session.id
+    });
+    
+    // Check for automated prompts on new followers
+    console.log(`🤖 [AI CHECK] New follower detected, checking for automated prompts...`);
+    generateAutomatedPrompt(session).then(automatedPrompt => {
+        if (automatedPrompt) {
+            console.log(`🤖 [AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+            broadcastToSession(session, 'automatedPrompt', automatedPrompt);
+        } else {
+            console.log(`🤖 [AI CHECK] No prompts triggered at this time`);
+        }
+    }).catch(error => {
+        console.error('🤖 [AI CHECK] Error generating prompt:', error);
     });
     
     // Broadcast updated metrics immediately using global broadcast (b594427 approach)
@@ -5245,3 +5307,22 @@ setInterval(() => {
         broadcastGlobalMetrics();
     }
 }, 5000); // Broadcast every 5 seconds
+
+// Set up periodic AI prompt checks for sessions
+setInterval(() => {
+    userSessions.forEach((session, sessionId) => {
+        if (session.wsClients.size > 0) {
+            console.log(`🤖 [PERIODIC AI CHECK] Checking for automated prompts... (Session: ${sessionId})`);
+            generateAutomatedPrompt(session).then(automatedPrompt => {
+                if (automatedPrompt) {
+                    console.log(`🤖 [PERIODIC AUTO-PROMPT] ${automatedPrompt.message} (Trigger: ${automatedPrompt.trigger})`);
+                    broadcastToSession(session, 'automatedPrompt', automatedPrompt);
+                } else {
+                    console.log(`🤖 [PERIODIC AI CHECK] No prompts triggered at this time`);
+                }
+            }).catch(error => {
+                console.error('🤖 [PERIODIC AI CHECK] Error generating prompt:', error);
+            });
+        }
+    });
+}, 30000); // Check every 30 seconds
