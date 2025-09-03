@@ -3106,12 +3106,16 @@ function calculateSessionEntertainmentMetrics(session) {
 function handleChatEventForSession(data, session) {
     console.log(`💬 [SESSION ${session.id}] Chat event:`, data);
     
+    // Extract user information with proper fallbacks
+    const { userId, nickname } = getUserInfo(data);
+    const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
+    
     // Update session metrics
     session.metrics.totalComments++;
     session.metrics.lastActivity = Date.now();
     
     // Track viewer activity for session
-    trackViewerForSession(data.userId, data.nickname, data.profilePictureUrl, session);
+    trackViewerForSession(userId, nickname, profilePicture, session);
     
     // Process sentiment
     if (data.comment) {
@@ -3172,13 +3176,16 @@ function handleChatEventForSession(data, session) {
 function handleLikeEventForSession(data, session) {
     console.log(`❤️ [SESSION ${session.id}] Like event:`, data);
     
+    // Extract user information with proper fallbacks
+    const { userId, nickname } = getUserInfo(data);
+    
     // Update session metrics
     session.metrics.totalLikes++;
     session.metrics.lastActivity = Date.now();
     
     // Track user likes
-    if (data.nickname) {
-        session.metrics.userLikeCounts[data.nickname] = (session.metrics.userLikeCounts[data.nickname] || 0) + 1;
+    if (nickname) {
+        session.metrics.userLikeCounts[nickname] = (session.metrics.userLikeCounts[nickname] || 0) + 1;
     }
     
     // Calculate entertainment metrics for session
@@ -3219,15 +3226,30 @@ function handleLikeEventForSession(data, session) {
 function handleGiftEventForSession(data, session) {
     console.log(`🎁 [SESSION ${session.id}] Gift event:`, data);
     
+    // Extract gift information with proper fallbacks
+    const { userId, nickname } = getUserInfo(data);
+    const giftName = data.giftName || data.gift?.name || 'Unknown Gift';
+    const giftValue = data.giftValue || data.gift?.diamondCount || 0;
+    const giftId = data.giftId || data.gift?.id || 'unknown';
+    const profilePicture = data.profilePictureUrl || data.user?.profilePictureUrl || '';
+    
     // Update session metrics
     session.metrics.totalGifts++;
     session.metrics.lastActivity = Date.now();
     
-    // Broadcast to session clients
+    // Track viewer activity for session
+    trackViewerForSession(userId, nickname, profilePicture, session);
+    
+    // Calculate entertainment metrics for session
+    calculateSessionEntertainmentMetrics(session);
+    
+    // Broadcast to session clients with proper data
     broadcastToSession(session, 'gift', {
-        user: data.nickname,
-        gift: data.giftName,
-        value: data.giftValue,
+        user: nickname || 'Anonymous',
+        gift: giftName,
+        value: giftValue,
+        giftId: giftId,
+        profilePicture: profilePicture,
         timestamp: Date.now(),
         sessionId: session.id
     });
@@ -3260,6 +3282,9 @@ function handleGiftEventForSession(data, session) {
 function handleFollowEventForSession(data, session) {
     console.log(`🆕 [SESSION ${session.id}] Follow event:`, data);
     
+    // Extract user information with proper fallbacks
+    const { userId, nickname } = getUserInfo(data);
+    
     // Update session metrics
     session.metrics.sessionFollowersGained++;
     session.metrics.lastActivity = Date.now();
@@ -3269,7 +3294,7 @@ function handleFollowEventForSession(data, session) {
         session.metrics.newFollowers = [];
     }
     session.metrics.newFollowers.push({
-        nickname: data.nickname,
+        nickname: nickname || 'Anonymous',
         timestamp: Date.now()
     });
     
@@ -4979,8 +5004,8 @@ setInterval(() => {
                 predictiveMetrics: session.metrics.predictiveMetrics,
                 sessionId: sessionId,
                 username: session.username,
-        timestamp: new Date()
-    });
-}
+                timestamp: new Date()
+            });
+        }
     });
 }, 5000); // Broadcast every 5 seconds
