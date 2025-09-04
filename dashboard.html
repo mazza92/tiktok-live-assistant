@@ -5819,10 +5819,8 @@
                         connectionDetails.style.display = 'flex';
                         updateConnectionDetails(username);
                     }
-                    // Show connection type
-                    if (message.data && message.data.connectionType) {
-                        console.log(`🔗 Connection type: ${message.data.connectionType}`);
-                    }
+                    // Show connection type (connection type info is passed separately)
+                    console.log(`🔗 Connection established`);
                     break;
                     
                 case 'disconnected':

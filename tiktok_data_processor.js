@@ -2894,7 +2894,17 @@ async function connectToTikTokDirectHTTP(session, retryAttempt = 0) {
             startDirectHTTPPolling(session);
             
         } else {
-            throw new Error('User is not currently live streaming');
+            console.log(`📺 [SESSION ${session.id}] User ${session.username} is not currently live streaming`);
+            // Still broadcast connection success but with offline status
+            broadcastToSession(session, 'connected', {
+                status: 'connected',
+                roomInfo: { isLive: false, username: session.username },
+                sessionId: session.id,
+                username: session.username,
+                connectionType: 'direct_http',
+                message: 'User is not currently live streaming'
+            });
+            return; // Don't throw error, just return
         }
         
     } catch (error) {
@@ -2971,11 +2981,16 @@ async function fetchTikTokLiveDataDirect(username) {
 // Parse TikTok live HTML to extract live stream data
 function parseTikTokLiveHTML(html, username) {
     try {
-        // Look for live stream indicators in the HTML
+        // Look for live stream indicators in the HTML (more comprehensive)
         const isLive = html.includes('"isLive":true') || 
                       html.includes('"liveStreamStatus":1') ||
                       html.includes('"roomStatus":1') ||
-                      html.includes('"is_live":true');
+                      html.includes('"is_live":true') ||
+                      html.includes('"live_status":1') ||
+                      html.includes('"streaming":true') ||
+                      html.includes('"isStreaming":true') ||
+                      html.includes('LIVE') ||
+                      html.includes('live-stream');
         
         if (!isLive) {
             return { isLive: false, username };
@@ -4192,14 +4207,9 @@ async function changeTikTokUsername(newUsername, ws) {
             }));
         }
         
-        // Try direct HTTP approach first to bypass API rate limiting
-        try {
-            await connectToTikTokDirectHTTP(session);
-        } catch (directError) {
-            console.log(`⚠️ [SESSION ${session.id}] Direct HTTP failed, falling back to API: ${directError.message}`);
-            // Fallback to original API approach if direct HTTP fails
-            await connectToTikTokForSession(session);
-        }
+        // Use direct HTTP approach to bypass API rate limiting
+        console.log(`🌐 [SESSION ${session.id}] Using direct HTTP approach to bypass rate limiting`);
+        await connectToTikTokDirectHTTP(session);
         
         // Send success message after connection
         console.log(`✅ [SESSION ${session.id}] Successfully connected to new username`);
