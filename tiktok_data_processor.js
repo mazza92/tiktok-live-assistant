@@ -35,12 +35,26 @@ const promptTranslations = {
         aiEngagementBoost: "💬 **AI Engagement Boost**: Engagement is low with {viewerCount} viewers. Say: \"I want to hear your thoughts! What's your take on this?\" or \"Let's get this chat moving! Share something that made you laugh today!\"",
         aiInteraction: "🎯 **AI Interaction**: Moderate engagement detected. Say: \"I love hearing from you! What's your experience with this?\" or \"Keep the conversation going! What do you think about this topic?\"",
         aiMomentum: "🎯 **AI Momentum**: Good engagement! Say: \"The energy is amazing! Let's keep it going - what's your opinion on this?\" or \"I love this energy! Share something that excites you about this topic!\"",
-        // Fallback prompts
-        fallback_engagement: "💬 **Chat Engagement**: The chat is quiet right now. Ask viewers directly: \"What's on your mind today?\" or \"Share something that made you laugh this week!\"",
-        fallback_growth: "📈 **Viewer Connection**: Great energy! Personalize your ask: \"If you're enjoying this, hit that follow button and let's build this community together!\"",
-        fallback_interaction: "🎯 **Interactive Challenge**: Start a quick game! \"Comment with your favorite emoji if you've ever been to [relevant place/topic]!\" or \"Type YES if you agree with this!\"",
-        fallback_retention: "👥 **Viewer Retention**: Connect with your audience! \"I want to hear from you - what brought you to this stream today?\" or \"Share your experience with [current topic]!\"",
-        fallback_momentum: "🚀 **Keep Momentum**: The energy is building! \"Let's keep this going - what's your take on [current topic]?\" or \"I love hearing your thoughts, keep them coming!\""
+        // Enhanced fallback prompts with more variety
+        fallback_engagement_question: "💬 **Direct Question**: Chat needs activation! Say: \"I want to hear from you! What's the most interesting thing that happened to you this week?\" or \"Drop a comment and tell me what you think about this topic!\"",
+        fallback_engagement_poll: "📊 **Quick Poll**: Perfect for engagement! Say: \"Let's do a quick poll! Comment with your favorite [topic] and I'll count the votes!\" or \"I'm curious - what's your opinion on this? Share your thoughts!\"",
+        fallback_engagement_challenge: "🎯 **Interactive Challenge**: Let's get creative! Say: \"Challenge time! Comment with the most creative [topic] and I'll pick the best ones!\" or \"Who can come up with the funniest [topic]? Let's see what you've got!\"",
+        
+        fallback_growth_welcome: "👋 **Welcome New Viewers**: Great to see new faces! Say: \"Welcome to all the new faces! Drop a comment and tell me where you're from!\" or \"I love seeing new people join! What brought you here today?\"",
+        fallback_growth_community: "🤝 **Build Community**: Perfect time to connect! Say: \"I love this community we're building! Share something about yourself in the chat!\" or \"Let's get to know each other better - what's your favorite thing about this stream?\"",
+        fallback_growth_share: "📢 **Encourage Sharing**: Great momentum! Say: \"If you're enjoying this, share it with your friends! Tag someone who would love this!\" or \"Help me grow this community - share this stream with someone who needs to see it!\"",
+        
+        fallback_interaction_game: "🎮 **Interactive Game**: Let's play! Say: \"Game time! Comment with your favorite [topic] and I'll pick the most creative ones!\" or \"Let's do something fun! Who can guess what I'm thinking about?\"",
+        fallback_interaction_story: "📖 **Share a Story**: Perfect for connection! Say: \"I want to hear your stories! What's the most interesting thing that happened to you recently?\" or \"Let's share some stories! What's something that made you laugh today?\"",
+        fallback_interaction_react: "🎭 **React to Content**: Great energy! Say: \"I love your reactions! What do you think about this? Share your thoughts!\" or \"The chat is buzzing! Let's keep this energy going - what's your take on this?\"",
+        
+        fallback_retention_connection: "💝 **Build Connection**: Let's connect deeper! Say: \"I want to know you better! What's something that always makes you smile?\" or \"Let's build a real connection - what's your biggest dream right now?\"",
+        fallback_retention_value: "💎 **Provide Value**: Adding value to your stream! Say: \"I want to make sure you're getting value from this! What would you like to learn more about?\" or \"Let me know what you'd like to see more of in future streams!\"",
+        fallback_retention_energy: "⚡ **Boost Energy**: Let's energize the chat! Say: \"I need your energy! What's something that always gets you hyped up?\" or \"Let's turn up the energy! What's your go-to pump-up song?\"",
+        
+        fallback_momentum_maintain: "🔥 **Maintain Momentum**: Keep the energy flowing! Say: \"I love this energy! Let's keep it going - what should we do next?\" or \"The vibe is perfect right now! How can we make it even better?\"",
+        fallback_momentum_celebrate: "🎉 **Celebrate Achievements**: Time to celebrate! Say: \"You all are amazing! What's something you're proud of accomplishing recently?\" or \"Let's celebrate together! What's your biggest win this week?\"",
+        fallback_momentum_next: "🔮 **Tease Next Content**: Building anticipation! Say: \"I'm already excited for next time! What would you like to see in the next stream?\" or \"This is just the beginning! What should we explore together next?\""
     },
     fr: {
         // Chat Activation prompts
@@ -50,8 +64,26 @@ const promptTranslations = {
         aiEngagementBoost: "💬 **Boost d'Engagement IA**: L'engagement est faible avec {viewerCount} spectateurs. Dites: \"Je veux entendre vos pensées ! Qu'est-ce que vous en pensez ?\" ou \"Faisons bouger ce chat ! Partagez quelque chose qui vous a fait rire aujourd'hui !\"",
         aiInteraction: "🎯 **Interaction IA**: Engagement modéré détecté. Dites: \"J'adore vous entendre ! Quelle est votre expérience avec ça ?\" ou \"Continuez la conversation ! Que pensez-vous de ce sujet ?\"",
         aiMomentum: "🎯 **Élan IA**: Bon engagement ! Dites: \"L'énergie est incroyable ! Continuons - quelle est votre opinion sur ça ?\" ou \"J'adore cette énergie ! Partagez quelque chose qui vous excite sur ce sujet !\"",
-        // Fallback prompts
-        fallback_engagement: "💬 **Engagement du Chat**: Le chat est calme en ce moment. Demandez directement aux spectateurs: \"Qu'est-ce qui vous préoccupe aujourd'hui ?\" ou \"Partagez quelque chose qui vous a fait rire cette semaine !\"",
+        // Enhanced fallback prompts with more variety
+        fallback_engagement_question: "💬 **Question Directe**: Le chat a besoin d'activation! Dites: \"Je veux vous entendre! Quelle est la chose la plus intéressante qui vous est arrivée cette semaine?\" ou \"Laissez un commentaire et dites-moi ce que vous pensez de ce sujet!\"",
+        fallback_engagement_poll: "📊 **Sondage Rapide**: Parfait pour l'engagement! Dites: \"Faisons un sondage rapide! Commentez avec votre [sujet] préféré et je compterai les votes!\" ou \"Je suis curieux - quel est votre avis là-dessus? Partagez vos pensées!\"",
+        fallback_engagement_challenge: "🎯 **Défi Interactif**: Soyons créatifs! Dites: \"C'est l'heure du défi! Commentez avec le [sujet] le plus créatif et je choisirai les meilleurs!\" ou \"Qui peut trouver le [sujet] le plus drôle? Montrez-moi ce que vous avez!\"",
+        
+        fallback_growth_welcome: "👋 **Accueillir Nouveaux Spectateurs**: Super de voir de nouveaux visages! Dites: \"Bienvenue à tous les nouveaux visages! Laissez un commentaire et dites-moi d'où vous venez!\" ou \"J'adore voir de nouvelles personnes rejoindre! Qu'est-ce qui vous a amené ici aujourd'hui?\"",
+        fallback_growth_community: "🤝 **Construire Communauté**: Moment parfait pour se connecter! Dites: \"J'adore cette communauté que nous construisons! Partagez quelque chose sur vous dans le chat!\" ou \"Apprenons à nous connaître mieux - quelle est votre chose préférée dans ce stream?\"",
+        fallback_growth_share: "📢 **Encourager Partage**: Excellent momentum! Dites: \"Si vous aimez ça, partagez-le avec vos amis! Taggez quelqu'un qui adorerait ça!\" ou \"Aidez-moi à faire grandir cette communauté - partagez ce stream avec quelqu'un qui doit le voir!\"",
+        
+        fallback_interaction_game: "🎮 **Jeu Interactif**: Jouons! Dites: \"C'est l'heure du jeu! Commentez avec votre [sujet] préféré et je choisirai les plus créatifs!\" ou \"Faisons quelque chose d'amusant! Qui peut deviner à quoi je pense?\"",
+        fallback_interaction_story: "📖 **Partager Histoire**: Parfait pour la connexion! Dites: \"Je veux entendre vos histoires! Quelle est la chose la plus intéressante qui vous est arrivée récemment?\" ou \"Partageons des histoires! Qu'est-ce qui vous a fait rire aujourd'hui?\"",
+        fallback_interaction_react: "🎭 **Réagir au Contenu**: Excellente énergie! Dites: \"J'adore vos réactions! Qu'est-ce que vous pensez de ça? Partagez vos pensées!\" ou \"Le chat bourdonne! Continuons cette énergie - quel est votre avis là-dessus?\"",
+        
+        fallback_retention_connection: "💝 **Construire Connexion**: Connectons-nous plus profondément! Dites: \"Je veux mieux vous connaître! Qu'est-ce qui vous fait toujours sourire?\" ou \"Construisons une vraie connexion - quel est votre plus grand rêve en ce moment?\"",
+        fallback_retention_value: "💎 **Fournir Valeur**: Ajoutant de la valeur à votre stream! Dites: \"Je veux m'assurer que vous tirez de la valeur de ça! Sur quoi aimeriez-vous en apprendre plus?\" ou \"Dites-moi ce que vous aimeriez voir plus dans les futurs streams!\"",
+        fallback_retention_energy: "⚡ **Booster Énergie**: Énergisons le chat! Dites: \"J'ai besoin de votre énergie! Qu'est-ce qui vous met toujours en forme?\" ou \"Montons l'énergie! Quelle est votre chanson de motivation préférée?\"",
+        
+        fallback_momentum_maintain: "🔥 **Maintenir Momentum**: Gardons l'énergie qui coule! Dites: \"J'adore cette énergie! Continuons - que devrions-nous faire ensuite?\" ou \"L'ambiance est parfaite maintenant! Comment pouvons-nous l'améliorer encore?\"",
+        fallback_momentum_celebrate: "🎉 **Célébrer Réussites**: C'est l'heure de célébrer! Dites: \"Vous êtes tous incroyables! Qu'est-ce dont vous êtes fier d'avoir accompli récemment?\" ou \"Célébrons ensemble! Quelle est votre plus grande victoire cette semaine?\"",
+        fallback_momentum_next: "🔮 **Teaser Prochain Contenu**: Construire l'anticipation! Dites: \"Je suis déjà excité pour la prochaine fois! Qu'aimeriez-vous voir dans le prochain stream?\" ou \"Ce n'est que le début! Qu'explorerons-nous ensemble ensuite?\"",
         fallback_growth: "📈 **Connexion avec les Spectateurs**: Excellente énergie ! Personnalisez votre demande: \"Si vous aimez ça, appuyez sur le bouton follow et construisons cette communauté ensemble !\"",
         fallback_interaction: "🎯 **Défi Interactif**: Commencez un jeu rapide ! \"Commentez avec votre emoji préféré si vous êtes déjà allé à [lieu/sujet pertinent] !\" ou \"Tapez OUI si vous êtes d'accord avec ça !\"",
         fallback_retention: "👥 **Rétention des Spectateurs**: Connectez-vous avec votre audience ! \"Je veux vous entendre - qu'est-ce qui vous a amené à ce stream aujourd'hui ?\" ou \"Partagez votre expérience avec [sujet actuel] !\"",
@@ -1631,8 +1663,8 @@ async function generateAutomatedPrompt(session = null) {
     const targetMetrics = session ? session.metrics : metrics;
     const sessionId = session ? session.id : 'global';
     
-    // Check cooldown to prevent spam - reduced from 30s to 15s for more proactive assistance
-    if (targetMetrics.lastPromptTime && (now - targetMetrics.lastPromptTime) < 15000) { // 15 second cooldown
+    // Check cooldown to prevent spam - increased to 45s for better quality prompts
+    if (targetMetrics.lastPromptTime && (now - targetMetrics.lastPromptTime) < 45000) { // 45 second cooldown
         return null;
     }
     
@@ -4151,8 +4183,8 @@ function handleChatEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Check for automated prompts every 5 comments
-    if (session.metrics.totalComments % 5 === 0) {
+    // Check for automated prompts every 10 comments (reduced frequency)
+    if (session.metrics.totalComments % 10 === 0) {
         console.log(`🤖 [AI CHECK] Checking for automated prompts... (Comments: ${session.metrics.totalComments})`);
         generateAutomatedPrompt(session).then(automatedPrompt => {
             if (automatedPrompt) {
@@ -4273,8 +4305,8 @@ function handleGiftEventForSession(data, session) {
         sessionId: session.id
     });
     
-    // Check for automated prompts every 3 gifts
-    if (session.metrics.totalGifts % 3 === 0) {
+    // Check for automated prompts every 5 gifts (reduced frequency)
+    if (session.metrics.totalGifts % 5 === 0) {
         console.log(`🤖 [AI CHECK] Checking for automated prompts... (Gifts: ${session.metrics.totalGifts})`);
         generateAutomatedPrompt(session).then(automatedPrompt => {
             if (automatedPrompt) {

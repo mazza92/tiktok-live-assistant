@@ -27,52 +27,81 @@ class GeminiService {
         const now = new Date();
         const streamDuration = Math.floor((now - metrics.streamStartTime) / 60000); // minutes
         
-        // Stream phase analysis
+        // Enhanced stream phase analysis
         let streamPhase = 'mid';
-        if (streamDuration < 10) streamPhase = 'start';
-        else if (streamDuration > 45) streamPhase = 'end';
+        let phaseContext = '';
+        if (streamDuration < 10) {
+            streamPhase = 'start';
+            phaseContext = 'Stream just started - focus on welcoming new viewers and setting the tone';
+        } else if (streamDuration > 45) {
+            streamPhase = 'end';
+            phaseContext = 'Stream is ending soon - focus on thanking viewers and encouraging follows';
+        } else {
+            phaseContext = 'Mid-stream - maintain engagement and build community';
+        }
         
-        // Engagement analysis
+        // Enhanced engagement analysis
         const engagementLevel = this.analyzeEngagementLevel(metrics);
         const sentimentStatus = this.analyzeSentimentStatus(metrics);
         const growthStatus = this.analyzeGrowthStatus(metrics);
+        const energyLevel = this.analyzeEnergyLevel(metrics);
+        const viewerTrend = this.analyzeViewerTrend(metrics);
         
-        // Recent events summary
+        // Recent events summary with more detail
         const recentEvents = this.summarizeRecentEvents(metrics);
+        const topEngagedUsers = this.getTopEngagedUsers(metrics);
+        const contentSuggestions = this.getContentSuggestions(metrics);
         
         // Language-specific instructions
         const languageInstructions = language === 'fr' ? 
             'IMPORTANT: Generate your response in French. Use natural, conversational French that a French streamer would say.' :
             'IMPORTANT: Generate your response in English. Use natural, conversational English that an English streamer would say.';
         
-        // Build the context string
+        // Build the enhanced context string
         const context = `
-You are LiveBot, an enthusiastic and friendly stream co-host. Your task is to generate a short, actionable prompt for the streamer to say out loud.
+You are LiveBot, an expert stream co-host with deep knowledge of streaming psychology and audience engagement. Your task is to generate a specific, actionable prompt that will genuinely help the streamer improve their stream.
 
 ${languageInstructions}
 
 STREAM CONTEXT:
 - Stream Duration: ${streamDuration} minutes (${streamPhase} phase)
+- Phase Context: ${phaseContext}
 - Current Viewers: ${metrics.currentViewerCount || 0}
+- Viewer Trend: ${viewerTrend}
 - Engagement Level: ${engagementLevel}
+- Energy Level: ${energyLevel}
 - Sentiment: ${sentimentStatus}
 - Growth: ${growthStatus}
 
-REAL-TIME METRICS:
+DETAILED METRICS:
 - Comments per minute: ${metrics.commentsPerMinute || 0}
 - Likes per minute: ${metrics.likesPerMinute || 0}
 - Gifts per minute: ${metrics.giftsPerMinute || 0}
 - Shares per minute: ${metrics.sharesPerMinute || 0}
 - Followers gained this session: ${metrics.sessionFollowersGained || 0}
+- Average watch time: ${metrics.averageWatchTime || 0} seconds
+- Viewer retention: ${metrics.viewerRetention || 0}%
 
 RECENT ACTIVITY:
 ${recentEvents}
 
-TASK: Generate a short, energetic prompt (max 2 sentences) that the streamer can say to:
-1. Address the current engagement situation
-2. Encourage viewer interaction
-3. Feel natural and conversational
-4. Match the stream's current energy level
+TOP ENGAGED USERS:
+${topEngagedUsers}
+
+CONTENT SUGGESTIONS:
+${contentSuggestions}
+
+TASK: Generate a specific, actionable prompt (1-2 sentences) that:
+1. Addresses the current stream situation with precision
+2. Provides a clear, specific action for the streamer
+3. Feels natural and matches the stream's energy
+4. Helps build genuine community connection
+5. Avoids generic phrases like "hit that follow button"
+
+EXAMPLES OF GOOD PROMPTS:
+- "I see we have some new faces! Drop a comment and tell me what brought you here today"
+- "The chat is buzzing! Let's do a quick poll - what's your favorite part of this stream so far?"
+- "I love the energy right now! Who wants to share their biggest win this week?"
 
 FORMAT: Just the prompt text, no explanations or formatting.
         `.trim();
@@ -257,6 +286,81 @@ FORMAT: Just the prompt text, no explanations or formatting.
     }
 
     /**
+     * Analyze energy level based on activity patterns
+     */
+    analyzeEnergyLevel(metrics) {
+        const commentRate = metrics.commentsPerMinute || 0;
+        const likeRate = metrics.likesPerMinute || 0;
+        const giftRate = metrics.giftsPerMinute || 0;
+        const viewerCount = metrics.currentViewerCount || 0;
+        
+        const totalActivity = commentRate + (likeRate / 10) + (giftRate * 5);
+        const activityPerViewer = viewerCount > 0 ? totalActivity / viewerCount : 0;
+        
+        if (activityPerViewer > 2) return '🔥 HIGH - Very active chat and engagement';
+        if (activityPerViewer > 1) return '⚡ MEDIUM - Good energy, room to grow';
+        if (activityPerViewer > 0.5) return '💤 LOW - Chat is quiet, needs activation';
+        return '😴 VERY LOW - Minimal engagement, needs immediate attention';
+    }
+
+    /**
+     * Analyze viewer trend (growing, stable, declining)
+     */
+    analyzeViewerTrend(metrics) {
+        const currentViewers = metrics.currentViewerCount || 0;
+        const peakViewers = metrics.peakViewerCount || 0;
+        const avgViewers = metrics.averageViewerCount || 0;
+        
+        if (currentViewers > peakViewers * 0.9) return '📈 GROWING - Near peak viewers';
+        if (currentViewers > avgViewers * 1.1) return '📊 STABLE - Above average';
+        if (currentViewers < avgViewers * 0.8) return '📉 DECLINING - Below average';
+        return '📊 STABLE - Normal fluctuation';
+    }
+
+    /**
+     * Get top engaged users summary
+     */
+    getTopEngagedUsers(metrics) {
+        if (!metrics.topEngagedUsers || metrics.topEngagedUsers.length === 0) {
+            return 'No specific user data available';
+        }
+        
+        const topUsers = metrics.topEngagedUsers.slice(0, 3);
+        return topUsers.map(user => 
+            `${user.nickname}: ${user.likes} likes, ${user.gifts} gifts, ${user.comments} comments`
+        ).join('\n');
+    }
+
+    /**
+     * Get content suggestions based on current metrics
+     */
+    getContentSuggestions(metrics) {
+        const commentRate = metrics.commentsPerMinute || 0;
+        const viewerCount = metrics.currentViewerCount || 0;
+        const streamDuration = Math.floor((Date.now() - metrics.streamStartTime) / 60000);
+        
+        const suggestions = [];
+        
+        if (commentRate < 3 && viewerCount > 10) {
+            suggestions.push('Ask direct questions to activate chat');
+        }
+        if (viewerCount > 50 && commentRate > 5) {
+            suggestions.push('Perfect time for interactive content or polls');
+        }
+        if (streamDuration > 30 && commentRate > 8) {
+            suggestions.push('High engagement - consider extending stream or doing special content');
+        }
+        if (metrics.totalGifts > 10) {
+            suggestions.push('Gift activity is high - acknowledge supporters and encourage more');
+        }
+        if (metrics.sessionFollowersGained > 5) {
+            suggestions.push('Good growth - welcome new followers and build community');
+        }
+        
+        return suggestions.length > 0 ? suggestions.join('\n') : 'Continue current content strategy';
+    }
+
+    /**
      * Get a context-aware fallback prompt
      */
     getFallbackPrompt(metrics = {}, language = 'en') {
@@ -287,45 +391,91 @@ FORMAT: Just the prompt text, no explanations or formatting.
         const viewerCount = metrics.currentViewerCount || 0;
         const commentRate = metrics.commentsPerMinute || 0;
         const likeRate = metrics.likesPerMinute || 0;
+        const giftRate = metrics.giftsPerMinute || 0;
         const sentiment = metrics.rollingSentimentScore || 0;
+        const streamDuration = Math.floor((Date.now() - metrics.streamStartTime) / 60000);
         
-        // Determine the best fallback based on current situation
-        let selectedPrompt;
+        // Get recent prompt history to avoid repetition
+        const recentPrompts = metrics.promptHistory || [];
+        const lastPrompt = recentPrompts[recentPrompts.length - 1];
         
-        if (commentRate < 3 && viewerCount > 0) {
-            // Low engagement - need to activate chat
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'ask_direct_question');
+        // Enhanced selection logic with more variety
+        let candidatePrompts = [];
+        
+        // Engagement-based selection
+        if (commentRate < 2 && viewerCount > 5) {
+            // Very low engagement - need immediate activation
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts.filter(p => 
+                p.type === 'engagement' && p.priority === 'high'
+            );
+        } else if (commentRate < 5 && viewerCount > 10) {
+            // Low engagement - variety of engagement prompts
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts.filter(p => 
+                p.type === 'engagement'
+            );
         } else if (viewerCount > 50 && commentRate > 5) {
-            // Good engagement - encourage growth
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'encourage_follows_personal');
+            // Good engagement - focus on growth and community
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts.filter(p => 
+                p.type === 'growth' || p.type === 'interaction'
+            );
         } else if (commentRate > 10 && likeRate > 20) {
             // High engagement - maintain momentum
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'maintain_energy');
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts.filter(p => 
+                p.type === 'momentum' || p.type === 'interaction'
+            );
         } else if (viewerCount < 20) {
-            // Small audience - focus on retention
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'build_connection');
+            // Small audience - focus on retention and connection
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts.filter(p => 
+                p.type === 'retention'
+            );
         } else {
-            // Default to interactive challenge
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts.find(p => p.action === 'start_interactive_game');
+            // Default - mix of all types
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts;
         }
         
-        // If no specific prompt found, use the first one
-        if (!selectedPrompt) {
-            selectedPrompt = GEMINI_CONFIG.fallbackPrompts[0];
+        // Stream phase adjustments
+        if (streamDuration < 10) {
+            // Early stream - prioritize welcome and engagement
+            candidatePrompts = candidatePrompts.filter(p => 
+                p.action === 'welcome_new_viewers' || p.type === 'engagement'
+            );
+        } else if (streamDuration > 45) {
+            // Late stream - focus on retention and next content
+            candidatePrompts = candidatePrompts.filter(p => 
+                p.action === 'tease_next_content' || p.type === 'retention'
+            );
         }
         
-        // Return the prompt with the translation key as message
-        // The calling code will handle translation using getTranslatedPrompt
+        // Avoid repeating the last prompt type
+        if (lastPrompt && candidatePrompts.length > 1) {
+            candidatePrompts = candidatePrompts.filter(p => p.trigger !== lastPrompt);
+        }
+        
+        // If no candidates, use all prompts
+        if (candidatePrompts.length === 0) {
+            candidatePrompts = GEMINI_CONFIG.fallbackPrompts;
+        }
+        
+        // Select random prompt from candidates
+        const randomIndex = Math.floor(Math.random() * candidatePrompts.length);
+        const selectedPrompt = candidatePrompts[randomIndex];
+        
+        // Return the prompt with enhanced context
         return {
             ...selectedPrompt,
-            message: selectedPrompt.message, // This is now a translation key like 'fallback_engagement'
+            message: selectedPrompt.message,
             source: 'context_aware_fallback',
             context: {
                 engagementLevel: this.analyzeEngagementLevel(metrics),
                 sentiment: this.analyzeSentimentStatus(metrics),
                 streamPhase: this.getStreamPhase(metrics),
+                energyLevel: this.analyzeEnergyLevel(metrics),
+                viewerTrend: this.analyzeViewerTrend(metrics),
                 viewerCount: viewerCount,
-                commentRate: commentRate
+                commentRate: commentRate,
+                likeRate: likeRate,
+                giftRate: giftRate,
+                streamDuration: streamDuration
             }
         };
     }
