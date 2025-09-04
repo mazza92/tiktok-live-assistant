@@ -2915,7 +2915,7 @@ async function connectToTikTokForSession(session, retryAttempt = 0) {
         });
 
         // Set up event handlers for this session
-        setupSessionEventHandlers(session);
+        setupSessionEventHandlers(session, retryAttempt);
         
         // Connect to the live stream
         await session.connection.connect();
@@ -2935,7 +2935,7 @@ async function connectToTikTokForSession(session, retryAttempt = 0) {
     }
 }
 
-function setupSessionEventHandlers(session) {
+function setupSessionEventHandlers(session, retryAttempt = 0) {
     const connection = session.connection;
     
     connection.on('connected', (state) => {
@@ -4012,6 +4012,8 @@ async function changeTikTokUsername(newUsername, ws) {
             errorMessage = 'TikTok API rate limit reached. Please wait a few minutes before trying again.';
         } else if (error.message.includes('Cannot read properties of undefined')) {
             errorMessage = 'Session initialization error. Please try again.';
+        } else if (error.message.includes('retryAttempt is not defined')) {
+            errorMessage = 'Connection error. Please try again.';
         } else if (error.message.includes('connection')) {
             errorMessage = 'Failed to connect to TikTok Live. Please check the username and try again.';
         } else if (error.message.includes('timeout')) {
