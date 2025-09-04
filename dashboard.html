@@ -5852,6 +5852,19 @@
                     }
                     break;
                     
+                case 'connectionError':
+                    console.log('❌ Connection error received:', message);
+                    // Show user-friendly error message
+                    if (message.message) {
+                        alert(`❌ Connection Error: ${message.message}`);
+                    }
+                    // Reset connection state
+                    connectBtn.style.display = 'inline-block';
+                    disconnectBtn.style.display = 'none';
+                    streamStatus.textContent = 'Connection Failed';
+                    if (connectionDetails) connectionDetails.style.display = 'none';
+                    break;
+                    
                 case 'disconnected':
                     connectBtn.style.display = 'inline-block';
                     disconnectBtn.style.display = 'none';
@@ -6550,7 +6563,19 @@
         // Performance monitoring functions
         async function refreshPerformance() {
             try {
-                const response = await fetch('/health');
+                // Determine the base URL for API calls
+                let baseUrl;
+                if (window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.protocol === 'file:') {
+                    // Local development
+                    baseUrl = 'http://localhost:3000';
+                } else {
+                    // Deployed environment - use current hostname with HTTPS
+                    baseUrl = `https://${window.location.hostname}`;
+                }
+                
+                const response = await fetch(`${baseUrl}/health`);
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -6651,8 +6676,22 @@
                 // Update UI to show HTTP mode
                 document.getElementById('streamStatus').textContent = 'Connecting via HTTP...';
                 
+                // Determine the base URL for API calls
+                let baseUrl;
+                if (window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.protocol === 'file:') {
+                    // Local development
+                    baseUrl = 'http://localhost:3000';
+                } else {
+                    // Deployed environment - use current hostname with HTTPS
+                    baseUrl = `https://${window.location.hostname}`;
+                }
+                
+                console.log(`🌐 [HTTP MODE] Using base URL: ${baseUrl}`);
+                
                 // Send username change request via HTTP POST
-                const response = await fetch('/change-username', {
+                const response = await fetch(`${baseUrl}/change-username`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -6728,16 +6767,30 @@
             }
             
             // Set up HTTP polling interval with mobile optimization
+            // Determine the base URL for API calls
+            let baseUrl;
+            if (window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.protocol === 'file:') {
+                // Local development
+                baseUrl = 'http://localhost:3000';
+            } else {
+                // Deployed environment - use current hostname with HTTPS
+                baseUrl = `https://${window.location.hostname}`;
+            }
+            
+            console.log(`🌐 [HTTP FALLBACK] Using base URL: ${baseUrl}`);
+            
             const pollInterval = setInterval(async () => {
                 try {
-                    const response = await fetch('/metrics');
+                    const response = await fetch(`${baseUrl}/metrics`);
                     if (response.ok) {
                         const data = await response.json();
                         updateMetrics(data);
                         
                         // Only fetch viewer stats on mobile if really needed (less frequent)
                         if (!isMobile || Math.random() < 0.3) { // 30% chance on mobile
-                            const viewerResponse = await fetch('/api/viewers');
+                            const viewerResponse = await fetch(`${baseUrl}/api/viewers`);
                             if (viewerResponse.ok) {
                                 const viewerData = await viewerResponse.json();
                                 if (viewerData.success) {

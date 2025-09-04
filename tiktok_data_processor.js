@@ -3198,8 +3198,15 @@ async function connectToTikTokForSession(session, retryAttempt = 0) {
         // Set up event handlers for this session
         setupSessionEventHandlers(session, retryAttempt);
         
-        // Connect to the live stream
-        await session.connection.connect();
+        // Connect to the live stream with timeout
+        console.log(`🔗 [SESSION ${session.id}] Attempting to connect to TikTok Live...`);
+        const connectPromise = session.connection.connect();
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timeout after 30 seconds')), 30000);
+        });
+        
+        await Promise.race([connectPromise, timeoutPromise]);
+        console.log(`✅ [SESSION ${session.id}] Successfully connected to TikTok Live!`);
         
             // Cache the connection for reuse
             connectionCache.set(cacheKey, {
@@ -3360,6 +3367,11 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
     connection.on('connected', (state) => {
         console.log(`✅ [SESSION ${session.id}] Connected to TikTok Live!`);
         console.log(`📊 [SESSION ${session.id}] Room info:`, state);
+        console.log(`🔍 [SESSION ${session.id}] Connection state details:`, {
+            roomId: connection.roomId,
+            userId: connection.userId,
+            state: state
+        });
         session.isConnecting = false;
         session.reconnectAttempts = 0;
         
@@ -3500,6 +3512,12 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
     // Add error handling with retry logic
     connection.on('error', (error) => {
         console.error(`❌ [SESSION ${session.id}] Connection error:`, error);
+        console.error(`❌ [SESSION ${session.id}] Error details:`, {
+            message: error.message,
+            code: error.code,
+            stack: error.stack,
+            username: session.username
+        });
         session.isConnecting = false;
         
         // Check if it's a rate limiting error
@@ -4949,16 +4967,40 @@ async function changeTikTokUsername(newUsername, ws) {
             // Approach 1: Standard connection with advanced rate limiting bypass
             await connectToTikTokForSession(session);
         } catch (error) {
-            console.log(`⚠️ [SESSION ${session.id}] Standard approach failed, trying alternative methods...`);
+            console.log(`⚠️ [SESSION ${session.id}] Standard approach failed:`, error.message);
+            console.log(`⚠️ [SESSION ${session.id}] This might mean the user is not currently live streaming.`);
+            
+            // Check if it's a timeout or connection error
+            if (error.message.includes('timeout') || error.message.includes('Connection timeout')) {
+                console.log(`⏰ [SESSION ${session.id}] Connection timeout - user may not be live or TikTok API is slow`);
+                broadcastToSession(session, 'connectionError', {
+                    message: `Connection timeout. The user @${session.username} may not be currently live streaming.`,
+                    username: session.username,
+                    error: 'timeout'
+                });
+                return;
+            }
             
             // Approach 2: Try with different connection parameters
             try {
+                console.log(`🔄 [SESSION ${session.id}] Trying alternative connection method...`);
                 await connectToTikTokAlternative(session);
             } catch (altError) {
-                console.log(`⚠️ [SESSION ${session.id}] Alternative approach failed, trying minimal connection...`);
+                console.log(`⚠️ [SESSION ${session.id}] Alternative approach failed:`, altError.message);
+                console.log(`⚠️ [SESSION ${session.id}] Trying minimal connection...`);
                 
                 // Approach 3: Minimal connection with basic parameters
-                await connectToTikTokMinimal(session);
+                try {
+                    await connectToTikTokMinimal(session);
+                } catch (minError) {
+                    console.error(`❌ [SESSION ${session.id}] All connection methods failed:`, minError.message);
+                    broadcastToSession(session, 'connectionError', {
+                        message: `Failed to connect to @${session.username}. The user may not be live streaming or TikTok API is unavailable.`,
+                        username: session.username,
+                        error: minError.message
+                    });
+                    return;
+                }
             }
         }
         
