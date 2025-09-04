@@ -3369,6 +3369,9 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
         // Extract initial room state
         extractInitialRoomStateForSession(state, session);
         
+        // Attempt to fetch additional room info after connection is established
+        fetchRoomInfoAfterConnectionForSession(session);
+        
         // Broadcast connection status to session clients
         broadcastToSession(session, 'connected', { 
             status: 'connected', 
@@ -3378,7 +3381,12 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
         });
     });
 
-    // Add event handlers for room stats and live info
+    // Add comprehensive event handlers for room data (replicating single-user approach)
+    connection.on('roomInfo', (data) => {
+        console.log(`🎯 [SESSION ${session.id}] Room info event received:`, data);
+        extractInitialRoomStateForSession(data, session);
+    });
+
     connection.on('roomStats', (data) => {
         console.log(`📊 [SESSION ${session.id}] Room stats event received:`, data);
         extractInitialRoomStateForSession(data, session);
@@ -3386,6 +3394,11 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
 
     connection.on('liveInfo', (data) => {
         console.log(`🎯 [SESSION ${session.id}] Live info event received:`, data);
+        extractInitialRoomStateForSession(data, session);
+    });
+
+    connection.on('roomData', (data) => {
+        console.log(`🎯 [SESSION ${session.id}] Room data event received:`, data);
         extractInitialRoomStateForSession(data, session);
     });
 
@@ -3406,6 +3419,22 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
         
         // Check if this contains room totals
         if (data.roomStats || data.totalLikes || data.totalGifts) {
+            extractInitialRoomStateForSession(data, session);
+        }
+    });
+
+    // Add generic event handler to catch any events that might contain room data
+    connection.on('*', (eventName, data) => {
+        // Check if this event might contain room totals
+        if (eventName === 'roomInfo' || eventName === 'roomStats' || eventName === 'liveInfo' ||
+            eventName === 'member' || eventName === 'join' || eventName === 'roomData') {
+            console.log(`🎯 [SESSION ${session.id}] Found room info event: ${eventName}`, data);
+            extractInitialRoomStateForSession(data, session);
+        }
+        
+        // Also check if the data object itself contains room totals
+        if (data && (data.totalLikes || data.totalGifts || data.totalComments || data.roomStats)) {
+            console.log(`🎯 [SESSION ${session.id}] Event ${eventName} contains room data:`, data);
             extractInitialRoomStateForSession(data, session);
         }
     });
@@ -4619,6 +4648,223 @@ function extractInitialRoomStateForSession(data, session) {
         
     } catch (error) {
         console.error(`❌ [SESSION ${session.id}] Error extracting room state:`, error);
+    }
+}
+
+// Fetch room info after connection for session (replicating single-user approach)
+async function fetchRoomInfoAfterConnectionForSession(session) {
+    console.log(`🔍 [SESSION ${session.id}] Attempting to fetch room info after connection...`);
+    try {
+        // Reduced wait time for faster response
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Try to get room info from connection state first (faster)
+        if (session.connection && session.connection.state) {
+            console.log(`🔍 [SESSION ${session.id}] Checking connection state for room data...`);
+            extractInitialRoomStateForSession(session.connection.state, session);
+        }
+        
+        // Then try to fetch additional room info if needed
+        if (session.connection && typeof session.connection.fetchRoomInfo === 'function') {
+            try {
+                const roomInfo = await session.connection.fetchRoomInfo();
+                console.log(`📊 [SESSION ${session.id}] Room info fetched after connection:`, roomInfo);
+                // Extract totals from room info
+                extractRoomInfoTotalsForSession(roomInfo, session);
+            } catch (fetchError) {
+                console.log(`⚠️ [SESSION ${session.id}] Room info fetch failed, using connection state data`);
+            }
+        }
+        
+    } catch (error) {
+        console.error(`❌ [SESSION ${session.id}] Failed to fetch room info after connection:`, error);
+    }
+}
+
+// Extract totals from TikTok room info response for session (replicating single-user approach)
+function extractRoomInfoTotalsForSession(roomInfo, session) {
+    console.log(`🎯 [SESSION ${session.id}] Extracting totals from TikTok room info...`);
+    
+    try {
+        // Log the full room info to see what's available
+        console.log(`📊 [SESSION ${session.id}] Full room info:`, JSON.stringify(roomInfo, null, 2));
+        
+        let initialLikes = 0;
+        let initialGifts = 0;
+        let initialComments = 0;
+        let initialViewers = 0;
+        let initialShares = 0;
+        let initialDiamonds = 0;
+        
+        // Extract totals from various possible locations in room info
+        // Check for likes count
+        if (roomInfo.like_count && typeof roomInfo.like_count === 'number') {
+            initialLikes = roomInfo.like_count;
+        } else if (roomInfo.total_likes && typeof roomInfo.total_likes === 'number') {
+            initialLikes = roomInfo.total_likes;
+        } else if (roomInfo.stats && roomInfo.stats.like_count) {
+            initialLikes = roomInfo.stats.like_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.like_count) {
+            initialLikes = roomInfo.room_data.like_count;
+        }
+        
+        // Check for gifts count
+        if (roomInfo.gift_count && typeof roomInfo.gift_count === 'number') {
+            initialGifts = roomInfo.gift_count;
+        } else if (roomInfo.total_gifts && typeof roomInfo.total_gifts === 'number') {
+            initialGifts = roomInfo.total_gifts;
+        } else if (roomInfo.stats && roomInfo.stats.gift_count) {
+            initialGifts = roomInfo.stats.gift_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.gift_count) {
+            initialGifts = roomInfo.room_data.gift_count;
+        }
+        
+        // Check for shares count
+        if (roomInfo.share_count && typeof roomInfo.share_count === 'number') {
+            initialShares = roomInfo.share_count;
+        } else if (roomInfo.total_shares && typeof roomInfo.total_shares === 'number') {
+            initialShares = roomInfo.total_shares;
+        } else if (roomInfo.stats && roomInfo.stats.share_count) {
+            initialShares = roomInfo.stats.share_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.share_count) {
+            initialShares = roomInfo.room_data.share_count;
+        }
+        
+        // Check for comments count
+        if (roomInfo.comment_count && typeof roomInfo.comment_count === 'number') {
+            initialComments = roomInfo.comment_count;
+        } else if (roomInfo.total_comments && typeof roomInfo.total_comments === 'number') {
+            initialComments = roomInfo.total_comments;
+        } else if (roomInfo.stats && roomInfo.stats.comment_count) {
+            initialComments = roomInfo.stats.comment_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.comment_count) {
+            initialComments = roomInfo.room_data.comment_count;
+        }
+        
+        // Check for viewer count
+        if (roomInfo.viewer_count && typeof roomInfo.viewer_count === 'number') {
+            initialViewers = roomInfo.viewer_count;
+        } else if (roomInfo.current_viewers && typeof roomInfo.current_viewers === 'number') {
+            initialViewers = roomInfo.current_viewers;
+        } else if (roomInfo.stats && roomInfo.stats.viewer_count) {
+            initialViewers = roomInfo.stats.viewer_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.viewer_count) {
+            initialViewers = roomInfo.room_data.viewer_count;
+        }
+        
+        // Check for diamonds
+        if (roomInfo.diamond_count && typeof roomInfo.diamond_count === 'number') {
+            initialDiamonds = roomInfo.diamond_count;
+        } else if (roomInfo.total_diamonds && typeof roomInfo.total_diamonds === 'number') {
+            initialDiamonds = roomInfo.total_diamonds;
+        } else if (roomInfo.stats && roomInfo.stats.diamond_count) {
+            initialDiamonds = roomInfo.stats.diamond_count;
+        } else if (roomInfo.room_data && roomInfo.room_data.diamond_count) {
+            initialDiamonds = roomInfo.room_data.diamond_count;
+        }
+        
+        // Use deep search function for any remaining values
+        if (initialLikes === 0) {
+            const deepLikes = findDeepValue(roomInfo, ['likes', 'totalLikes', 'likeCount', 'total_likes', 'like_count']);
+            if (deepLikes && typeof deepLikes === 'number') {
+                initialLikes = deepLikes;
+            }
+        }
+        
+        if (initialGifts === 0) {
+            const deepGifts = findDeepValue(roomInfo, ['gifts', 'totalGifts', 'giftCount', 'total_gifts', 'gift_count']);
+            if (deepGifts && typeof deepGifts === 'number') {
+                initialGifts = deepGifts;
+            }
+        }
+        
+        if (initialShares === 0) {
+            const deepShares = findDeepValue(roomInfo, ['shares', 'totalShares', 'shareCount', 'total_shares', 'share_count']);
+            if (deepShares && typeof deepShares === 'number') {
+                initialShares = deepShares;
+            }
+        }
+        
+        if (initialComments === 0) {
+            const deepComments = findDeepValue(roomInfo, ['comments', 'totalComments', 'commentCount', 'total_comments', 'comment_count']);
+            if (deepComments && typeof deepComments === 'number') {
+                initialComments = deepComments;
+            }
+        }
+        
+        if (initialViewers === 0) {
+            const deepViewers = findDeepValue(roomInfo, ['viewerCount', 'viewers', 'currentViewers', 'viewer_count', 'current_viewers']);
+            if (deepViewers && typeof deepViewers === 'number') {
+                initialViewers = deepViewers;
+            }
+        }
+        
+        if (initialDiamonds === 0) {
+            const deepDiamonds = findDeepValue(roomInfo, ['diamonds', 'totalDiamonds', 'diamondCount', 'total_diamonds', 'diamond_count']);
+            if (deepDiamonds && typeof deepDiamonds === 'number') {
+                initialDiamonds = deepDiamonds;
+            }
+        }
+        
+        // Set the initial values if found
+        if (initialLikes > 0) {
+            session.metrics.totalLikes = initialLikes;
+            console.log(`🎯 [SESSION ${session.id}] Set total likes from room info: ${initialLikes.toLocaleString()}`);
+        }
+        
+        if (initialGifts > 0) {
+            session.metrics.totalGifts = initialGifts;
+            console.log(`🎯 [SESSION ${session.id}] Set total gifts from room info: ${initialGifts.toLocaleString()}`);
+        }
+        
+        if (initialShares > 0) {
+            session.metrics.totalShares = initialShares;
+            console.log(`🎯 [SESSION ${session.id}] Set total shares from room info: ${initialShares.toLocaleString()}`);
+        }
+        
+        if (initialComments > 0) {
+            session.metrics.totalComments = initialComments;
+            console.log(`🎯 [SESSION ${session.id}] Set total comments from room info: ${initialComments.toLocaleString()}`);
+        }
+        
+        if (initialViewers > 0) {
+            session.metrics.currentViewerCount = initialViewers;
+            console.log(`🎯 [SESSION ${session.id}] Set current viewer count from room info: ${initialViewers.toLocaleString()}`);
+        }
+        
+        if (initialDiamonds > 0) {
+            session.metrics.totalGiftDiamonds = initialDiamonds;
+            console.log(`🎯 [SESSION ${session.id}] Set total gift diamonds from room info: ${initialDiamonds.toLocaleString()}`);
+        }
+        
+        // Log all available keys in the room info object for debugging
+        console.log(`🔍 [SESSION ${session.id}] Available keys:`, Object.keys(roomInfo));
+        if (roomInfo.stats) {
+            console.log(`🔍 [SESSION ${session.id}] Stats keys:`, Object.keys(roomInfo.stats));
+        }
+        if (roomInfo.room_data) {
+            console.log(`🔍 [SESSION ${session.id}] Room data keys:`, Object.keys(roomInfo.room_data));
+        }
+        if (roomInfo.owner) {
+            console.log(`🔍 [SESSION ${session.id}] Owner keys:`, Object.keys(roomInfo.owner));
+        }
+        
+        // Broadcast the complete room state to the dashboard
+        broadcastToSession(session, 'roomState', {
+            type: 'roomState',
+            sessionId: session.id,
+            username: session.username,
+            totalLikes: session.metrics.totalLikes,
+            totalGifts: session.metrics.totalGifts,
+            totalShares: session.metrics.totalShares,
+            totalComments: session.metrics.totalComments,
+            totalGiftDiamonds: session.metrics.totalGiftDiamonds,
+            currentViewerCount: session.metrics.currentViewerCount,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        console.error(`❌ [SESSION ${session.id}] Error extracting room info totals:`, error);
     }
 }
 
