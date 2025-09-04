@@ -3378,6 +3378,38 @@ function setupSessionEventHandlers(session, retryAttempt = 0) {
         });
     });
 
+    // Add event handlers for room stats and live info
+    connection.on('roomStats', (data) => {
+        console.log(`📊 [SESSION ${session.id}] Room stats event received:`, data);
+        extractInitialRoomStateForSession(data, session);
+    });
+
+    connection.on('liveInfo', (data) => {
+        console.log(`🎯 [SESSION ${session.id}] Live info event received:`, data);
+        extractInitialRoomStateForSession(data, session);
+    });
+
+    connection.on('roomUser', (data) => {
+        console.log(`👥 [SESSION ${session.id}] Room user event received:`, data);
+        
+        // Update current viewer count from TikTok
+        if (typeof data.viewerCount === 'number') {
+            session.metrics.currentViewerCount = data.viewerCount;
+            console.log(`👥 [SESSION ${session.id}] Current viewer count: ${data.viewerCount}`);
+            
+            // Broadcast updated viewer count
+            broadcastToSession(session, 'viewerCount', { 
+                count: data.viewerCount,
+                sessionId: session.id 
+            });
+        }
+        
+        // Check if this contains room totals
+        if (data.roomStats || data.totalLikes || data.totalGifts) {
+            extractInitialRoomStateForSession(data, session);
+        }
+    });
+
     connection.on('disconnected', (reason) => {
         console.log(`❌ [SESSION ${session.id}] Disconnected from TikTok Live:`, reason);
         session.isConnecting = false;
@@ -4308,28 +4340,285 @@ function handleRoomUserEventForSession(data, session) {
 }
 
 function extractInitialRoomStateForSession(data, session) {
-    // Extract initial room state for session
-    if (data && typeof data === 'object') {
-        if (typeof data.totalLikes === 'number') {
-            session.metrics.totalLikes = data.totalLikes;
+    console.log(`🔍 [SESSION ${session.id}] Extracting complete room state from TikTok connection...`);
+    
+    try {
+        // Log the full state object to see what's available
+        console.log(`📊 [SESSION ${session.id}] Full room state:`, JSON.stringify(data, null, 2));
+        
+        // Initialize variables for all possible metrics
+        let initialLikes = 0;
+        let initialGifts = 0;
+        let initialComments = 0;
+        let initialShares = 0;
+        let initialViewers = 0;
+        let initialDiamonds = 0;
+        
+        // Comprehensive search for likes in different possible locations
+        if (data.likes && typeof data.likes === 'number') {
+            initialLikes = data.likes;
+        } else if (data.totalLikes && typeof data.totalLikes === 'number') {
+            initialLikes = data.totalLikes;
+        } else if (data.likeCount && typeof data.likeCount === 'number') {
+            initialLikes = data.likeCount;
+        } else if (data.roomStats && data.roomStats.likes) {
+            initialLikes = data.roomStats.likes;
+        } else if (data.stats && data.stats.likes) {
+            initialLikes = data.stats.likes;
+        } else if (data.room && data.room.likes) {
+            initialLikes = data.room.likes;
+        } else if (data.live && data.live.likes) {
+            initialLikes = data.live.likes;
+        } else if (data.total_likes && typeof data.total_likes === 'number') {
+            initialLikes = data.total_likes;
+        } else if (data.like_count && typeof data.like_count === 'number') {
+            initialLikes = data.like_count;
         }
-        if (typeof data.totalGifts === 'number') {
-            session.metrics.totalGifts = data.totalGifts;
+        
+        // Comprehensive search for gifts
+        if (data.gifts && typeof data.gifts === 'number') {
+            initialGifts = data.gifts;
+        } else if (data.totalGifts && typeof data.totalGifts === 'number') {
+            initialGifts = data.totalGifts;
+        } else if (data.giftCount && typeof data.giftCount === 'number') {
+            initialGifts = data.giftCount;
+        } else if (data.roomStats && data.roomStats.gifts) {
+            initialGifts = data.roomStats.gifts;
+        } else if (data.stats && data.stats.gifts) {
+            initialGifts = data.stats.gifts;
+        } else if (data.room && data.room.gifts) {
+            initialGifts = data.room.gifts;
+        } else if (data.live && data.live.gifts) {
+            initialGifts = data.live.gifts;
+        } else if (data.total_gifts && typeof data.total_gifts === 'number') {
+            initialGifts = data.total_gifts;
+        } else if (data.gift_count && typeof data.gift_count === 'number') {
+            initialGifts = data.gift_count;
         }
-        if (typeof data.totalComments === 'number') {
-            session.metrics.totalComments = data.totalComments;
+        
+        // Comprehensive search for shares
+        if (data.shares && typeof data.shares === 'number') {
+            initialShares = data.shares;
+        } else if (data.totalShares && typeof data.totalShares === 'number') {
+            initialShares = data.totalShares;
+        } else if (data.shareCount && typeof data.shareCount === 'number') {
+            initialShares = data.shareCount;
+        } else if (data.roomStats && data.roomStats.shares) {
+            initialShares = data.roomStats.shares;
+        } else if (data.stats && data.stats.shares) {
+            initialShares = data.stats.shares;
+        } else if (data.room && data.room.shares) {
+            initialShares = data.room.shares;
+        } else if (data.live && data.live.shares) {
+            initialShares = data.live.shares;
+        } else if (data.total_shares && typeof data.total_shares === 'number') {
+            initialShares = data.total_shares;
+        } else if (data.share_count && typeof data.share_count === 'number') {
+            initialShares = data.share_count;
         }
-        if (typeof data.viewerCount === 'number') {
-            session.metrics.currentViewerCount = data.viewerCount;
+        
+        // Comprehensive search for comments
+        if (data.comments && typeof data.comments === 'number') {
+            initialComments = data.comments;
+        } else if (data.totalComments && typeof data.totalComments === 'number') {
+            initialComments = data.totalComments;
+        } else if (data.commentCount && typeof data.commentCount === 'number') {
+            initialComments = data.commentCount;
+        } else if (data.roomStats && data.roomStats.comments) {
+            initialComments = data.roomStats.comments;
+        } else if (data.stats && data.stats.comments) {
+            initialComments = data.stats.comments;
+        } else if (data.room && data.room.comments) {
+            initialComments = data.room.comments;
+        } else if (data.live && data.live.comments) {
+            initialComments = data.live.comments;
+        } else if (data.total_comments && typeof data.total_comments === 'number') {
+            initialComments = data.total_comments;
+        } else if (data.comment_count && typeof data.comment_count === 'number') {
+            initialComments = data.comment_count;
+        }
+        
+        // Comprehensive search for viewer count
+        if (data.viewerCount && typeof data.viewerCount === 'number') {
+            initialViewers = data.viewerCount;
+        } else if (data.viewers && typeof data.viewers === 'number') {
+            initialViewers = data.viewers;
+        } else if (data.currentViewers && typeof data.currentViewers === 'number') {
+            initialViewers = data.currentViewers;
+        } else if (data.roomStats && data.roomStats.viewerCount) {
+            initialViewers = data.roomStats.viewerCount;
+        } else if (data.stats && data.stats.viewerCount) {
+            initialViewers = data.stats.viewerCount;
+        } else if (data.room && data.room.viewerCount) {
+            initialViewers = data.room.viewerCount;
+        } else if (data.live && data.live.viewerCount) {
+            initialViewers = data.live.viewerCount;
+        } else if (data.viewer_count && typeof data.viewer_count === 'number') {
+            initialViewers = data.viewer_count;
+        } else if (data.current_viewers && typeof data.current_viewers === 'number') {
+            initialViewers = data.current_viewers;
+        }
+        
+        // Search for diamonds (gift value)
+        if (data.diamonds && typeof data.diamonds === 'number') {
+            initialDiamonds = data.diamonds;
+        } else if (data.totalDiamonds && typeof data.totalDiamonds === 'number') {
+            initialDiamonds = data.totalDiamonds;
+        } else if (data.diamondCount && typeof data.diamondCount === 'number') {
+            initialDiamonds = data.diamondCount;
+        } else if (data.roomStats && data.roomStats.diamonds) {
+            initialDiamonds = data.roomStats.diamonds;
+        } else if (data.stats && data.stats.diamonds) {
+            initialDiamonds = data.stats.diamonds;
+        } else if (data.room && data.room.diamonds) {
+            initialDiamonds = data.room.diamonds;
+        } else if (data.live && data.live.diamonds) {
+            initialDiamonds = data.live.diamonds;
+        } else if (data.total_diamonds && typeof data.total_diamonds === 'number') {
+            initialDiamonds = data.total_diamonds;
+        } else if (data.diamond_count && typeof data.diamond_count === 'number') {
+            initialDiamonds = data.diamond_count;
+        }
+        
+        // Use deep search function for any remaining values
+        if (initialLikes === 0) {
+            const deepLikes = findDeepValue(data, ['likes', 'totalLikes', 'likeCount', 'total_likes', 'like_count']);
+            if (deepLikes && typeof deepLikes === 'number') {
+                initialLikes = deepLikes;
+            }
+        }
+        
+        if (initialGifts === 0) {
+            const deepGifts = findDeepValue(data, ['gifts', 'totalGifts', 'giftCount', 'total_gifts', 'gift_count']);
+            if (deepGifts && typeof deepGifts === 'number') {
+                initialGifts = deepGifts;
+            }
+        }
+        
+        if (initialShares === 0) {
+            const deepShares = findDeepValue(data, ['shares', 'totalShares', 'shareCount', 'total_shares', 'share_count']);
+            if (deepShares && typeof deepShares === 'number') {
+                initialShares = deepShares;
+            }
+        }
+        
+        if (initialComments === 0) {
+            const deepComments = findDeepValue(data, ['comments', 'totalComments', 'commentCount', 'total_comments', 'comment_count']);
+            if (deepComments && typeof deepComments === 'number') {
+                initialComments = deepComments;
+            }
+        }
+        
+        if (initialViewers === 0) {
+            const deepViewers = findDeepValue(data, ['viewerCount', 'viewers', 'currentViewers', 'viewer_count', 'current_viewers']);
+            if (deepViewers && typeof deepViewers === 'number') {
+                initialViewers = deepViewers;
+            }
+        }
+        
+        if (initialDiamonds === 0) {
+            const deepDiamonds = findDeepValue(data, ['diamonds', 'totalDiamonds', 'diamondCount', 'total_diamonds', 'diamond_count']);
+            if (deepDiamonds && typeof deepDiamonds === 'number') {
+                initialDiamonds = deepDiamonds;
+            }
+        }
+        
+        // Set the initial values if found
+        if (initialLikes > 0) {
+            session.metrics.totalLikes = initialLikes;
+            console.log(`🎯 [SESSION ${session.id}] Set total likes from room state: ${initialLikes.toLocaleString()}`);
+        }
+        
+        if (initialGifts > 0) {
+            session.metrics.totalGifts = initialGifts;
+            console.log(`🎯 [SESSION ${session.id}] Set total gifts from room state: ${initialGifts.toLocaleString()}`);
+        }
+        
+        if (initialShares > 0) {
+            session.metrics.totalShares = initialShares;
+            console.log(`🎯 [SESSION ${session.id}] Set total shares from room state: ${initialShares.toLocaleString()}`);
+        }
+        
+        if (initialComments > 0) {
+            session.metrics.totalComments = initialComments;
+            console.log(`🎯 [SESSION ${session.id}] Set total comments from room state: ${initialComments.toLocaleString()}`);
+        }
+        
+        if (initialViewers > 0) {
+            session.metrics.currentViewerCount = initialViewers;
+            console.log(`🎯 [SESSION ${session.id}] Set current viewer count from room state: ${initialViewers.toLocaleString()}`);
+        }
+        
+        if (initialDiamonds > 0) {
+            session.metrics.totalGiftDiamonds = initialDiamonds;
+            console.log(`🎯 [SESSION ${session.id}] Set total gift diamonds from room state: ${initialDiamonds.toLocaleString()}`);
         }
         
         session.metrics.lastActivity = Date.now();
-        console.log(`📊 [SESSION ${session.id}] Initial room state extracted:`, {
+        
+        // Log all available keys in the room state object for debugging
+        console.log(`🔍 [SESSION ${session.id}] Available keys:`, Object.keys(data));
+        if (data.stats) {
+            console.log(`🔍 [SESSION ${session.id}] Stats keys:`, Object.keys(data.stats));
+        }
+        if (data.roomStats) {
+            console.log(`🔍 [SESSION ${session.id}] Room stats keys:`, Object.keys(data.roomStats));
+        }
+        if (data.room) {
+            console.log(`🔍 [SESSION ${session.id}] Room keys:`, Object.keys(data.room));
+        }
+        if (data.live) {
+            console.log(`🔍 [SESSION ${session.id}] Live keys:`, Object.keys(data.live));
+        }
+        
+        // If we still don't have totals, try to find any large numbers that might be totals
+        if (initialLikes === 0 && initialGifts === 0 && initialShares === 0) {
+            console.log(`🔍 [SESSION ${session.id}] Searching for any large numbers that might be totals...`);
+            const largeNumbers = findLargeNumbers(data);
+            if (largeNumbers.length > 0) {
+                console.log(`🔍 [SESSION ${session.id}] Found large numbers:`, largeNumbers);
+                // Try to assign them logically (largest to likes, second to gifts, etc.)
+                largeNumbers.sort((a, b) => b - a);
+                if (largeNumbers[0] > 0) {
+                    session.metrics.totalLikes = largeNumbers[0];
+                    console.log(`🎯 [SESSION ${session.id}] Assigned largest number to total likes: ${largeNumbers[0].toLocaleString()}`);
+                }
+                if (largeNumbers[1] > 0) {
+                    session.metrics.totalGifts = largeNumbers[1];
+                    console.log(`🎯 [SESSION ${session.id}] Assigned second largest number to total gifts: ${largeNumbers[1].toLocaleString()}`);
+                }
+                if (largeNumbers[2] > 0) {
+                    session.metrics.totalShares = largeNumbers[2];
+                    console.log(`🎯 [SESSION ${session.id}] Assigned third largest number to total shares: ${largeNumbers[2].toLocaleString()}`);
+                }
+            }
+        }
+        
+        console.log(`📊 [SESSION ${session.id}] Complete room state extracted:`, {
             totalLikes: session.metrics.totalLikes,
             totalGifts: session.metrics.totalGifts,
+            totalShares: session.metrics.totalShares,
             totalComments: session.metrics.totalComments,
+            totalGiftDiamonds: session.metrics.totalGiftDiamonds,
             viewerCount: session.metrics.currentViewerCount
         });
+        
+        // Broadcast the complete room state to the dashboard
+        broadcastToSession(session, 'roomState', {
+            type: 'roomState',
+            sessionId: session.id,
+            username: session.username,
+            totalLikes: session.metrics.totalLikes,
+            totalGifts: session.metrics.totalGifts,
+            totalShares: session.metrics.totalShares,
+            totalComments: session.metrics.totalComments,
+            totalGiftDiamonds: session.metrics.totalGiftDiamonds,
+            currentViewerCount: session.metrics.currentViewerCount,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        console.error(`❌ [SESSION ${session.id}] Error extracting room state:`, error);
     }
 }
 

@@ -5823,6 +5823,35 @@
                     console.log(`🔗 Connection established`);
                     break;
                     
+                case 'roomState':
+                    console.log('📊 Complete room state received:', message);
+                    // Update all metrics with complete room information
+                    if (message.totalLikes !== undefined) {
+                        updateMetric('totalLikes', message.totalLikes);
+                        console.log(`🎯 Updated total likes: ${message.totalLikes.toLocaleString()}`);
+                    }
+                    if (message.totalGifts !== undefined) {
+                        updateMetric('totalGifts', message.totalGifts);
+                        console.log(`🎯 Updated total gifts: ${message.totalGifts.toLocaleString()}`);
+                    }
+                    if (message.totalShares !== undefined) {
+                        updateMetric('totalShares', message.totalShares);
+                        console.log(`🎯 Updated total shares: ${message.totalShares.toLocaleString()}`);
+                    }
+                    if (message.totalComments !== undefined) {
+                        updateMetric('totalComments', message.totalComments);
+                        console.log(`🎯 Updated total comments: ${message.totalComments.toLocaleString()}`);
+                    }
+                    if (message.totalGiftDiamonds !== undefined) {
+                        updateMetric('totalGiftDiamonds', message.totalGiftDiamonds);
+                        console.log(`🎯 Updated total gift diamonds: ${message.totalGiftDiamonds.toLocaleString()}`);
+                    }
+                    if (message.currentViewerCount !== undefined) {
+                        updateViewerCount(message.currentViewerCount);
+                        console.log(`🎯 Updated current viewer count: ${message.currentViewerCount.toLocaleString()}`);
+                    }
+                    break;
+                    
                 case 'disconnected':
                     connectBtn.style.display = 'inline-block';
                     disconnectBtn.style.display = 'none';
