@@ -2855,9 +2855,7 @@ const BASE_RETRY_DELAY = 30000; // 30 seconds base delay
 const CONNECTION_CACHE_DURATION = 300000; // 5 minutes cache duration
 
 // Direct HTTP approach to bypass API rate limiting
-const https = require('https');
-const http = require('http');
-const { URL } = require('url');
+// Note: http and https are already imported at the top of the file
 
 // Direct HTTP connection to TikTok live streams (bypasses API rate limiting)
 async function connectToTikTokDirectHTTP(session, retryAttempt = 0) {
