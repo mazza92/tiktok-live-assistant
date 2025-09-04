@@ -3187,36 +3187,13 @@ async function connectToTikTokForSession(session, retryAttempt = 0) {
             console.log(`♻️ [SESSION ${session.id}] Reusing cached connection for ${session.username}`);
             session.connection = cachedConnection.connection;
         } else {
-            // Add random delay to avoid rate limiting (0-5 seconds)
-            const randomDelay = Math.random() * 5000;
-            if (randomDelay > 0) {
-                console.log(`⏳ [SESSION ${session.id}] Adding random delay: ${randomDelay.toFixed(0)}ms`);
-                await new Promise(resolve => setTimeout(resolve, randomDelay));
-            }
+            // Use advanced rate limiting bypass strategies
+            await implementAdvancedRateLimitBypass(session, retryAttempt);
             
-            session.connection = new WebcastPushConnection(session.username, {
-            requestPollingIntervalMs: 3000 + Math.random() * 2000, // Randomize polling interval
-            sessionId: undefined,
-            clientParams: {
-                "app_language": "en-US",
-                "device_platform": "web",
-                "webcast_sdk_version": "1.3.0",
-                "web_id": "7280301053461791239",
-                "msToken": "msToken",
-                "browser_language": "en",
-                "browser_platform": "Win32",
-                "browser_name": "Mozilla",
-                "browser_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "browser_online": true,
-                "tz_name": "America/New_York",
-                "identity": "en",
-                "room_id": "7280301053461791239",
-                "heartbeatIntervalMs": 15000,
-                "client": "web"
-            },
-            connectTimeoutMs: 30000,
-            requestTimeoutMs: 10000
-        });
+            // Generate randomized connection parameters to avoid detection
+            const connectionParams = generateRandomizedConnectionParams();
+            
+            session.connection = new WebcastPushConnection(session.username, connectionParams);
 
         // Set up event handlers for this session
         setupSessionEventHandlers(session, retryAttempt);
@@ -3237,6 +3214,144 @@ async function connectToTikTokForSession(session, retryAttempt = 0) {
         session.isConnecting = false;
         throw error;
     }
+}
+
+// Advanced rate limiting bypass strategies for real TikTok connections
+async function implementAdvancedRateLimitBypass(session, retryAttempt) {
+    // Strategy 1: Exponential backoff with jitter
+    const baseDelay = 10000; // 10 seconds base
+    const exponentialDelay = baseDelay * Math.pow(2, retryAttempt);
+    const jitter = Math.random() * 5000; // 0-5 seconds random
+    const totalDelay = exponentialDelay + jitter;
+    
+    if (retryAttempt > 0) {
+        console.log(`⏳ [SESSION ${session.id}] Advanced rate limit bypass delay: ${Math.round(totalDelay/1000)}s`);
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+    }
+    
+    // Strategy 2: Random delay to avoid synchronized requests
+    const randomDelay = Math.random() * 3000; // 0-3 seconds
+    if (randomDelay > 0) {
+        console.log(`⏳ [SESSION ${session.id}] Random delay: ${randomDelay.toFixed(0)}ms`);
+        await new Promise(resolve => setTimeout(resolve, randomDelay));
+    }
+}
+
+// Generate randomized connection parameters to avoid detection
+function generateRandomizedConnectionParams() {
+    // Randomize various parameters to avoid pattern detection
+    const randomWebId = Math.floor(Math.random() * 10000000000000000000).toString();
+    const randomRoomId = Math.floor(Math.random() * 10000000000000000000).toString();
+    const randomPollingInterval = 3000 + Math.floor(Math.random() * 2000); // 3-5 seconds
+    
+    // Randomize user agent strings
+    const userAgents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
+    ];
+    
+    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+    
+    return {
+        requestPollingIntervalMs: randomPollingInterval,
+        sessionId: undefined,
+        clientParams: {
+            "app_language": "en-US",
+            "device_platform": "web",
+            "webcast_sdk_version": "1.3.0",
+            "web_id": randomWebId,
+            "msToken": "msToken",
+            "browser_language": "en",
+            "browser_platform": "Win32",
+            "browser_name": "Mozilla",
+            "browser_version": randomUserAgent,
+            "browser_online": true,
+            "tz_name": "America/New_York",
+            "identity": "en",
+            "room_id": randomRoomId,
+            "heartbeatIntervalMs": 15000 + Math.floor(Math.random() * 5000), // 15-20 seconds
+            "client": "web"
+        },
+        connectTimeoutMs: 30000,
+        requestTimeoutMs: 10000
+    };
+}
+
+// Alternative connection method with different parameters
+async function connectToTikTokAlternative(session) {
+    console.log(`🔄 [SESSION ${session.id}] Trying alternative connection method`);
+    
+    // Wait longer between attempts
+    await new Promise(resolve => setTimeout(resolve, 15000)); // 15 second delay
+    
+    // Use minimal connection parameters
+    const minimalParams = {
+        requestPollingIntervalMs: 5000, // Slower polling
+        sessionId: undefined,
+        clientParams: {
+            "app_language": "en-US",
+            "device_platform": "web",
+            "webcast_sdk_version": "1.2.0", // Older version
+            "web_id": Math.floor(Math.random() * 10000000000000000000).toString(),
+            "msToken": "",
+            "browser_language": "en",
+            "browser_platform": "Win32",
+            "browser_name": "Mozilla",
+            "browser_version": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "browser_online": true,
+            "tz_name": "America/New_York",
+            "identity": "en",
+            "room_id": Math.floor(Math.random() * 10000000000000000000).toString(),
+            "heartbeatIntervalMs": 30000, // Longer heartbeat
+            "client": "web"
+        },
+        connectTimeoutMs: 60000, // Longer timeout
+        requestTimeoutMs: 20000
+    };
+    
+    session.connection = new WebcastPushConnection(session.username, minimalParams);
+    setupSessionEventHandlers(session, 0);
+    await session.connection.connect();
+}
+
+// Minimal connection method with basic parameters
+async function connectToTikTokMinimal(session) {
+    console.log(`🔧 [SESSION ${session.id}] Trying minimal connection method`);
+    
+    // Wait even longer
+    await new Promise(resolve => setTimeout(resolve, 30000)); // 30 second delay
+    
+    // Use very basic parameters
+    const basicParams = {
+        requestPollingIntervalMs: 10000, // Very slow polling
+        sessionId: undefined,
+        clientParams: {
+            "app_language": "en-US",
+            "device_platform": "web",
+            "webcast_sdk_version": "1.0.0", // Very old version
+            "web_id": "1234567890123456789",
+            "msToken": "",
+            "browser_language": "en",
+            "browser_platform": "Win32",
+            "browser_name": "Mozilla",
+            "browser_version": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "browser_online": true,
+            "tz_name": "America/New_York",
+            "identity": "en",
+            "room_id": "1234567890123456789",
+            "heartbeatIntervalMs": 60000, // Very long heartbeat
+            "client": "web"
+        },
+        connectTimeoutMs: 120000, // Very long timeout
+        requestTimeoutMs: 30000
+    };
+    
+    session.connection = new WebcastPushConnection(session.username, basicParams);
+    setupSessionEventHandlers(session, 0);
+    await session.connection.connect();
 }
 
 function setupSessionEventHandlers(session, retryAttempt = 0) {
@@ -4292,9 +4407,25 @@ async function changeTikTokUsername(newUsername, ws) {
             }));
         }
         
-        // Use mock connection approach to completely bypass all rate limiting
-        console.log(`🎭 [SESSION ${session.id}] Using mock connection approach to bypass all rate limiting`);
-        await connectToTikTokMock(session);
+        // Try multiple approaches to connect to real TikTok live streams
+        console.log(`🔗 [SESSION ${session.id}] Connecting to REAL TikTok live stream: ${session.username}`);
+        
+        try {
+            // Approach 1: Standard connection with advanced rate limiting bypass
+            await connectToTikTokForSession(session);
+        } catch (error) {
+            console.log(`⚠️ [SESSION ${session.id}] Standard approach failed, trying alternative methods...`);
+            
+            // Approach 2: Try with different connection parameters
+            try {
+                await connectToTikTokAlternative(session);
+            } catch (altError) {
+                console.log(`⚠️ [SESSION ${session.id}] Alternative approach failed, trying minimal connection...`);
+                
+                // Approach 3: Minimal connection with basic parameters
+                await connectToTikTokMinimal(session);
+            }
+        }
         
         // Send success message after connection
         console.log(`✅ [SESSION ${session.id}] Successfully connected to new username`);
