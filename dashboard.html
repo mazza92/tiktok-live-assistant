@@ -5810,6 +5810,7 @@
                     break;
                     
                 case 'connected':
+                    console.log('✅ Connected to TikTok Live!');
                     connectBtn.style.display = 'none';
                     disconnectBtn.style.display = 'inline-block';
                     streamStatus.textContent = 'Connected';
@@ -5817,6 +5818,10 @@
                     if (connectionDetails) {
                         connectionDetails.style.display = 'flex';
                         updateConnectionDetails(username);
+                    }
+                    // Show connection type
+                    if (message.data && message.data.connectionType) {
+                        console.log(`🔗 Connection type: ${message.data.connectionType}`);
                     }
                     break;
                     
@@ -6285,6 +6290,13 @@
                                 // Show rate limit notification to user
                                 const rateLimitMessage = `Rate Limited: ${message.data.message}\n\nAttempt ${message.data.retryAttempt}/${message.data.maxAttempts}`;
                                 alert(rateLimitMessage);
+                                break;
+                            case 'liveUpdate':
+                                console.log('📺 Live update received:', message.data);
+                                // Update viewer count and other live data
+                                if (message.data.viewerCount !== undefined) {
+                                    updateViewerCount(message.data.viewerCount);
+                                }
                                 break;
                                 
                                 // Clear restoration flag if we were restoring
@@ -8284,6 +8296,15 @@
             if (contentEl) contentEl.textContent = `${Math.round((entertainmentMetrics.contentReception || 0) * 100)}%`;
             if (energyEl) energyEl.textContent = `${Math.round((entertainmentMetrics.audienceEnergy || 0) * 100)}%`;
             if (retentionEl) retentionEl.textContent = `${Math.round((entertainmentMetrics.retentionQuality || 0) * 100)}%`;
+        }
+        
+        // Update viewer count display
+        function updateViewerCount(viewerCount) {
+            const viewerCountElement = document.getElementById('viewerCount');
+            if (viewerCountElement) {
+                viewerCountElement.textContent = viewerCount.toLocaleString();
+            }
+            console.log(`👥 Updated viewer count: ${viewerCount}`);
         }
         
                 // Update top engaged users display with enhanced engagement data

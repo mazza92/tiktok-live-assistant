@@ -2854,6 +2854,212 @@ const MAX_RETRY_ATTEMPTS = 5;
 const BASE_RETRY_DELAY = 30000; // 30 seconds base delay
 const CONNECTION_CACHE_DURATION = 300000; // 5 minutes cache duration
 
+// Direct HTTP approach to bypass API rate limiting
+const https = require('https');
+const http = require('http');
+const { URL } = require('url');
+
+// Direct HTTP connection to TikTok live streams (bypasses API rate limiting)
+async function connectToTikTokDirectHTTP(session, retryAttempt = 0) {
+    if (session.isConnecting) return;
+    
+    // Check if username is set
+    if (!session.username || session.username.trim() === '') {
+        console.log('⚠️ [SESSION] No username set for session', session.id);
+        return;
+    }
+    
+    session.isConnecting = true;
+    console.log(`🌐 [SESSION ${session.id}] Using direct HTTP connection to ${session.username} (Attempt ${retryAttempt + 1})`);
+    
+    try {
+        // Use direct HTTP requests to get live stream data
+        const liveData = await fetchTikTokLiveDataDirect(session.username);
+        
+        if (liveData && liveData.isLive) {
+            console.log(`✅ [SESSION ${session.id}] Successfully connected via direct HTTP`);
+            
+            // Simulate connection events
+            session.metrics.currentViewerCount = liveData.viewerCount || 0;
+            session.metrics.lastActivity = Date.now();
+            
+            // Broadcast connection success
+            broadcastToSession(session, 'connected', {
+                status: 'connected',
+                roomInfo: liveData,
+                sessionId: session.id,
+                username: session.username,
+                connectionType: 'direct_http'
+            });
+            
+            // Start polling for live data
+            startDirectHTTPPolling(session);
+            
+        } else {
+            throw new Error('User is not currently live streaming');
+        }
+        
+    } catch (error) {
+        console.error(`❌ [SESSION ${session.id}] Direct HTTP connection failed:`, error.message);
+        session.isConnecting = false;
+        
+        // Implement retry logic for direct HTTP
+        if (retryAttempt < MAX_RETRY_ATTEMPTS) {
+            const retryDelay = 10000 + (retryAttempt * 5000); // 10s, 15s, 20s, 25s, 30s
+            console.log(`🔄 [SESSION ${session.id}] Retrying direct HTTP in ${retryDelay/1000}s...`);
+            
+            setTimeout(async () => {
+                if (!session.isConnecting) {
+                    await connectToTikTokDirectHTTP(session, retryAttempt + 1);
+                }
+            }, retryDelay);
+        } else {
+            console.error(`❌ [SESSION ${session.id}] Max direct HTTP retry attempts reached`);
+        }
+        
+        throw error;
+    }
+}
+
+// Fetch TikTok live data using direct HTTP requests
+async function fetchTikTokLiveDataDirect(username) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'www.tiktok.com',
+            port: 443,
+            path: `/@${username}/live`,
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            }
+        };
+        
+        const req = https.request(options, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            res.on('end', () => {
+                try {
+                    // Parse the HTML to extract live stream information
+                    const liveData = parseTikTokLiveHTML(data, username);
+                    resolve(liveData);
+                } catch (error) {
+                    reject(new Error(`Failed to parse TikTok live data: ${error.message}`));
+                }
+            });
+        });
+        
+        req.on('error', (error) => {
+            reject(new Error(`HTTP request failed: ${error.message}`));
+        });
+        
+        req.setTimeout(15000, () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+        
+        req.end();
+    });
+}
+
+// Parse TikTok live HTML to extract live stream data
+function parseTikTokLiveHTML(html, username) {
+    try {
+        // Look for live stream indicators in the HTML
+        const isLive = html.includes('"isLive":true') || 
+                      html.includes('"liveStreamStatus":1') ||
+                      html.includes('"roomStatus":1') ||
+                      html.includes('"is_live":true');
+        
+        if (!isLive) {
+            return { isLive: false, username };
+        }
+        
+        // Extract viewer count
+        const viewerMatch = html.match(/"viewerCount":(\d+)/) || 
+                           html.match(/"onlineCount":(\d+)/) ||
+                           html.match(/"audienceCount":(\d+)/);
+        const viewerCount = viewerMatch ? parseInt(viewerMatch[1]) : 0;
+        
+        // Extract room ID
+        const roomMatch = html.match(/"roomId":"([^"]+)"/) || 
+                         html.match(/"room_id":"([^"]+)"/);
+        const roomId = roomMatch ? roomMatch[1] : null;
+        
+        // Extract stream title
+        const titleMatch = html.match(/"title":"([^"]+)"/) || 
+                          html.match(/"roomTitle":"([^"]+)"/);
+        const title = titleMatch ? titleMatch[1] : `${username}'s Live Stream`;
+        
+        return {
+            isLive: true,
+            username,
+            viewerCount,
+            roomId,
+            title,
+            timestamp: Date.now()
+        };
+        
+    } catch (error) {
+        console.error('Error parsing TikTok live HTML:', error);
+        return { isLive: false, username, error: error.message };
+    }
+}
+
+// Start polling for live data updates
+function startDirectHTTPPolling(session) {
+    const pollInterval = setInterval(async () => {
+        if (!session.isConnecting && session.wsClients.size > 0) {
+            try {
+                const liveData = await fetchTikTokLiveDataDirect(session.username);
+                
+                if (liveData && liveData.isLive) {
+                    // Update metrics
+                    session.metrics.currentViewerCount = liveData.viewerCount || 0;
+                    session.metrics.lastActivity = Date.now();
+                    
+                    // Broadcast updated data
+                    broadcastToSession(session, 'liveUpdate', {
+                        viewerCount: liveData.viewerCount,
+                        title: liveData.title,
+                        timestamp: Date.now(),
+                        sessionId: session.id
+                    });
+                    
+                    // Broadcast metrics
+                    broadcastGlobalMetrics();
+                } else {
+                    console.log(`📺 [SESSION ${session.id}] User ${session.username} is no longer live`);
+                    clearInterval(pollInterval);
+                    
+                    // Broadcast disconnection
+                    broadcastToSession(session, 'disconnected', {
+                        status: 'disconnected',
+                        reason: 'User went offline',
+                        sessionId: session.id,
+                        username: session.username
+                    });
+                }
+            } catch (error) {
+                console.error(`❌ [SESSION ${session.id}] Polling error:`, error.message);
+            }
+        } else {
+            clearInterval(pollInterval);
+        }
+    }, 10000); // Poll every 10 seconds
+    
+    // Store interval reference for cleanup
+    session.pollInterval = pollInterval;
+}
+
 // Session-aware connection management with rate limiting bypass
 async function connectToTikTokForSession(session, retryAttempt = 0) {
     if (session.isConnecting) return;
@@ -3988,7 +4194,14 @@ async function changeTikTokUsername(newUsername, ws) {
             }));
         }
         
-        await connectToTikTokForSession(session);
+        // Try direct HTTP approach first to bypass API rate limiting
+        try {
+            await connectToTikTokDirectHTTP(session);
+        } catch (directError) {
+            console.log(`⚠️ [SESSION ${session.id}] Direct HTTP failed, falling back to API: ${directError.message}`);
+            // Fallback to original API approach if direct HTTP fails
+            await connectToTikTokForSession(session);
+        }
         
         // Send success message after connection
         console.log(`✅ [SESSION ${session.id}] Successfully connected to new username`);
